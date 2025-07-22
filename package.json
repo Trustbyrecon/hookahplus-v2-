@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 HEAD
+=======
+
+>>>>>>> ab0ac175 (Fix: valid JSON and Vite setup for deploy)
 {
   "name": "hookahplus",
   "version": "1.0.0",
@@ -6,11 +10,12 @@ HEAD
     "node": ">=18"
   },
   "scripts": {
-    "build": "npm run generate",
-    "dev": "vite"
+    "dev": "vite",
+    "build": "vite build"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "vite": "^4.0.0"
+  }
 }
 
 {
