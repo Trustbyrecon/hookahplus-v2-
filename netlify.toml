@@ -1,1 +1,6 @@
-Placeholder content for netlify.toml
+[build]
+publish = "./"
+command = ""
+
+[dev]
+port = 8888
