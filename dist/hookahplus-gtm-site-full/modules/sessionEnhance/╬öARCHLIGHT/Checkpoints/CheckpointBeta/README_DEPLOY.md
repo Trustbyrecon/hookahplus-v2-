@@ -1,0 +1,1 @@
+Drop components into session summary UI and link to analytics.

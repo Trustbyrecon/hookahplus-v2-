@@ -1,0 +1,1 @@
+<template><div>AI Flavor Toggle</div></template>

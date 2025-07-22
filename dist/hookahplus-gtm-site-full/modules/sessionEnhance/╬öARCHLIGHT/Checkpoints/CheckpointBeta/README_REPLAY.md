@@ -1,0 +1,1 @@
+This component displays a heatmap of flavor usage.

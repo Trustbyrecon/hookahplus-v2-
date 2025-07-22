@@ -1,0 +1,1 @@
+<template><div>Flavor Memory Tracker Component</div></template>

@@ -1,0 +1,8 @@
+
+[build]
+  publish = "./"
+  command = ""
+
+[dev]
+  port = 8888
+  framework = "#static"

@@ -1,0 +1,3 @@
+loyalty:
+  enabled: true
+  type: ['phone', 'email']

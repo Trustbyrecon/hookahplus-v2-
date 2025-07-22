@@ -1,0 +1,1 @@
+<template><div>Guest History Card</div></template>

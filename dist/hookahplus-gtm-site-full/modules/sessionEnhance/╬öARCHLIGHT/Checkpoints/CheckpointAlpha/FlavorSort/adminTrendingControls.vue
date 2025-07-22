@@ -1,0 +1,1 @@
+<template><div>Trending Badge Controls</div></template>

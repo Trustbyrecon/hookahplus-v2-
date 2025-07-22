@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Hookah+</title>
+</head>
+<body>
+  <h1>Welcome to Hookah+</h1>
+
+<!-- Email Confirmation Modal -->
+<style>
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+}
+.modal.hidden {
+  display: none;
+}
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+}
+.modal-content input {
+  padding: 10px;
+  margin: 10px 0;
+  width: 90%;
+}
+.modal-content button {
+  background-color: #1b0f1a;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+}
+</style>
+
+<div id="emailModal" class="modal hidden">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()" style="cursor:pointer; float:right;">&times;</span>
+    <h2>Confirm Your Email</h2>
+    <p>Please confirm to join the Hookah+ Partner Program.</p>
+    <input type="email" id="emailInput" placeholder="you@example.com" value="hookahplusconnector@gmail.com" />
+    <button onclick="submitEmail()">Confirm</button>
+  </div>
+</div>
+
+<script>
+  function openModal() {
+    document.getElementById("emailModal").classList.remove("hidden");
+  }
+
+  function closeModal() {
+    document.getElementById("emailModal").classList.add("hidden");
+  }
+
+  function submitEmail() {
+    const email = document.getElementById("emailInput").value;
+    alert(`Thanks! We've received your email: ${email}`);
+    closeModal();
+  }
+</script>
+
+<!-- Trigger Button -->
+<div style="text-align:center; margin: 20px;">
+  <button onclick="openModal()" style="padding: 10px 20px; background: #f9cb5e; border: none; border-radius: 5px; font-weight: bold;">Join Partner Program</button>
+</div>
+</body>
+</html>
