@@ -1,11 +1,11 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
+ HEAD
 HEAD
-=======
+HEAD
 
->>>>>>> ab0ac175 (Fix: valid JSON and Vite setup for deploy)
-=======
->>>>>>> c2234bd5 (Fix logo + add CTA)
+
+ ab0ac175 (Fix: valid JSON and Vite setup for deploy)
+
+ c2234bd5 (Fix logo + add CTA)
 {
   "name": "hookahplus",
   "version": "1.0.0",
