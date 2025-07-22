@@ -1,1 +1,0 @@
-// Metadata injection logic

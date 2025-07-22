@@ -1,5 +1,0 @@
-{ 
-  "name": "hookahplus-gtm", 
-  "version": "1.0.0", 
-  "scripts": { "build": "echo Deploying HookahPlus..." } 
-} 

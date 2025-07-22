@@ -1,1 +1,0 @@
-This module suggests flavors based on session patterns.
