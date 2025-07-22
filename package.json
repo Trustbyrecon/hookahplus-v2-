@@ -1,9 +1,9 @@
-"engines": {
-  "node": ">=18"
-},
 {
   "name": "hookahplus",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "npm run generate",
     "dev": "vite"
