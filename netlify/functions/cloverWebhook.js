@@ -1,20 +1,17 @@
-exports.handler = async (event, context) => {
-  if (event.httpMethod === "GET") {
-    const verificationCode = event.queryStringParameters.verificationCode;
+exports.handler = async (event) => {
+  const payload = JSON.parse(event.body);
+
+  if (payload?.verificationCode) {
     return {
       statusCode: 200,
-      body: verificationCode,
+      body: payload.verificationCode,
     };
   }
 
-  if (event.httpMethod === "POST") {
-    const eventData = JSON.parse(event.body);
-    console.log("Received Clover webhook:", eventData);
-    return {
-      statusCode: 200,
-      body: "Webhook received",
-    };
-  }
+  console.log("📦 Incoming Clover Webhook:", payload);
 
-  return { statusCode: 405, body: "Method Not Allowed" };
+  return {
+    statusCode: 200,
+    body: "Received!",
+  };
 };
