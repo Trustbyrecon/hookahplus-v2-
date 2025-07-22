@@ -1,9 +1,5 @@
 {
-ab0ac175 (Fix: valid JSON and Vite setup for deploy)
-
- c2234bd5 (Fix logo + add CTA)
-{
-"name": "hookahplus",
+  "name": "hookahplus",
   "version": "1.0.0",
   "scripts": {
     "build": "vite build",
@@ -12,8 +8,5 @@ ab0ac175 (Fix: valid JSON and Vite setup for deploy)
   "dependencies": {},
   "devDependencies": {
     "vite": "^5.0.0"
-  },
-  "dependencies": {},
-  "devDependencies": {}
+  }
 }
-3322489f (Fixed malformed package.json for Netlify build)
