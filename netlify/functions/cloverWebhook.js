@@ -1,26 +1,30 @@
 exports.handler = async (event) => {
-  const payload = JSON.parse(event.body);
+  let body = {};
 
-  if (payload?.verificationCode) {
+  try {
+    body = JSON.parse(event.body || "{}");
+  } catch (e) {
+    console.log("⚠️ JSON Parse Error:", e.message);
     return {
-      statusCode: 200,
-      body: payload.verificationCode,
+      statusCode: 400,
+      body: "Invalid JSON payload",
     };
   }
 
-  const reflexLog = {
-    source: "clover",
-    eventType: payload.type || "unknown",
-    receivedAt: new Date().toISOString(),
-    sessionId: payload.object?.id || null,
-    trustScore: 87, // can be dynamically adjusted later
-    raw: payload,
-  };
+  // Handle webhook verification handshake
+  if (body?.verificationCode) {
+    console.log("🔐 Clover Verification Code Received:", body.verificationCode);
+    return {
+      statusCode: 200,
+      body: body.verificationCode,
+    };
+  }
 
-  console.log("🧠 Reflex Log Entry:", JSON.stringify(reflexLog));
+  // Log any webhook activity for debugging
+  console.log("📦 Webhook Payload Received:", JSON.stringify(body));
 
   return {
     statusCode: 200,
-    body: "Received",
+    body: "Webhook received",
   };
 };
