@@ -1,3 +1,4 @@
+HEAD
 {
   "name": "hookahplus",
   "version": "1.0.0",
@@ -11,3 +12,18 @@
   "dependencies": {},
   "devDependencies": {}
 }
+
+{
+  "name": "hookahplus",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "npm run generate",
+    "dev": "vite"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
+3322489f (Fixed malformed package.json for Netlify build)
