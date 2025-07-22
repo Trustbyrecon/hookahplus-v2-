@@ -1,40 +1,17 @@
- HEAD
-HEAD
-HEAD
-
-
- ab0ac175 (Fix: valid JSON and Vite setup for deploy)
+{
+ab0ac175 (Fix: valid JSON and Vite setup for deploy)
 
  c2234bd5 (Fix logo + add CTA)
 {
-  "name": "hookahplus",
+"name": "hookahplus",
   "version": "1.0.0",
-  "engines": {
-    "node": ">=18"
-  },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build"
-  },
-  "dependencies": {
-    "vite": "^4.0.0"
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.11"
-  }
-}
-
-{
-  "name": "hookahplus",
-  "version": "1.0.0",
-  "engines": {
-    "node": ">=18"
-  },
-  "scripts": {
-    "build": "npm run generate",
+    "build": "vite build",
     "dev": "vite"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vite": "^5.0.0"
   },
   "dependencies": {},
   "devDependencies": {}
