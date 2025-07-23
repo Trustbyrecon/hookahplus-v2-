@@ -1,11 +1,8 @@
-<<<<<<< HEAD
-{
-  "name": "hookahplus-app",
+
+{ 
+   "name": "hookahplus-app",
   "private": true,
   "scripts": {
-=======
-{ "name": "hookahplus-app", "private": true, "scripts": {
->>>>>>> f68d55b4 (Fix merge conflict in package.json)
     "dev": "remix vite:dev",
     "build": "remix vite:build",
     "start": "remix-serve build"
