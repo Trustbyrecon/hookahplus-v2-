@@ -1,6 +1,12 @@
 [build]
+
 command = "npm run build"
 publish = ".next"
+=======
+<<<<<<< HEAD
+  command = "npm run build"
+  publish = ".next"
+>>>>>>> b49d228c (� Ensure Netlify targets .next output and plugin for App Router support)
 
 [[redirects]]
 from = "/*"
@@ -8,4 +14,18 @@ to = "/index.html"
 status = 200
 
 [[plugins]]
+
 package = "@netlify/plugin-nextjs"
+
+  package = "@netlify/plugin-nextjs"
+
+command = "npm run build"
+publish = ".next"
+
+[functions]
+directory = "netlify/functions"
+
+[[plugins]]
+package = "@netlify/next"
+ 1ac05b4a (� Ensure Netlify targets .next output and plugin for App Router support)
+ b49d228c (� Ensure Netlify targets .next output and plugin for App Router support)
