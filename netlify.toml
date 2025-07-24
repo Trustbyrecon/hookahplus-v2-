@@ -1,6 +1,6 @@
 [build]
 command = "npm run build"
-publish = "dist"  # or "build" if using CRA
+publish = "build"  # <-- Fix this from 'dist' to 'build'
 
 [[redirects]]
 from = "/*"
