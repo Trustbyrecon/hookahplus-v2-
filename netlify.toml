@@ -1,8 +1,8 @@
 [build]
-command = "npm run build"
-publish = "build"  # <-- Fix this from 'dist' to 'build'
+  command = "npm run build"
+  publish = "out"
 
 [[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
+  from = "/*"
+  to = "/index.html"
+  status = 200
