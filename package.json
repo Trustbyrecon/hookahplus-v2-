@@ -6,6 +6,12 @@
     "build": "next build",
     "start": "next start"
   },
+  "scripts": {
+  "dev": "next dev",
+  "build": "next build && next export",
+  "start": "serve out"
+}
+
   "dependencies": {
     "@netlify/next": "^1.4.9",
     "next": "^13.5.11",
