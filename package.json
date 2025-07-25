@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build"
-,
+    "build": "next build",
     "start": "serve out"
   },
   "dependencies": {
@@ -14,11 +13,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-
-    "serve": "^14.2.0"
-
-    "@netlify/plugin-nextjs": "^5.11.6",
-    "serve": "^14.2.4"
-37c2e344 (Fix malformed package.json)
+    "serve": "^14.2.0",
+    "@netlify/plugin-nextjs": "^5.11.6"
   }
 }
