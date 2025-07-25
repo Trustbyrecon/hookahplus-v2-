@@ -1,21 +1,34 @@
-import { useState } from 'react';
-
-const flavors = ['Mint', 'Grape', 'Watermelon', 'Blueberry'];
+// components/FlavorSelector.jsx
+import React from 'react';
+import { useSession } from './SessionContext';
+import { useReflexAgent } from './ReflexAgentContext';
 
 export default function FlavorSelector() {
-  const [selected, setSelected] = useState('');
+  const { session, setSession } = useSession();
+  const { logFlavorChange } = useReflexAgent();
+
+  const flavors = ['Mint', 'Watermelon', 'Blueberry', 'Peach', 'Double Apple'];
+
+  const handleChange = (e) => {
+    const newFlavor = e.target.value;
+    setSession(prev => ({ ...prev, flavor: newFlavor }));
+    logFlavorChange(newFlavor);
+  };
 
   return (
-    <div>
-      <select onChange={(e) => setSelected(e.target.value)}>
-        <option value="">Choose a flavor</option>
+    <div className="mb-4">
+      <label className="block mb-1 font-semibold">Flavor:</label>
+      <select
+        value={session.flavor}
+        onChange={handleChange}
+        className="p-2 bg-gray-800 text-white rounded w-full"
+      >
         {flavors.map((flavor) => (
           <option key={flavor} value={flavor}>
             {flavor}
           </option>
         ))}
       </select>
-      {selected && <p>You selected: {selected}</p>}
     </div>
   );
 }
