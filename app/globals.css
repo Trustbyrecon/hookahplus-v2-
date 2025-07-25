@@ -1,8 +1,8 @@
-/* globals.css */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: sans-serif;
-  background-color: #111;
-  color: #f8f8f8;
+// ✅ _app.tsx entry point for global styles
+import './globals.css';
+
+import type { AppProps } from 'next/app';
+
+export default function MyApp({ Component, pageProps }: AppProps) {
+  return <Component {...pageProps} />;
 }
