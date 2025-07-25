@@ -1,4 +1,4 @@
-// components/SessionNotes.jsx
+'use client';
 import React from 'react';
 import { useSession } from './SessionContext';
 import { useReflexAgent } from './ReflexAgentContext';
