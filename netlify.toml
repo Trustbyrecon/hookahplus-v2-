@@ -1,13 +1,6 @@
-[build]
+[context.production]
   command = "npm run build"
   publish = ".next"
-  functions = "netlify/functions"
-
-[context.production.environment]
-  NODE_VERSION = "18"
-  NEXT_PRIVATE_TARGET = "server"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[context.deploy-preview]
+  command = "npm run build"
+  publish = ".next"
