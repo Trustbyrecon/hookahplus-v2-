@@ -1,4 +1,4 @@
-// ✅ _app.tsx entry point for global styles
+✅ _app.tsx entry point for global styles
 import './globals.css';
 
 import type { AppProps } from 'next/app';
