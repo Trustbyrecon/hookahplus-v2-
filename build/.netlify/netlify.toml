@@ -1,0 +1,30 @@
+plugins = []
+headers = []
+redirects = []
+
+[dev]
+port = 8888.0
+framework = "#static"
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch"
+publishOrigin = "config"
+base = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
