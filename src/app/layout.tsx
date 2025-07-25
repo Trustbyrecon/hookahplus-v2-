@@ -1,4 +1,4 @@
-// app/layout.tsx
+app/layout.tsx
 import './globals.css';
 import { SessionProvider } from '../components/SessionContext';
 import { ReflexAgentProvider } from '../components/ReflexAgentContext';
