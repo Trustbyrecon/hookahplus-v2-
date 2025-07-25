@@ -1,0 +1,1 @@
+SessionInput.tsx content placeholder
