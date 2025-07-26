@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+// app/layout.tsx
+>>>>>>> efe696602548539f5ac97a4139557b96db76e4cd
 import './globals.css';
 import { SessionProvider } from '../../components/SessionContext';
 import { ReflexAgentProvider } from '../../components/ReflexAgentContext';

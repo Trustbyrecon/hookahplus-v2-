@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 'use client';
 
 import TimerController from '../../components/TimerController';
@@ -21,3 +22,6 @@ export default function Home() {
     </main>
   );
 }
+=======
+<div>Session Flow Page</div>
+>>>>>>> efe696602548539f5ac97a4139557b96db76e4cd
