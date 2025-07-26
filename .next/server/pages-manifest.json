@@ -1,1 +1,12 @@
-{}
+{
+  "/SessionFlow": "pages/SessionFlow.js",
+  "/checkout": "pages/checkout.js",
+  "/_error": "pages/_error.js",
+  "/_app": "pages/_app.js",
+  "/SessionInput": "pages/SessionInput.js",
+  "/SessionSummary": "pages/SessionSummary.js",
+  "/dashboard": "pages/dashboard.js",
+  "/session": "pages/session.js",
+  "/onboarding": "pages/onboarding.js",
+  "/_document": "pages/_document.js"
+}

@@ -1,6 +1,5 @@
 functionsDirectory = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\netlify\\functions"
 functionsDirectoryOrigin = "ui"
-plugins = []
 headers = []
 redirects = []
 
@@ -28,3 +27,9 @@ functions = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\net
 [functions]
 
 [functions."*"]
+
+[[plugins]]
+origin = "default"
+package = "@netlify/plugin-nextjs"
+
+[plugins.inputs]
