@@ -1,14 +1,15 @@
-functionsDirectory = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\functions"
-functionsDirectoryOrigin = "config-v1"
-headersOrigin = "inline"
-redirectsOrigin = "inline"
+functionsDirectory = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\netlify\\functions"
+functionsDirectoryOrigin = "ui"
+plugins = []
+headers = []
+redirects = []
 
 [build]
 publish = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\.next"
-publishOrigin = "ui"
-commandOrigin = "ui"
+publishOrigin = "config"
+commandOrigin = "config"
 command = "npm run build"
-functions = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\functions"
+functions = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\netlify\\functions"
 
 [build.environment]
 
@@ -27,45 +28,3 @@ functions = "C:\\Users\\Dwayne Clark\\Downloads\\hookahplus_net_full_launch\\fun
 [functions]
 
 [functions."*"]
-
-[[plugins]]
-origin = "default"
-package = "@netlify/plugin-nextjs"
-
-[plugins.inputs]
-
-[[headers]]
-for = "/_next/static/*"
-
-[headers.values]
-Cache-Control = "public, max-age=31536000, immutable"
-
-[[redirects]]
-from = "/_next/image"
-to = "/.netlify/images?url=:url&w=:width&q=:quality"
-status = 200.0
-force = false
-
-[redirects.query]
-url = ":url"
-w = ":width"
-q = ":quality"
-
-[redirects.conditions]
-
-[redirects.headers]
-
-[[redirects]]
-from = "/_ipx/*"
-to = "/.netlify/images?url=:url&w=:width&q=:quality"
-status = 200.0
-force = false
-
-[redirects.query]
-url = ":url"
-w = ":width"
-q = ":quality"
-
-[redirects.conditions]
-
-[redirects.headers]

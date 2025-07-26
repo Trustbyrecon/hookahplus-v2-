@@ -1,9 +1,9 @@
 'use client';
 
-import TimerController from '../components/TimerController';
-import FlavorSelector from '../components/FlavorSelector';
-import SessionNotes from '../components/SessionNotes';
-import { useSession } from '../components/SessionContext';
+import TimerController from '../../components/TimerController';
+import FlavorSelector from '../../components/FlavorSelector';
+import SessionNotes from '../../components/SessionNotes';
+import { useSession } from '../../components/SessionContext';
 
 export default function Home() {
   const { session } = useSession();
