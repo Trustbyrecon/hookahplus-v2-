@@ -1,6 +1,7 @@
 {
   "name": "hookahplus",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -28,6 +29,6 @@
     "next": "^14.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
- efe696602548539f5ac97a4139557b96db76e4cd
+efe696602548539f5ac97a4139557b96db76e4cd
   }
 }
