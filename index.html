@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,3 +46,52 @@
   </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hookah+ | Reflective Lounge Intelligence</title>
+  <meta name="description" content="The Hookah+ Reflex Experience: Loyalty, Memory, and Session Flow – all in one intelligent system." />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="reflexSync.js" defer></script>
+</head>
+<body>
+  <div id="hero" class="hero-section">
+    <h1 class="pulse">Welcome to Hookah+</h1>
+    <p class="subtext">Where every puff remembers. Where every session adapts.</p>
+    <button id="enterBtn">Enter Lounge Flow</button>
+  </div>
+  <!-- Whisper Modal Placeholder -->
+  <div id="whisperModal" class="hidden">
+    <div class="whisper-content">
+      <p id="whisperMessage">Welcome back. Your loyalty is encoded.</p>
+    </div>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const isReturning = localStorage.getItem("user_visited_before");
+      const tier = localStorage.getItem("trust_tier") || "Tier I";
+      logGhost("reflex_entry", { timestamp: Date.now(), isReturning, tier });
+
+      if (tier === "Tier VII") {
+        const modal = document.getElementById("whisperModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("active");
+      }
+
+      document.getElementById("enterBtn").addEventListener("click", () => {
+        localStorage.setItem("user_visited_before", true);
+        window.location.href = "/";
+      });
+    });
+
+    function logGhost(event, payload) {
+      console.log(`[GhostLog] ${event}`, payload);
+      // Placeholder for future server sync
+    }
+  </script>
+</body>
+</html>
+>>>>>>> 7afc7937bc2e009f6196ba0635daf2df3aa1fcad
