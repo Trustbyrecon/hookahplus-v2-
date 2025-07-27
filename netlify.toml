@@ -1,2 +1,3 @@
 [build]
-publish = "out" 
+publish = "out"
+command = "npm run build" 
