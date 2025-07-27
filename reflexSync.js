@@ -10,5 +10,5 @@ function startReflection() {
   }
 
   localStorage.setItem("user_visited_before", true);
-  window.location.href = "/session.html"; // or dashboard, if staff
+  window.location.href = "/"; // or dashboard, if staff
 }

@@ -1,9 +1,2 @@
-[[redirects]]
-  from = "/theme-selector"
-  to = "/Theme Selector.html"
-  status = 200
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[build]
+publish = "out" 
