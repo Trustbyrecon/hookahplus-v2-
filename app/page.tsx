@@ -2,8 +2,34 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+
+function useReflexAgent(routeName: string) {
+  useEffect(() => {
+    const agentId = `reflex-${routeName.toLowerCase()}`;
+    const trustLevel = localStorage.getItem("trust_tier") || "Tier I";
+    const sessionContext = {
+      timestamp: Date.now(),
+      returning: localStorage.getItem("user_visited_before") === "true",
+    };
+
+    console.log(`[ReflexAgent] ${agentId} loaded`, {
+      trustLevel,
+      sessionContext,
+    });
+
+    // Simulated reflex log and bloom trigger
+    window.dispatchEvent(new CustomEvent("reflex-agent-log", {
+      detail: { agentId, trustLevel, routeName, sessionContext },
+    }));
+
+    localStorage.setItem("user_visited_before", "true");
+  }, [routeName]);
+}
 
 export default function Home() {
+  useReflexAgent("Home");
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
       <h1 className="text-4xl font-bold mb-8 text-orange-400">Hookah+ Gateway</h1>
