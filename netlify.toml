@@ -1,7 +1,10 @@
 [build]
-  base = "app/dashboard"
-  publish = "dist"
-  command = "npm run build"
+publish = "out"
+command = "npm install && CI=false npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
 
 [functions]
   directory = "netlify/functions"
