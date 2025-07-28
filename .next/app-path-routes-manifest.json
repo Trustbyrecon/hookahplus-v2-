@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"/_not-found/page":"/_not-found","/operator/page":"/operator","/admin/page":"/admin","/page":"/","/dashboard/page":"/dashboard","/pre-order/page":"/pre-order"}
+=======
+{"/_not-found/page":"/_not-found","/page":"/","/pre-order/page":"/pre-order","/dashboard/page":"/dashboard","/operator/page":"/operator","/admin/page":"/admin"}
+>>>>>>> 2dcdcf35ad0631c5ccfb7da96ad409677d58a16b
