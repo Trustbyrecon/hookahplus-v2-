@@ -1,37 +1,29 @@
 // app/page.tsx
+"use client";
+
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8">
-      <h1 className="text-4xl font-bold mb-6">Hookah+ Operator Gateway</h1>
-      <p className="text-lg text-gray-300 mb-10">Welcome to the launchpad. Choose your portal.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-xl">
-        <Link href="/dashboard">
-          <div className="bg-zinc-900 rounded-2xl p-6 hover:bg-zinc-800 transition cursor-pointer shadow-lg">
-            <h2 className="text-2xl font-semibold mb-2">📊 Dashboard</h2>
-            <p className="text-sm text-gray-400">View session analytics, loyalty insights, and reflex heatmaps.</p>
-          </div>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
+      <h1 className="text-4xl font-bold mb-8 text-orange-400">Hookah+ Gateway</h1>
+      <p className="mb-10 text-center max-w-xl">
+        Select your operational mode. Each route is empowered by Reflex Agents, Memory Logs, Trust Bloom layers, and UI/UX intelligence.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-3xl">
+        <Link href="/dashboard" className="bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
+          Lounge Dashboard
         </Link>
-        <Link href="/pre-order">
-          <div className="bg-zinc-900 rounded-2xl p-6 hover:bg-zinc-800 transition cursor-pointer shadow-lg">
-            <h2 className="text-2xl font-semibold mb-2">🧾 Pre-Order</h2>
-            <p className="text-sm text-gray-400">Allow guests to pre-select flavors, session time, and QR pay.</p>
-          </div>
+        <Link href="/preorder" className="bg-purple-500 hover:bg-purple-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
+          QR Pre-Order Portal
         </Link>
-        <Link href="/admin">
-          <div className="bg-zinc-900 rounded-2xl p-6 hover:bg-zinc-800 transition cursor-pointer shadow-lg">
-            <h2 className="text-2xl font-semibold mb-2">🛠️ Admin</h2>
-            <p className="text-sm text-gray-400">Set up lounge zones, pricing tiers, staff roles and timing.</p>
-          </div>
+        <Link href="/admin" className="bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
+          Admin Intelligence Hub
         </Link>
-        <Link href="/operator">
-          <div className="bg-zinc-900 rounded-2xl p-6 hover:bg-zinc-800 transition cursor-pointer shadow-lg">
-            <h2 className="text-2xl font-semibold mb-2">🔥 Operator</h2>
-            <p className="text-sm text-gray-400">Live session manager for staff. Vibe logs, SessionNotes, timer.</p>
-          </div>
+        <Link href="/operator" className="bg-blue-500 hover:bg-blue-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
+          Main Operator Panel
         </Link>
       </div>
-    </main>
+    </div>
   );
 }
