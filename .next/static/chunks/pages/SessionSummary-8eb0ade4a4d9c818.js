@@ -1,1 +1,0 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[618],{8637:function(n,u,i){(window.__NEXT_P=window.__NEXT_P||[]).push(["/SessionSummary",function(){return i(4769)}])},4769:function(n,u,i){"use strict";i.r(u);var s=i(5893);i(7294),u.default=()=>(0,s.jsx)("div",{children:"Session Summary"})}},function(n){n.O(0,[888,774,179],function(){return n(n.s=8637)}),_N_E=n.O()}]);
