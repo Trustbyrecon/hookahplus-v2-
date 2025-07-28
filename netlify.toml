@@ -1,4 +1,4 @@
 [build]
 publish = "out"
-command = "CI=false npm run build"
+command = "npm install && CI=false npm run build"
 environment = { NODE_VERSION = "18", NPM_VERSION = "9" } 
