@@ -1,176 +1,34 @@
-'use client';
-
-  import { useState } from 'react';
-
-export default function ThemeSelector() {
-  const [loungeName, setLoungeName] = useState('');
-  const [primaryColor, setPrimaryColor] = useState('#f27c38');
-  const [flavorTheme, setFlavorTheme] = useState('mint');
-
-  const previewTheme = () => {
-    // This function is now handled by React state
-  };
-
-  return (
-    <div style={{
-      fontFamily: 'Arial, sans-serif',
-      background: '#0e0e0e',
-      color: '#fff',
-      padding: '20px',
-      minHeight: '100vh'
-    }}>
-      <h1>🎨 Customize Your Lounge Experience</h1>
-      
-      <form id="themeForm">
-        <label htmlFor="lounge_name" style={{
-          fontWeight: 'bold',
-          display: 'block',
-          marginTop: '20px'
-        }}>
-          Lounge Name
-        </label>
-        <input 
-          type="text" 
-          id="lounge_name" 
-          placeholder="e.g. Cloud Nine Lounge"
-          value={loungeName}
-          onChange={(e) => setLoungeName(e.target.value)}
-          style={{
-            padding: '10px',
-            margin: '10px 0',
-            width: '100%'
-          }}
-        />
-
-        <label htmlFor="primary_color" style={{
-          fontWeight: 'bold',
-          display: 'block',
-          marginTop: '20px'
-        }}>
-          Primary Color
-        </label>
-        <input 
-          type="color" 
-          id="primary_color" 
-          value={primaryColor}
-          onChange={(e) => setPrimaryColor(e.target.value)}
-          style={{
-            padding: '10px',
-            margin: '10px 0',
-            width: '100%'
-          }}
-        />
-
-        <label htmlFor="flavor_theme" style={{
-          fontWeight: 'bold',
-          display: 'block',
-          marginTop: '20px'
-        }}>
-          Flavor Theme
-        </label>
-        <select 
-          id="flavor_theme"
-          value={flavorTheme}
-          onChange={(e) => setFlavorTheme(e.target.value)}
-          style={{
-            padding: '10px',
-            margin: '10px 0',
-            width: '100%'
-          }}
-        >
-          <option value="mint">Mint</option>
-          <option value="cherry">Cherry</option>
-          <option value="dark">Luxe Dark</option>
-        </select>
-
-        <button 
-          type="button" 
-          onClick={previewTheme}
-          style={{
-            background: '#f27c38',
-            border: 'none',
-            padding: '12px 20px',
-            color: '#fff',
-            fontSize: '1em',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            marginTop: '20px'
-          }}
-        >
-          Preview Theme
-        </button>
-      </form>
-
-      <div style={{
-        marginTop: '40px',
-        padding: '20px',
-        border: '1px solid #444'
-      }} id="previewBox">
-        <h2>{loungeName || '[Lounge Name]'}</h2>
-        <p>
-          Primary color preview: 
-          <span 
-            style={{
-              display: 'inline-block',
-              width: '30px',
-              height: '30px',
-              background: primaryColor,
-              marginLeft: '10px'
-            }}
-          />
-        </p>
-        <p>Selected Theme: {flavorTheme}</p>
-      </div>
-    </div>
-  );
-}
-function useReflexAgent(routeName: string) {
-  useEffect(() => {
-    const agentId = `reflex-${routeName.toLowerCase()}`;
-    const trustLevel = localStorage.getItem("trust_tier") || "Tier I";
-    const sessionContext = {
-      timestamp: Date.now(),
-      returning: localStorage.getItem("user_visited_before") === "true",
-    };
-
-    console.log(`[ReflexAgent] ${agentId} loaded`, {
-      trustLevel,
-      sessionContext,
-    });
-
-    // Simulated reflex log and bloom trigger
-    window.dispatchEvent(new CustomEvent("reflex-agent-log", {
-      detail: { agentId, trustLevel, routeName, sessionContext },
-    }));
-
-    localStorage.setItem("user_visited_before", "true");
-  }, [routeName]);
-}
+import Link from 'next/link';
 
 export default function Home() {
-  useReflexAgent("Home");
-
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
-      <h1 className="text-4xl font-bold mb-8 text-orange-400">Hookah+ Gateway</h1>
-      <p className="mb-10 text-center max-w-xl">
-        Select your operational mode. Each route is empowered by Reflex Agents, Memory Logs, Trust Bloom layers, and UI/UX intelligence.
+    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-4 py-8">
+      <h1 className="text-5xl font-bold mb-6">Hookah<span className="text-purple-400">+</span></h1>
+      <p className="text-lg text-center mb-8 max-w-xl">
+        Select your operational mode. Each route is empowered by Reflex Agents, Memory Logs, Trust Bloom layers, and Portal UI/UX intelligence.
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-3xl">
-        <Link href="/dashboard" className="bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
-          Lounge Dashboard
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
+        <Link href="/dashboard">
+          <a className="block bg-purple-600 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded text-center">
+            Lounge Dashboard
+          </a>
         </Link>
-        <Link href="/preorder" className="bg-purple-500 hover:bg-purple-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
-          QR Pre-Order Portal
+        <Link href="/preorder">
+          <a className="block bg-green-600 hover:bg-green-800 text-white font-semibold py-3 px-4 rounded text-center">
+            QR Pre-Order Gateway
+          </a>
         </Link>
-        <Link href="/admin" className="bg-red-500 hover:bg-red-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
-          Admin Intelligence Hub
+        <Link href="/admin">
+          <a className="block bg-blue-600 hover:bg-blue-800 text-white font-semibold py-3 px-4 rounded text-center">
+            Admin Intelligence Hub
+          </a>
         </Link>
-        <Link href="/operator" className="bg-blue-500 hover:bg-blue-600 text-white py-4 px-6 rounded-xl text-center shadow-xl">
-          Main Operator Panel
+        <Link href="/operator">
+          <a className="block bg-pink-600 hover:bg-pink-800 text-white font-semibold py-3 px-4 rounded text-center">
+            Main Operator Panel
+          </a>
         </Link>
       </div>
-    </div>
+    </main>
   );
 }
-b292807de8bab19230f2726faf822a394e14f0ca
