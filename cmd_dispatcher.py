@@ -74,6 +74,12 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+def pushPressKit():
+    """Simulates pushing the latest press kit assets."""
+    # Placeholder for real sync logic
+    return "📣 Press kit pushed to /press-kit"
+
+
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -84,7 +90,8 @@ COMMANDS = {
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
-    "openWhisperMemory": openWhisperMemory
+    "openWhisperMemory": openWhisperMemory,
+    "pushPressKit": pushPressKit
 }
 
 
