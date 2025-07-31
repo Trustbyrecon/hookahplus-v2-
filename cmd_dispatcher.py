@@ -6,6 +6,7 @@ COMMANDS = {
     "deployReflexUI": reflex_ui.deploy_reflex_ui,
     "renderReflexLoyalty": reflex_ui.render_reflex_loyalty,
     "injectReflexHeatmap": reflex_ui.inject_reflex_heatmap,
+    "deployFlavorMixUI": reflex_ui.deploy_flavor_mix_ui,
     # Add more here...
 }
 
