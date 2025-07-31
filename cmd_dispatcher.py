@@ -74,6 +74,12 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+def releaseTeaserVideo():
+    """Publishes the Hookah+ teaser video to public channels."""
+    # Placeholder for actual release workflow (e.g., upload to CDN/YouTube)
+    return "🎬 Teaser video released across marketing outlets"
+
+
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -84,7 +90,8 @@ COMMANDS = {
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
-    "openWhisperMemory": openWhisperMemory
+    "openWhisperMemory": openWhisperMemory,
+    "releaseTeaserVideo": releaseTeaserVideo
 }
 
 
