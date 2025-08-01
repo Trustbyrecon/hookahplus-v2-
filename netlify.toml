@@ -1,4 +1,4 @@
 [build]
-base = "app/dashboard"
-publish = "out"
-command = "npm run build && npm run export"
+  base = ""
+  command = "npm run build && npm run export"
+  publish = "out"
