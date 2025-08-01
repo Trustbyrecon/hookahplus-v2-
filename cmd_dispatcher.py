@@ -74,6 +74,13 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+def markCodexPRResolved():
+    """Mark the current Codex pull request as resolved."""
+    # In this minimal implementation we just return a success message.
+    # A real deployment could update PR status via an API call.
+    return "✅ Codex pull request marked as resolved"
+
+
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -84,7 +91,8 @@ COMMANDS = {
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
-    "openWhisperMemory": openWhisperMemory
+    "openWhisperMemory": openWhisperMemory,
+    "markCodexPRResolved": markCodexPRResolved
 }
 
 
