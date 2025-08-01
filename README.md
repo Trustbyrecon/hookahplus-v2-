@@ -22,5 +22,6 @@ Available commands:
 - `deployReflexUI` – trigger a Netlify deploy
 - `renderReflexLoyalty <user_id>` – generate a loyalty heatmap for the given user
 - `injectReflexHeatmap` – insert the heatmap into the dashboard
+- `fireSession` – launch a simulated session with QR tracking and dynamic pricing
 
 More commands can be added by extending `cmd/modules/reflex_ui.py` and updating the `COMMANDS` table in `cmd_dispatcher.py`.
