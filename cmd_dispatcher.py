@@ -74,6 +74,15 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+ codex/resolve-codex-pr-with-cmd.markcodexprresolved
+def markCodexPRResolved():
+    """Mark the current Codex pull request as resolved."""
+    # In this minimal implementation we just return a success message.
+    # A real deployment could update PR status via an API call.
+    return "✅ Codex pull request marked as resolved"
+
+
+
  codex/lock-trust-deployment-for-phase-3
 def lockTrustDeploy(phase: str = "Phase1"):
     """Simulates locking the deployment pipeline for a given phase."""
@@ -236,6 +245,7 @@ def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
  main
 
  main
+ main
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -254,6 +264,9 @@ COMMANDS = {
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
+ codex/resolve-codex-pr-with-cmd.markcodexprresolved
+    "markCodexPRResolved": markCodexPRResolved
+
  codex/lock-trust-deployment-for-phase-3
     "lockTrustDeploy": lockTrustDeploy
 
@@ -275,6 +288,7 @@ COMMANDS = {
     "registerLoungeConfig": registerLoungeConfig
  main
 main
+ main
  main
  main
  main
