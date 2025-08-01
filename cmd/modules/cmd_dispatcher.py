@@ -74,6 +74,12 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+ 296jel-codex/task-title
+def pushPressKit():
+    """Simulates pushing the latest press kit assets."""
+    # Placeholder for real sync logic
+    return "📣 Press kit pushed to /press-kit"
+
  codex/task-title
 def releaseTeaserVideo():
     """Publishes the Hookah+ teaser video to public channels."""
@@ -85,6 +91,7 @@ def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
     if not os.path.isfile(config_path):
         return f"⚠️ Lounge config {config_path} not found"
     return f"🎉 Lounge configuration registered from {config_path}"
+ main
  main
 
 
@@ -99,11 +106,14 @@ COMMANDS = {
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
+ 296jel-codex/task-title
+    "pushPressKit": pushPressKit
  codex/task-title
     "releaseTeaserVideo": releaseTeaserVideo
 
     "registerLoungeConfig": registerLoungeConfig
  main
+  main
 }
 
 
