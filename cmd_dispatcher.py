@@ -74,6 +74,53 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+def registerLoungeConfig(
+    lounge_name="Midnight Ember Lounge",
+    session_price=30,
+    flavor_addons=None,
+    seat_count=10,
+    section_names=None,
+    slug=None
+):
+    """Registers a YAML config for a new Hookah+ lounge."""
+    import yaml
+    import os
+    from slugify import slugify
+
+    if flavor_addons is None:
+        flavor_addons = {
+            "Mint Blast": 2,
+            "Double Apple": 3,
+            "Blue Ice": 1
+        }
+
+    if section_names is None:
+        section_names = ["Main", "VIP"]
+
+    if not slug:
+        slug = slugify(lounge_name)
+
+    config = {
+        "lounge_name": lounge_name,
+        "slug": slug,
+        "session_price": session_price,
+        "flavor_addons": flavor_addons,
+        "sections": section_names,
+        "seat_count": seat_count,
+        "reflex_enabled": True
+    }
+
+    output_dir = "configs/lounges"
+    os.makedirs(output_dir, exist_ok=True)
+    config_path = os.path.join(output_dir, f"{slug}.yaml")
+
+    try:
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)
+        return f"\u2705 Lounge config registered: {config_path}"
+    except Exception as e:
+        return f"\u274c Failed to write config: {str(e)}"
+
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -84,7 +131,8 @@ COMMANDS = {
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
-    "openWhisperMemory": openWhisperMemory
+    "openWhisperMemory": openWhisperMemory,
+    "registerLoungeConfig": registerLoungeConfig,
 }
 
 
