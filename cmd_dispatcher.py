@@ -74,6 +74,13 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+def lockTrustDeploy(phase: str = "Phase1"):
+    """Simulates locking the deployment pipeline for a given phase."""
+    print(f"🔒 Locking Trust deploy at {phase}...")
+    # Placeholder logic that would trigger any CI/CD lock mechanisms
+    return f"Deployment locked for {phase}"
+
+
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -84,7 +91,8 @@ COMMANDS = {
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
-    "openWhisperMemory": openWhisperMemory
+    "openWhisperMemory": openWhisperMemory,
+    "lockTrustDeploy": lockTrustDeploy
 }
 
 
