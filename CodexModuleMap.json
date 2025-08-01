@@ -46,6 +46,13 @@
         "cmd.logWhisperJournal",
         "cmd.snapshotPartnerStatus"
       ]
+    },
+    "repoOps": {
+      "path": ".",
+      "repo": "hookahplus",
+      "codex": [
+        "ReflexArc_GitRemoteReassignment.codex.md"
+      ]
     }
   },
   "defaultModule": "pos"
