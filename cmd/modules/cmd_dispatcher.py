@@ -74,6 +74,15 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+ codex/lock-trust-deployment-for-phase-3
+def lockTrustDeploy(phase: str = "Phase1"):
+    """Simulates locking the deployment pipeline for a given phase."""
+    print(f"🔒 Locking Trust deploy at {phase}...")
+    # Placeholder logic that would trigger any CI/CD lock mechanisms
+    return f"Deployment locked for {phase}"
+
+
+
  codex/align-main-portal-ui
 def alignMainPortalUI():
     """Synchronizes the main portal UI elements with the brand style guide."""
@@ -152,6 +161,7 @@ def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
  main
  main
 
+ main
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -163,6 +173,9 @@ COMMANDS = {
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
+ codex/lock-trust-deployment-for-phase-3
+    "lockTrustDeploy": lockTrustDeploy
+
  codex/align-main-portal-ui
     "alignMainPortalUI": alignMainPortalUI
 
@@ -177,6 +190,7 @@ COMMANDS = {
     "registerLoungeConfig": registerLoungeConfig
  main
   main
+ main
  main
  main
 }
