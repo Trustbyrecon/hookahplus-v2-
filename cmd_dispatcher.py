@@ -86,6 +86,13 @@ def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
 
 # Codex and internal use: maps string commands to functions
 COMMANDS = {
+ codex/deploy-flavor-mix-ui
+    "deployReflexUI": reflex_ui.deploy_reflex_ui,
+    "renderReflexLoyalty": reflex_ui.render_reflex_loyalty,
+    "injectReflexHeatmap": reflex_ui.inject_reflex_heatmap,
+    "deployFlavorMixUI": reflex_ui.deploy_flavor_mix_ui,
+    # Add more here...
+
     "bundleDeployKit": bundleDeployKit,
     "switchDomain": switchDomain,
     "deployFlavorMixUI": deployFlavorMixUI,
@@ -93,6 +100,7 @@ COMMANDS = {
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
     "registerLoungeConfig": registerLoungeConfig
+ main
 }
 
 
