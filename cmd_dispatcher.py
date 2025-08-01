@@ -74,6 +74,13 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+ codex/align-main-portal-ui
+def alignMainPortalUI():
+    """Synchronizes the main portal UI elements with the brand style guide."""
+    # Placeholder logic for UI alignment
+    return "🔧 Main portal UI aligned to brand specifications"
+
+
  codex/create-main-portal-ui-function
 def alignMainPortalUI():
     """
@@ -217,6 +224,7 @@ def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
 
  main
  main
+ main
 
 # Optional: Extend as new cmd.* actions are needed
 
@@ -236,6 +244,9 @@ COMMANDS = {
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
+ codex/align-main-portal-ui
+    "alignMainPortalUI": alignMainPortalUI
+
  codex/create-main-portal-ui-function
     "alignMainPortalUI": alignMainPortalUI
 
@@ -251,6 +262,7 @@ COMMANDS = {
     "registerLoungeConfig": registerLoungeConfig
  main
 main
+ main
  main
  main
  main

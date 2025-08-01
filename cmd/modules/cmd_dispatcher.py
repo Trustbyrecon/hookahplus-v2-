@@ -74,6 +74,13 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+ codex/align-main-portal-ui
+def alignMainPortalUI():
+    """Synchronizes the main portal UI elements with the brand style guide."""
+    # Placeholder logic for UI alignment
+    return "🔧 Main portal UI aligned to brand specifications"
+
+
  codex/add-registerloungeconfig-function
 def registerLoungeConfig(
     lounge_name="Midnight Ember Lounge",
@@ -143,6 +150,7 @@ def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
  main
 
  main
+ main
 
 # Optional: Extend as new cmd.* actions are needed
 
@@ -155,6 +163,9 @@ COMMANDS = {
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
+ codex/align-main-portal-ui
+    "alignMainPortalUI": alignMainPortalUI
+
  codex/add-registerloungeconfig-function
     "registerLoungeConfig": registerLoungeConfig,
 
@@ -166,6 +177,7 @@ COMMANDS = {
     "registerLoungeConfig": registerLoungeConfig
  main
   main
+ main
  main
 }
 
