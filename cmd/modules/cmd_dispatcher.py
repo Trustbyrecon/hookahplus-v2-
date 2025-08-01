@@ -74,11 +74,83 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+ codex/align-main-portal-ui
 def alignMainPortalUI():
     """Synchronizes the main portal UI elements with the brand style guide."""
     # Placeholder logic for UI alignment
     return "🔧 Main portal UI aligned to brand specifications"
 
+
+ codex/add-registerloungeconfig-function
+def registerLoungeConfig(
+    lounge_name="Midnight Ember Lounge",
+    session_price=30,
+    flavor_addons=None,
+    seat_count=10,
+    section_names=None,
+    slug=None
+):
+    """Registers a YAML config for a new Hookah+ lounge."""
+    import yaml
+    import os
+    from slugify import slugify
+
+    if flavor_addons is None:
+        flavor_addons = {
+            "Mint Blast": 2,
+            "Double Apple": 3,
+            "Blue Ice": 1
+        }
+
+    if section_names is None:
+        section_names = ["Main", "VIP"]
+
+    if not slug:
+        slug = slugify(lounge_name)
+
+    config = {
+        "lounge_name": lounge_name,
+        "slug": slug,
+        "session_price": session_price,
+        "flavor_addons": flavor_addons,
+        "sections": section_names,
+        "seat_count": seat_count,
+        "reflex_enabled": True
+    }
+
+    output_dir = "configs/lounges"
+    os.makedirs(output_dir, exist_ok=True)
+    config_path = os.path.join(output_dir, f"{slug}.yaml")
+
+    try:
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)
+        return f"\u2705 Lounge config registered: {config_path}"
+    except Exception as e:
+        return f"\u274c Failed to write config: {str(e)}"
+
+ 296jel-codex/task-title
+def pushPressKit():
+    """Simulates pushing the latest press kit assets."""
+    # Placeholder for real sync logic
+    return "📣 Press kit pushed to /press-kit"
+
+ codex/task-title
+def releaseTeaserVideo():
+    """Publishes the Hookah+ teaser video to public channels."""
+    # Placeholder for actual release workflow (e.g., upload to CDN/YouTube)
+    return "🎬 Teaser video released across marketing outlets"
+
+def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
+    """Register lounge configuration from a YAML file."""
+    if not os.path.isfile(config_path):
+        return f"⚠️ Lounge config {config_path} not found"
+    return f"🎉 Lounge configuration registered from {config_path}"
+ main
+ main
+
+ main
+ main
 
 # Optional: Extend as new cmd.* actions are needed
 
@@ -91,7 +163,22 @@ COMMANDS = {
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
+ codex/align-main-portal-ui
     "alignMainPortalUI": alignMainPortalUI
+
+ codex/add-registerloungeconfig-function
+    "registerLoungeConfig": registerLoungeConfig,
+
+ 296jel-codex/task-title
+    "pushPressKit": pushPressKit
+ codex/task-title
+    "releaseTeaserVideo": releaseTeaserVideo
+
+    "registerLoungeConfig": registerLoungeConfig
+ main
+  main
+ main
+ main
 }
 
 
