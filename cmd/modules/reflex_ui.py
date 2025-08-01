@@ -23,3 +23,9 @@ def deploy_flavor_mix_ui():
     """
     print("🍹 Deploying Flavor Mix UI...")
     return "Flavor Mix UI deployment triggered."
+
+def deploy_to_netlify(branch: str = "main"):
+    """Trigger a Netlify deploy for the specified branch."""
+    print(f"🚀 Triggering Netlify deploy for branch: {branch}...")
+    # Placeholder for actual deployment logic
+    return f"Netlify deploy initiated for {branch}"

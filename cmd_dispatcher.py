@@ -232,6 +232,8 @@ COMMANDS = {
     "deployFlavorMixUI": reflex_ui.deploy_flavor_mix_ui,
     # Add more here...
 
+    "deployToNetlify": reflex_ui.deploy_to_netlify,
+
     "bundleDeployKit": bundleDeployKit,
     "switchDomain": switchDomain,
     "deployFlavorMixUI": deployFlavorMixUI,
