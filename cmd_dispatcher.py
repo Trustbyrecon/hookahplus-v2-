@@ -74,10 +74,25 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+ 296jel-codex/task-title
 def pushPressKit():
     """Simulates pushing the latest press kit assets."""
     # Placeholder for real sync logic
     return "📣 Press kit pushed to /press-kit"
+=======
+ codex/task-title
+def releaseTeaserVideo():
+    """Publishes the Hookah+ teaser video to public channels."""
+    # Placeholder for actual release workflow (e.g., upload to CDN/YouTube)
+    return "🎬 Teaser video released across marketing outlets"
+
+def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
+    """Register lounge configuration from a YAML file."""
+    if not os.path.isfile(config_path):
+        return f"⚠️ Lounge config {config_path} not found"
+    return f"🎉 Lounge configuration registered from {config_path}"
+ main
+ main
 
 
 # Optional: Extend as new cmd.* actions are needed
@@ -85,13 +100,29 @@ def pushPressKit():
 
 # Codex and internal use: maps string commands to functions
 COMMANDS = {
+ codex/deploy-flavor-mix-ui
+    "deployReflexUI": reflex_ui.deploy_reflex_ui,
+    "renderReflexLoyalty": reflex_ui.render_reflex_loyalty,
+    "injectReflexHeatmap": reflex_ui.inject_reflex_heatmap,
+    "deployFlavorMixUI": reflex_ui.deploy_flavor_mix_ui,
+    # Add more here...
+
     "bundleDeployKit": bundleDeployKit,
     "switchDomain": switchDomain,
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
     "openWhisperMemory": openWhisperMemory,
+ 296jel-codex/task-title
     "pushPressKit": pushPressKit
+
+ codex/task-title
+    "releaseTeaserVideo": releaseTeaserVideo
+
+    "registerLoungeConfig": registerLoungeConfig
+ main
+main
+ main
 }
 
 
