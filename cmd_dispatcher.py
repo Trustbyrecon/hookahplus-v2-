@@ -74,6 +74,12 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+def alignMainPortalUI():
+    """Synchronizes the main portal UI elements with the brand style guide."""
+    # Placeholder logic for UI alignment
+    return "🔧 Main portal UI aligned to brand specifications"
+
+
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -84,7 +90,8 @@ COMMANDS = {
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
-    "openWhisperMemory": openWhisperMemory
+    "openWhisperMemory": openWhisperMemory,
+    "alignMainPortalUI": alignMainPortalUI
 }
 
 
