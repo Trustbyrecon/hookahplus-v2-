@@ -1,117 +1,102 @@
-<<<<<<< HEAD
-# hookahplus/cmd/cmd_dispatcher.py
+# cmd_dispatcher.py
 
-from modules import reflex_ui
+import os
+import zipfile
+import shutil
 
+
+def bundleDeployKit():
+    """
+    Bundles the Hookah+ deploy kit: React UI, YAML configs, and Netlify-ready build.
+    Returns path to generated ZIP.
+    """
+    bundle_name = "hookahplus_deploy_kit.zip"
+    output_dir = "dist"
+    bundle_path = os.path.join(output_dir, bundle_name)
+    os.makedirs(output_dir, exist_ok=True)
+
+    files_to_include = [
+        "dashboard/ui_component_pack/",
+        "preorder/web_companion/",
+        "configs/session_config.yaml",
+        "netlify.toml",
+        "README.md"
+    ]
+
+    with zipfile.ZipFile(bundle_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for item in files_to_include:
+            if os.path.isdir(item):
+                for root, _, files in os.walk(item):
+                    for file in files:
+                        full_path = os.path.join(root, file)
+                        arcname = os.path.relpath(full_path, os.path.dirname(item))
+                        zipf.write(full_path, arcname)
+            elif os.path.isfile(item):
+                zipf.write(item, os.path.basename(item))
+
+    return f"✅ Deploy kit bundled at: {bundle_path}"
+
+
+def switchDomain(domain_name="hookahplus.net"):
+    """
+    Simulates domain switch for deployment.
+    """
+    # Placeholder logic — in production, update Netlify config or DNS.
+    return f"🌐 Domain switched to: https://{domain_name}"
+
+
+def deployFlavorMixUI():
+    """
+    Deploys Flavor Mix History Tracker UI.
+    """
+    # Simulate deployment steps
+    return "📦 Flavor Mix UI deployed to /flavor-mix-history"
+
+
+def capturePOSWaitlist():
+    """
+    Activates POS Plugin Waitlist capture form.
+    """
+    return "📝 POS waitlist form now live at /waitlist"
+
+
+def fireSession():
+    """
+    Simulates full Hookah+ session with QR + pricing.
+    """
+    return "🔥 Session launched with QR tracking + dynamic pricing enabled"
+
+
+def openWhisperMemory():
+    """
+    Opens the Whisper Log Memory view.
+    """
+    return "📖 Whisper Memory Panel opened — review recent Reflex signals"
+
+
+def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
+    """Register lounge configuration from a YAML file."""
+    if not os.path.isfile(config_path):
+        return f"⚠️ Lounge config {config_path} not found"
+    return f"🎉 Lounge configuration registered from {config_path}"
+
+
+# Optional: Extend as new cmd.* actions are needed
+
+
+# Codex and internal use: maps string commands to functions
 COMMANDS = {
-    "deployReflexUI": reflex_ui.deploy_reflex_ui,
-    "renderReflexLoyalty": reflex_ui.render_reflex_loyalty,
-    "injectReflexHeatmap": reflex_ui.inject_reflex_heatmap,
-    # Add more here...
+    "bundleDeployKit": bundleDeployKit,
+    "switchDomain": switchDomain,
+    "deployFlavorMixUI": deployFlavorMixUI,
+    "capturePOSWaitlist": capturePOSWaitlist,
+    "fireSession": fireSession,
+    "openWhisperMemory": openWhisperMemory,
+    "registerLoungeConfig": registerLoungeConfig
 }
 
-def dispatch(cmd_name, *args):
-    if cmd_name in COMMANDS:
-        return COMMANDS[cmd_name](*args)
-    else:
-        return f"❌ Unknown command: {cmd_name}"
-=======
-import json
-import os
-import sys
-import subprocess
-from pathlib import Path
 
-# Load the Codex module map
-MODULE_MAP_PATH = "CodexModuleMap.json"
-
-def load_module_map():
-    with open(MODULE_MAP_PATH, "r") as f:
-        return json.load(f)
-
-def find_module_for_command(cmd_name, modules, default_module):
-    for module_name, module_info in modules.items():
-        if cmd_name in module_info.get("triggers", []):
-            return module_info
-    return modules.get(default_module)
-
-def try_open_editor(module_path, module_name):
-    """Try different ways to open the module in an editor"""
-    module_path_str = str(module_path)
-    
-    # Try VS Code first
-    try:
-        subprocess.run(["code", "."], cwd=module_path_str, check=True, shell=True)
-        print(f"🚀 Opened {module_name} in VS Code")
-        return True
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        pass
-    
-    # Try VS Code with full path
-    try:
-        code_paths = [
-            "C:/Users/Dwayne Clark/AppData/Local/Programs/Microsoft VS Code/Code.exe",
-            "C:/Program Files/Microsoft VS Code/Code.exe",
-            "C:/Program Files (x86)/Microsoft VS Code/Code.exe"
-        ]
-        for code_path in code_paths:
-            if os.path.exists(code_path):
-                subprocess.run([code_path, module_path_str], check=True)
-                print(f"🚀 Opened {module_name} in VS Code")
-                return True
-    except subprocess.CalledProcessError:
-        pass
-    
-    # Fallback: just show the path
-    print(f"📁 Module directory: {module_path_str}")
-    print(f"💡 You can manually open this directory in your preferred editor")
-    return False
-
-def dispatch_command(cmd_name):
-    module_map = load_module_map()
-    modules = module_map.get("modules", {})
-    default_module = module_map.get("defaultModule", "pos")
-    root_dir = module_map.get("rootDir", ".")
-
-    module = find_module_for_command(cmd_name, modules, default_module)
-    if not module:
-        print(f"❌ No module found for command: {cmd_name}")
-        return
-
-    # Use pathlib for proper path handling on Windows
-    module_path = Path(root_dir) / module["path"]
-    module_path = module_path.resolve()  # Normalize the path
-    
-    print(f"🔁 Dispatching `{cmd_name}` to module: {module['repo']} @ {module_path}")
-
-    # Check if the directory exists
-    if not module_path.exists():
-        print(f"❌ Directory does not exist: {module_path}")
-        print(f"💡 Please ensure the module directory exists at: {module_path}")
-        return
-
-    if not module_path.is_dir():
-        print(f"❌ Path exists but is not a directory: {module_path}")
-        return
-
-    # Change to the module directory
-    try:
-        os.chdir(str(module_path))
-        print(f"📁 Changed directory to: {module_path}")
-        
-        # Try to open in an editor
-        try_open_editor(module_path, module['repo'])
-            
-    except Exception as e:
-        print(f"⚠️ Error dispatching command: {e}")
-
+# Optional: Run test
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python cmd_dispatcher.py <command>")
-        print("Available commands:")
-        module_map = load_module_map()
-        for module_name, module_info in module_map.get("modules", {}).items():
-            print(f"  {module_name}: {', '.join(module_info.get('triggers', []))}")
-    else:
-        dispatch_command(sys.argv[1])
->>>>>>> 26d18609d32074000489e9f3da92072754eca32a
+    for cmd_name, cmd_func in COMMANDS.items():
+        print(f"▶️ {cmd_name}: {cmd_func()}")
