@@ -1,8 +1,16 @@
 # cmd_dispatcher.py
 
 import os
+import sys
 import zipfile
 import shutil
+
+# Ensure modules in ./cmd/modules can be imported without installing as a package
+MODULE_PATH = os.path.join(os.path.dirname(__file__), "cmd", "modules")
+if MODULE_PATH not in sys.path:
+    sys.path.insert(0, MODULE_PATH)
+
+import reflex_ui
 
 
 def bundleDeployKit():
@@ -249,7 +257,23 @@ COMMANDS = {
 }
 
 
-# Optional: Run test
+# Optional: Run command from CLI
 if __name__ == "__main__":
-    for cmd_name, cmd_func in COMMANDS.items():
-        print(f"▶️ {cmd_name}: {cmd_func()}")
+    if len(sys.argv) < 2:
+        available = ", ".join(COMMANDS.keys())
+        print(f"Usage: python {sys.argv[0]} <command> [args...]\nAvailable commands: {available}")
+        sys.exit(1)
+
+    cmd_name = sys.argv[1]
+    args = sys.argv[2:]
+    cmd_func = COMMANDS.get(cmd_name)
+
+    if not cmd_func:
+        print(f"Unknown command: {cmd_name}")
+        print("Available commands:")
+        for name in COMMANDS.keys():
+            print(f"  - {name}")
+        sys.exit(1)
+
+    result = cmd_func(*args)
+    print(result)
