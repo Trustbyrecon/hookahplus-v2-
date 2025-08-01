@@ -74,6 +74,13 @@ def openWhisperMemory():
     return "📖 Whisper Memory Panel opened — review recent Reflex signals"
 
 
+def registerLoungeConfig(config_path="configs/lounge_config.yaml"):
+    """Register lounge configuration from a YAML file."""
+    if not os.path.isfile(config_path):
+        return f"⚠️ Lounge config {config_path} not found"
+    return f"🎉 Lounge configuration registered from {config_path}"
+
+
 # Optional: Extend as new cmd.* actions are needed
 
 
@@ -84,7 +91,8 @@ COMMANDS = {
     "deployFlavorMixUI": deployFlavorMixUI,
     "capturePOSWaitlist": capturePOSWaitlist,
     "fireSession": fireSession,
-    "openWhisperMemory": openWhisperMemory
+    "openWhisperMemory": openWhisperMemory,
+    "registerLoungeConfig": registerLoungeConfig
 }
 
 
