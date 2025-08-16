@@ -3,7 +3,7 @@ command = "npm install && npm run build"
 publish = ".next"
 
 [build.environment]
-NODE_VERSION = "18"
+NODE_VERSION = "20.19.0"
 NPM_VERSION = "9"
 
 [functions]

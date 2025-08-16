@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 function useReflexAgent(routeName: string) {
@@ -29,33 +29,132 @@ function useReflexAgent(routeName: string) {
 
 export default function Home() {
   useReflexAgent("Home");
+  const [videoLoaded, setVideoLoaded] = useState(false);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-4 py-8">
-      <h1 className="text-5xl font-bold mb-6">Hookah<span className="text-purple-400">+</span></h1>
-      <p className="text-lg text-center mb-8 max-w-xl">
-        Select your operational mode. Each route is empowered by Reflex Agents, Memory Logs, Trust Bloom layers, and Portal UI/UX intelligence.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
-        <Link href="/dashboard">
-          <a className="block bg-purple-600 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded text-center">
-            Lounge Dashboard
-          </a>
-        </Link>
-        <Link href="/preorder">
-          <a className="block bg-green-600 hover:bg-green-800 text-white font-semibold py-3 px-4 rounded text-center">
-            QR Pre-Order Gateway
-          </a>
-        </Link>
-        <Link href="/admin">
-          <a className="block bg-blue-600 hover:bg-blue-800 text-white font-semibold py-3 px-4 rounded text-center">
-            Admin Intelligence Hub
-          </a>
-        </Link>
-        <Link href="/operator">
-          <a className="block bg-pink-600 hover:bg-pink-800 text-white font-semibold py-3 px-4 rounded text-center">
-            Main Operator Panel
-          </a>
-        </Link>
+    <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+        <h1 className="text-6xl md:text-7xl font-bold mb-6">
+          Hookah<span className="text-teal-400">+</span>
+        </h1>
+        <p className="text-xl md:text-2xl text-center mb-8 max-w-3xl text-zinc-300">
+          Experience the future of lounge sessions with AI-powered personalization, 
+          secure payments, and seamless ordering.
+        </p>
+        
+        {/* Main CTA - "Start a Session" */}
+        <div className="mb-12">
+          <Link href="/pre-order">
+            <button className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-full text-xl shadow-2xl hover:shadow-teal-500/25 transition-all transform hover:scale-105">
+              🚀 Start a Session
+            </button>
+          </Link>
+          <p className="text-zinc-400 text-sm mt-3">QR scan → Menu browse → Flavor personalize → Pay securely</p>
+        </div>
+
+        {/* Trust Lock Display */}
+        <div className="mb-8 p-4 border border-teal-500 rounded-lg bg-zinc-900/50">
+          <div className="flex items-center gap-2">
+            <span className="text-green-400">🔒</span>
+            <span className="text-teal-200">Trust-Lock: TLH-v1::active</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Demo Video Section */}
+      <div className="px-4 py-12 bg-zinc-900/30">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-6 text-teal-300">See Hookah+ in Action</h2>
+          <div className="relative aspect-video bg-zinc-800 rounded-2xl overflow-hidden">
+            {!videoLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">🎬</div>
+                  <div className="text-zinc-400">Demo Video Loading...</div>
+                </div>
+              </div>
+            )}
+            <iframe
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&rel=0"
+              title="Hookah+ Demo"
+              className="w-full h-full"
+              onLoad={() => setVideoLoaded(true)}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Feature Grid */}
+      <div className="px-4 py-16">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12 text-teal-300">Powered by Reflex Intelligence</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-6 bg-zinc-900 border border-teal-500 rounded-xl">
+              <div className="text-4xl mb-4">🧠</div>
+              <h3 className="text-xl font-semibold mb-3 text-teal-300">Aliethia Memory</h3>
+              <p className="text-zinc-400">Learns your flavor preferences and suggests perfect pairings</p>
+            </div>
+            <div className="text-center p-6 bg-zinc-900 border border-teal-500 rounded-xl">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-xl font-semibold mb-3 text-teal-300">Sentinel Trust</h3>
+              <p className="text-zinc-400">Cryptographic verification for every transaction</p>
+            </div>
+            <div className="text-center p-6 bg-zinc-900 border border-teal-500 rounded-xl">
+              <div className="text-4xl mb-4">💳</div>
+              <h3 className="text-xl font-semibold mb-3 text-teal-300">EP Payments</h3>
+              <p className="text-zinc-400">Secure Stripe integration with real-time processing</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Access Grid */}
+      <div className="px-4 py-16">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12 text-teal-300">Quick Access</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link href="/dashboard">
+              <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4 text-center hover:bg-teal-900/20 transition-colors">
+                <div className="text-2xl mb-2">📊</div>
+                <div className="text-sm">Dashboard</div>
+              </div>
+            </Link>
+            <Link href="/pre-order">
+              <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4 text-center hover:bg-teal-900/20 transition-colors">
+                <div className="text-2xl mb-2">📱</div>
+                <div className="text-sm">Pre-Order</div>
+              </div>
+            </Link>
+            <Link href="/checkout">
+              <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4 text-center hover:bg-teal-900/20 transition-colors">
+                <div className="text-2xl mb-2">💳</div>
+                <div className="text-sm">Checkout</div>
+              </div>
+            </Link>
+            <Link href="/admin">
+              <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4 text-center hover:bg-teal-900/20 transition-colors">
+                <div className="text-2xl mb-2">⚙️</div>
+                <div className="text-sm">Admin</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Reflex Agent Status Footer */}
+      <div className="px-4 py-8 border-t border-teal-500 bg-zinc-900/50">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-teal-200 mb-2">🌀 Reflex Agent Monitoring — Cycle 09 Consensus Achieved</p>
+          <div className="flex justify-center gap-4 text-sm text-zinc-400">
+            <span>Aliethia: 0.87 ✅</span>
+            <span>EP: 0.82 ✅</span>
+            <span>Session Agent: 0.90 ✅</span>
+            <span>Demo Agent: 0.78 🚧</span>
+          </div>
+        </div>
       </div>
     </main>
   );
