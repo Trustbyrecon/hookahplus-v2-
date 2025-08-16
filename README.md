@@ -35,3 +35,4 @@ This is a baseline restore template for Hookah+ full launch.
 - Placeholder flavor selector UI
 - Ready to deploy
 >>>>>>> 1720e30bee34ab738cfd08a47b42d87217c4be27
+# Updated from new repo
