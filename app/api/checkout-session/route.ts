@@ -43,8 +43,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Sentinel: Log audit event
-    console.log(`[SENTINEL] Order created: ${session.id}, Table: ${tableId}, Trust Lock: ${session.metadata.trustLock}`);
+    // Sentinel: Log audit event with null check
+    if (session.metadata) {
+      console.log(`[SENTINEL] Order created: ${session.id}, Table: ${tableId}, Trust Lock: ${session.metadata.trustLock}`);
+    } else {
+      console.log(`[SENTINEL] Order created: ${session.id}, Table: ${tableId}, Trust Lock: generated`);
+    }
 
     // EP: Emit payment.confirmed signal
     console.log(`[EP] payment.confirmed: ${session.id}`);
