@@ -43,14 +43,28 @@ export default function Home() {
           secure payments, and seamless ordering.
         </p>
         
-        {/* Main CTA - "Start a Session" */}
+        {/* Main CTA - "Start preorders" */}
         <div className="mb-12">
-          <Link href="/pre-order">
+          <Link href="/preorder/T-001">
             <button className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-full text-xl shadow-2xl hover:shadow-teal-500/25 transition-all transform hover:scale-105">
-              🚀 Start a Session
+              🚀 Start Preorders
             </button>
           </Link>
           <p className="text-zinc-400 text-sm mt-3">QR scan → Menu browse → Flavor personalize → Pay securely</p>
+        </div>
+
+        {/* Secondary CTAs */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <Link href="/demo">
+            <button className="bg-zinc-700 hover:bg-zinc-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+              🎬 See Demo
+            </button>
+          </Link>
+          <Link href="/onboarding#waitlist">
+            <button className="bg-zinc-700 hover:bg-zinc-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+              📋 POS Waitlist
+            </button>
+          </Link>
         </div>
 
         {/* Trust Lock Display */}

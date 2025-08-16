@@ -23,3 +23,30 @@ export function markPaid(id: string) {
   const o = ORDERS.find(x => x.id === id);
   if (o) o.status = "paid";
 }
+
+// Flavor intent capture for Aliethia
+export function getTopFlavors() {
+  const paidOrders = ORDERS.filter(o => o.status === 'paid');
+  if (paidOrders.length < 3) return null; // Need at least 3 paid orders
+  
+  const flavorCounts: Record<string, number> = {};
+  paidOrders.forEach(o => {
+    if (o.flavor) {
+      flavorCounts[o.flavor] = (flavorCounts[o.flavor] || 0) + 1;
+    }
+  });
+  
+  return Object.entries(flavorCounts)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 3)
+    .map(([flavor, count]) => ({ flavor, count }));
+}
+
+export function getReturningCustomers() {
+  const paidOrders = ORDERS.filter(o => o.status === 'paid');
+  if (paidOrders.length < 3) return null;
+  
+  // Simple calculation: count unique table IDs
+  const uniqueTables = new Set(paidOrders.map(o => o.tableId).filter(Boolean));
+  return uniqueTables.size;
+}

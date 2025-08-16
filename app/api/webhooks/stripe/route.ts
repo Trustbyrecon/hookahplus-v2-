@@ -31,6 +31,9 @@ export async function POST(req: Request) {
 
     // Mark order paid for dashboard
     markPaid(orderId);
+    
+    // Audit log (MVP)
+    console.log(`audit.order.paid: ${new Date().toISOString()} | orderId: ${orderId} | tableId: ${session.metadata?.tableId} | trustSig: ${trustSig}`);
   }
 
   return NextResponse.json({ received: true });
