@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Hookahplus
 
 Hookahplus aggregates several repositories for the Hookah+ project using Git submodules. Currently only the `netlify` site is linked as a submodule so it remains a separate repo while sharing a common root.
@@ -25,3 +26,12 @@ Available commands:
 - `fireSession` – launch a simulated session with QR tracking and dynamic pricing
 
 More commands can be added by extending `cmd/modules/reflex_ui.py` and updating the `COMMANDS` table in `cmd_dispatcher.py`.
+=======
+# Hookah+ Launch App
+
+This is a baseline restore template for Hookah+ full launch.
+
+- Next.js App Router and Pages Router included
+- Placeholder flavor selector UI
+- Ready to deploy
+>>>>>>> 1720e30bee34ab738cfd08a47b42d87217c4be27

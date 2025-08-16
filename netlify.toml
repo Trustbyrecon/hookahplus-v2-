@@ -1,4 +1,5 @@
 [build]
+<<<<<<< HEAD
 command = "npm run build"
 publish = ".next"
 
@@ -9,3 +10,11 @@ directory = "netlify/functions"
 from = "/api/*"
 to = "/.netlify/functions/:splat"
 status = 200
+=======
+  publish = "out"
+  command = "npm install && npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+>>>>>>> 1720e30bee34ab738cfd08a47b42d87217c4be27
