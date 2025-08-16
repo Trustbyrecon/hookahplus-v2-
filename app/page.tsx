@@ -46,7 +46,17 @@ export default function Home() {
         {/* Main CTA - "Start preorders" */}
         <div className="mb-12">
           <Link href="/preorder/T-001">
-            <button className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-full text-xl shadow-2xl hover:shadow-teal-500/25 transition-all transform hover:scale-105">
+            <button 
+              className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-full text-xl shadow-2xl hover:shadow-teal-500/25 transition-all transform hover:scale-105"
+              onClick={() => {
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                  (window as any).gtag('event', 'Hero_StartPreorders', {
+                    event_category: 'Navigation',
+                    event_label: 'T-001',
+                  });
+                }
+              }}
+            >
               🚀 Start Preorders
             </button>
           </Link>
@@ -56,12 +66,32 @@ export default function Home() {
         {/* Secondary CTAs */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <Link href="/demo">
-            <button className="bg-zinc-700 hover:bg-zinc-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+            <button 
+              className="bg-zinc-700 hover:bg-zinc-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+              onClick={() => {
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                  (window as any).gtag('event', 'Hero_ViewDemo', {
+                    event_category: 'Navigation',
+                    event_label: 'Demo',
+                  });
+                }
+              }}
+            >
               🎬 See Demo
             </button>
           </Link>
           <Link href="/onboarding#waitlist">
-            <button className="bg-zinc-700 hover:bg-zinc-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+            <button 
+              className="bg-zinc-700 hover:bg-zinc-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+              onClick={() => {
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                  (window as any).gtag('event', 'Hero_ViewDemo', {
+                    event_category: 'Navigation',
+                    event_label: 'Waitlist',
+                  });
+                }
+              }}
+            >
               📋 POS Waitlist
             </button>
           </Link>

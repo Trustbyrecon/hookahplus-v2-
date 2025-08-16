@@ -2,14 +2,10 @@
 command = "npm install && npm run build"
 publish = ".next"
 
-[build.environment]
-NODE_VERSION = "20.19.0"
-NPM_VERSION = "9"
-
-[functions]
-directory = "netlify/functions"
+[[plugins]]
+package = "@netlify/plugin-nextjs"
 
 [[redirects]]
-from = "/api/*"
-to = "/.netlify/functions/:splat"
+from = "/demo"
+to = "/demo.html"
 status = 200

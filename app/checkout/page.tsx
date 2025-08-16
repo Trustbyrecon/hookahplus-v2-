@@ -16,6 +16,19 @@ export default function Checkout() {
       setShowTrustLock(true);
       // Hide after 5 seconds
       setTimeout(() => setShowTrustLock(false), 5000);
+      
+      // Return-from-Stripe toast and GA event
+      const orderId = urlParams.get('order');
+      if (orderId) {
+        // Fire Order_Confirmed GA event
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'Order_Confirmed', {
+            event_category: 'Ecommerce',
+            event_label: orderId,
+            value: 30.00,
+          });
+        }
+      }
     }
   }, []);
 

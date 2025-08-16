@@ -1,6 +1,7 @@
 // app/dashboard/page.tsx
 "use client";
 import { useEffect, useState } from "react";
+import { getTopFlavors, getReturningCustomers } from "@/lib/orders";
 
 type Order = {
   id: string;
@@ -24,6 +25,15 @@ export default function Dashboard() {
   useEffect(() => {
     fetchOrders();
     const t = setInterval(fetchOrders, 5000); // poll every 5s for demo
+    
+    // Track dashboard view
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'Dashboard_View', {
+        event_category: 'Navigation',
+        event_label: 'Dashboard',
+      });
+    }
+    
     return () => clearInterval(t);
   }, []);
 
@@ -116,6 +126,47 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Aliethia Flavor History Widget */}
+        <div className="bg-zinc-900 border border-teal-500 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-teal-300 mb-4">🧠 Aliethia Memory</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-md font-medium text-teal-200 mb-3">Top 3 Mixes Today</h4>
+              {(() => {
+                const topFlavors = getTopFlavors();
+                if (!topFlavors) {
+                  return <p className="text-zinc-500 text-sm">Need 3+ paid orders to show trends</p>;
+                }
+                return (
+                  <div className="space-y-2">
+                    {topFlavors.map((item, i) => (
+                      <div key={item.flavor} className="flex justify-between items-center">
+                        <span className="text-zinc-300">{i + 1}. {item.flavor}</span>
+                        <span className="text-teal-400 font-medium">{item.count}x</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+            <div>
+              <h4 className="text-md font-medium text-teal-200 mb-3">Returning Customers</h4>
+              {(() => {
+                const returningCount = getReturningCustomers();
+                if (!returningCount) {
+                  return <p className="text-zinc-500 text-sm">Need 3+ paid orders to calculate</p>;
+                }
+                return (
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-teal-400">{returningCount}</div>
+                    <div className="text-zinc-400 text-sm">unique tables</div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+
         {/* Reflex Agent Status */}
         <div className="bg-zinc-900 border border-teal-500 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-teal-300 mb-4">Reflex Agent Status</h3>
@@ -133,7 +184,7 @@ export default function Dashboard() {
               <div className="text-sm text-zinc-400">Sentinel (Trust)</div>
             </div>
             <div className="text-center">
-              <div className="text-blue-400 text-2xl">🔵</div>
+              <div className="text-green-400 text-2xl">🟢</div>
               <div className="text-sm text-zinc-400">Aliethia (Memory)</div>
             </div>
           </div>
