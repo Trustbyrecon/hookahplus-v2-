@@ -1,64 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+// app/api/checkout-session/route.ts
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import { signTrust } from "@/lib/trustlock";
+import { addOrder } from "@/lib/orders";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: "2023-10-16",
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { tableId, flavorSelections, customerEmail } = await request.json();
+    const body = await req.json().catch(() => ({}));
+    const { tableId = "T-001", flavor = "Blue Mist + Mint", amount = 3000 } = body;
 
-    // Sentinel: Trust Lock validation
-    if (!tableId || !flavorSelections || flavorSelections.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid order data' },
-        { status: 400 }
-      );
-    }
+    // Create a local order id for trust binding
+    const orderId = `ord_${Math.random().toString(36).slice(2, 10)}`;
+    const trustSig = signTrust(orderId);
 
-    // EP: Create Stripe Checkout Session
+    // Record order (demo, ephemeral)
+    addOrder({
+      id: orderId,
+      tableId,
+      flavor,
+      amount,
+      currency: "usd",
+      status: "created",
+      createdAt: Date.now(),
+    });
+
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: flavorSelections.map((flavor: any) => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `Hookah+ ${flavor.name}`,
-            description: `Table ${tableId} - ${flavor.description}`,
-          },
-          unit_amount: Math.round(flavor.price * 100), // Convert to cents
-        },
-        quantity: flavor.quantity || 1,
-      })),
-      mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}&table=${tableId}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/preorder/${tableId}`,
-      customer_email: customerEmail,
+      mode: "payment",
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/checkout?success=1&order=${orderId}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/checkout?canceled=1&order=${orderId}`,
+      line_items: [
+        { price_data: { currency: "usd", product_data: { name: `Hookah Session — ${flavor}` }, unit_amount: amount }, quantity: 1 },
+      ],
       metadata: {
+        orderId,
+        trustSig,
         tableId,
-        trustLock: `TLH-v1::${Date.now().toString(16)}`,
-        agent: 'EP',
-        cycle: '02',
+        flavor,
       },
     });
 
-    // Sentinel: Log audit event with null check
-    if (session.metadata) {
-      console.log(`[SENTINEL] Order created: ${session.id}, Table: ${tableId}, Trust Lock: ${session.metadata.trustLock}`);
-    } else {
-      console.log(`[SENTINEL] Order created: ${session.id}, Table: ${tableId}, Trust Lock: generated`);
-    }
-
-    // EP: Emit payment.confirmed signal
-    console.log(`[EP] payment.confirmed: ${session.id}`);
-
-    return NextResponse.json({ sessionId: session.id });
-  } catch (error) {
-    console.error('[SENTINEL] Checkout error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create checkout session' },
-      { status: 500 }
-    );
+    return NextResponse.json({ id: session.id, orderId });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message ?? "failed" }, { status: 500 });
   }
 }
