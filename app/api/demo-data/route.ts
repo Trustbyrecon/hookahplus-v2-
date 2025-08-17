@@ -2,7 +2,7 @@
 // Generate demo data for dashboard testing
 
 import { NextResponse } from "next/server";
-import { addOrder, markPaid } from "@/lib/orders";
+import { addOrder, markPaid, clearOrders } from "@/lib/orders";
 
 // Simulate orders over a 2-hour period (8 PM - 10 PM)
 const startTime = new Date('2025-08-16T20:00:00Z'); // 8:00 PM
@@ -55,6 +55,9 @@ function generateOrderTimes() {
 
 export async function POST() {
   try {
+    // Clear existing orders before generating new ones
+    clearOrders();
+    
     // Define the order type to match lib/orders.ts
     type Order = {
       id: string;
