@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CustomerProfileManager from "@/components/CustomerProfileManager";
 import LoungeLayout from "@/components/LoungeLayout";
+import ConnectorPartnershipManager from "@/components/ConnectorPartnershipManager";
 
 type Session = {
   id: string;
@@ -32,6 +33,9 @@ type Session = {
   tableType?: "high_boy" | "table" | "2x_booth" | "4x_booth" | "8x_sectional" | "4x_sofa";
   tablePosition?: { x: number; y: number };
   refillTimerStart?: number;
+  // Session pause tracking for burnout management
+  sessionPauseTime?: number;
+  totalPausedTime?: number;
 };
 
 type FlavorSuggestion = {
