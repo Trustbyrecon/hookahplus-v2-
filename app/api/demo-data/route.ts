@@ -32,6 +32,60 @@ const durations = [
 
 const tables = ['T-001', 'T-002', 'T-003', 'T-004', 'T-005', 'T-006', 'T-007', 'T-008'];
 
+// Customer profiles for network ecosystem simulation
+const customerProfiles = [
+  {
+    id: 'cust_001',
+    name: 'Alex Johnson',
+    preferences: {
+      favoriteFlavors: ['Peach + Mint', 'Strawberry + Mint'],
+      sessionDuration: 90,
+      addOnPreferences: ['Mint', 'Grape'],
+      notes: 'Prefers strong mint flavors, regular customer'
+    }
+  },
+  {
+    id: 'cust_002',
+    name: 'Sarah Chen',
+    preferences: {
+      favoriteFlavors: ['Blue Mist + Mint', 'Lavender + Mint'],
+      sessionDuration: 60,
+      addOnPreferences: ['Rose', 'Lavender'],
+      notes: 'Likes floral notes, moderate session length'
+    }
+  },
+  {
+    id: 'cust_003',
+    name: 'Mike Rodriguez',
+    preferences: {
+      favoriteFlavors: ['Double Apple', 'Mango + Mint'],
+      sessionDuration: 120,
+      addOnPreferences: ['Mint', 'Pineapple'],
+      notes: 'Long sessions, prefers classic flavors'
+    }
+  },
+  {
+    id: 'cust_004',
+    name: 'Emily Davis',
+    preferences: {
+      favoriteFlavors: ['Watermelon + Mint', 'Grape + Mint'],
+      sessionDuration: 60,
+      addOnPreferences: ['Mint', 'Strawberry'],
+      notes: 'Fruit-forward preferences, quick sessions'
+    }
+  },
+  {
+    id: 'cust_005',
+    name: 'David Kim',
+    preferences: {
+      favoriteFlavors: ['Rose + Mint', 'Pineapple + Mint'],
+      sessionDuration: 90,
+      addOnPreferences: ['Mint', 'Lavender'],
+      notes: 'Sophisticated palate, medium sessions'
+    }
+  }
+];
+
 // Generate realistic order timestamps over the past 2 hours + current
 function generateOrderTimes() {
   const times: Date[] = [];
@@ -79,6 +133,16 @@ export async function POST() {
       baseRate?: number;
       addOnRate?: number;
       totalRevenue?: number;
+      // Customer profile metadata for network ecosystem
+      customerName?: string;
+      customerId?: string;
+      customerPreferences?: {
+        favoriteFlavors?: string[];
+        sessionDuration?: number;
+        addOnPreferences?: string[];
+        notes?: string;
+      };
+      previousSessions?: string[];
     };
     
     const orderTimes = generateOrderTimes();
@@ -102,6 +166,10 @@ export async function POST() {
       const addOnRate = hasAddOns ? Math.floor(Math.random() * 3 + 1) * 500 : 0; // 1-3 add-ons
       const totalAmount = baseRate + addOnRate;
       
+      // Assign customer profile (70% chance of having a profile)
+      const hasCustomerProfile = Math.random() > 0.3;
+      const customerProfile = hasCustomerProfile ? customerProfiles[Math.floor(Math.random() * customerProfiles.length)] : null;
+      
       const order: Order = {
         id: orderId,
         tableId: table,
@@ -113,14 +181,19 @@ export async function POST() {
         sessionDuration: duration.time,
         baseRate: baseRate,
         addOnRate: addOnRate,
-        totalRevenue: totalAmount
+        totalRevenue: totalAmount,
+        // Customer profile data
+        customerName: customerProfile?.name || 'Staff Customer',
+        customerId: customerProfile?.id,
+        customerPreferences: customerProfile?.preferences,
+        previousSessions: customerProfile ? [`prev_${Math.random().toString(36).slice(2, 8)}`] : undefined
       };
       
       orders.push(order);
       
       // Add to the orders system
       addOrder(order);
-      console.log(`Added order ${index + 1}:`, orderId, order.status, order.flavor);
+      console.log(`Added order ${index + 1}:`, orderId, order.status, order.flavor, customerProfile?.name || 'Staff Customer');
       
       // If paid, mark it as paid and potentially start session
       if (isPaid) {
@@ -165,7 +238,8 @@ export async function POST() {
       paid: orders.filter(o => o.status === 'paid').length,
       pending: orders.filter(o => o.status === 'created').length,
       timeRange: `${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}`,
-      activeSessions: orders.filter(o => o.status === 'paid' && o.sessionStartTime).length
+      activeSessions: orders.filter(o => o.status === 'paid' && o.sessionStartTime).length,
+      customersWithProfiles: orders.filter(o => o.customerId).length
     });
     
   } catch (error: any) {
@@ -182,6 +256,7 @@ export async function GET() {
     message: "POST to /api/demo-data to generate demo orders",
     timeRange: `${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}`,
     flavors: flavors,
-    tables: tables
+    tables: tables,
+    customerProfiles: customerProfiles.length
   });
 }
