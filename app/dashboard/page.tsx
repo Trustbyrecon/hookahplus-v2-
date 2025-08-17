@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { getTopFlavors, getReturningCustomers } from "../../lib/orders";
+import { getTopFlavors, getReturningCustomers } from "@/lib/orders";
 
 type Order = {
   id: string;
