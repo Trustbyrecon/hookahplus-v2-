@@ -24,6 +24,10 @@ export function markPaid(id: string) {
   if (o) o.status = "paid";
 }
 
+export function clearOrders() {
+  ORDERS = [];
+}
+
 // Flavor intent capture for Aliethia
 export function getTopFlavors() {
   const paidOrders = ORDERS.filter(o => o.status === 'paid');

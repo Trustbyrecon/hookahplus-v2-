@@ -2,6 +2,7 @@
 // Generate demo data for dashboard testing
 
 import { NextResponse } from "next/server";
+import { addOrder, markPaid } from "@/lib/orders";
 
 // Simulate orders over a 2-hour period (8 PM - 10 PM)
 const startTime = new Date('2025-08-16T20:00:00Z'); // 8:00 PM
@@ -54,9 +55,6 @@ function generateOrderTimes() {
 
 export async function POST() {
   try {
-    // Import the orders functions and types
-    const { addOrder, markPaid } = await import('@/lib/orders');
-    
     // Define the order type to match lib/orders.ts
     type Order = {
       id: string;
@@ -68,11 +66,8 @@ export async function POST() {
       createdAt: number;
     };
     
-    // Clear existing orders (optional - comment out if you want to keep existing)
-    // This would require adding a clearOrders function to lib/orders.ts
-    
     const orderTimes = generateOrderTimes();
-    const orders: any[] = [];
+    const orders: Order[] = [];
     
     orderTimes.forEach((orderTime, index) => {
       const flavor = flavors[Math.floor(Math.random() * flavors.length)];
@@ -85,15 +80,15 @@ export async function POST() {
       // Simulate some orders being paid, some still pending
       const isPaid = Math.random() > 0.3; // 70% paid, 30% pending
       
-             const order: Order = {
-         id: orderId,
-         tableId: table,
-         flavor: flavor,
-         amount: duration.value,
-         currency: 'usd',
-         status: isPaid ? 'paid' : 'created',
-         createdAt: orderTime.getTime()
-       };
+      const order: Order = {
+        id: orderId,
+        tableId: table,
+        flavor: flavor,
+        amount: duration.value,
+        currency: 'usd',
+        status: isPaid ? 'paid' : 'created',
+        createdAt: orderTime.getTime()
+      };
       
       orders.push(order);
       
