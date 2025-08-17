@@ -17,6 +17,28 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function fetchOrders() {
+    console.log('Fetching orders...');
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/orders", { 
+        cache: "no-store",
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      const json = await res.json();
+      console.log('Orders response:', json);
+      setOrders(json.orders || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   async function generateDemoData() {
     setIsGenerating(true);
@@ -33,24 +55,12 @@ export default function Dashboard() {
         setTimeout(async () => {
           console.log('Refreshing orders after demo generation...');
           await fetchOrders();
-        }, 500);
+        }, 1000);
       }
     } catch (error) {
       console.error('Error generating demo data:', error);
     } finally {
       setIsGenerating(false);
-    }
-  }
-
-  async function fetchOrders() {
-    console.log('Fetching orders...');
-    try {
-      const res = await fetch("/api/orders", { cache: "no-store" });
-      const json = await res.json();
-      console.log('Orders response:', json);
-      setOrders(json.orders || []);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
     }
   }
 
@@ -81,6 +91,14 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl md:text-4xl font-bold text-teal-400">Lounge Dashboard</h1>
           <div className="flex items-center gap-4">
+            <button
+              onClick={fetchOrders}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {isLoading ? '🔄' : '🔄'} 
+              {isLoading ? 'Refreshing...' : 'Refresh Data'}
+            </button>
             <button
               onClick={generateDemoData}
               disabled={isGenerating}
