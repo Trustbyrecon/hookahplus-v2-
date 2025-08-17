@@ -54,8 +54,19 @@ function generateOrderTimes() {
 
 export async function POST() {
   try {
-    // Import the orders functions
+    // Import the orders functions and types
     const { addOrder, markPaid } = await import('@/lib/orders');
+    
+    // Define the order type to match lib/orders.ts
+    type Order = {
+      id: string;
+      tableId?: string;
+      flavor?: string;
+      amount: number;
+      currency: string;
+      status: "created" | "paid" | "failed";
+      createdAt: number;
+    };
     
     // Clear existing orders (optional - comment out if you want to keep existing)
     // This would require adding a clearOrders function to lib/orders.ts
@@ -74,15 +85,15 @@ export async function POST() {
       // Simulate some orders being paid, some still pending
       const isPaid = Math.random() > 0.3; // 70% paid, 30% pending
       
-      const order = {
-        id: orderId,
-        tableId: table,
-        flavor: flavor,
-        amount: duration.value,
-        currency: 'usd',
-        status: isPaid ? 'paid' : 'created',
-        createdAt: orderTime.getTime()
-      };
+             const order: Order = {
+         id: orderId,
+         tableId: table,
+         flavor: flavor,
+         amount: duration.value,
+         currency: 'usd',
+         status: isPaid ? 'paid' : 'created',
+         createdAt: orderTime.getTime()
+       };
       
       orders.push(order);
       
