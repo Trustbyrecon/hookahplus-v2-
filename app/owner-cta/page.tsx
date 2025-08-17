@@ -56,7 +56,7 @@ export default function OwnerCTAPage() {
               name: formData.name,
               email: formData.email,
               phone: formData.phone,
-              loungeName: formFormData.loungeName,
+                             loungeName: formData.loungeName,
               city: formData.city,
               currentPOS: formData.currentPOS,
               estimatedRevenue: formData.estimatedRevenue
