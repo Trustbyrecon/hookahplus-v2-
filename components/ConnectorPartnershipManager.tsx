@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface ConnectorProfile {
   id: string;
@@ -26,68 +26,127 @@ interface LoungeOpportunity {
   notes: string;
 }
 
+interface ConnectorData {
+  connectors: ConnectorProfile[];
+  opportunities: LoungeOpportunity[];
+  metrics: {
+    totalRevenue: number;
+    totalLounges: number;
+    activeConnectors: number;
+    totalConnectors: number;
+  };
+}
+
 export default function ConnectorPartnershipManager() {
-  const [connectors, setConnectors] = useState<ConnectorProfile[]>([
-    {
-      id: 'conn_001',
-      name: 'Alex Johnson',
-      city: 'Los Angeles',
-      status: 'active',
-      loungesIdentified: 8,
-      loungesSignedUp: 5,
-      revenueEarned: 1250,
-      specialties: ['Community Leadership', 'Hookah Culture'],
-      socialMedia: ['@alex_hookah', 'TikTok: 50K followers'],
-      applicationDate: Date.now() - 30 * 24 * 60 * 60 * 1000,
-      approvalDate: Date.now() - 25 * 24 * 60 * 60 * 1000,
-      notes: 'Strong community presence in LA hookah scene'
-    },
-    {
-      id: 'conn_002',
-      name: 'Sarah Chen',
-      city: 'New York',
-      status: 'approved',
-      loungesIdentified: 6,
-      loungesSignedUp: 0,
-      revenueEarned: 0,
-      specialties: ['Influencer Marketing', 'Diaspora Communities'],
-      socialMedia: ['@sarah_chen', 'Instagram: 25K followers'],
-      applicationDate: Date.now() - 15 * 24 * 60 * 60 * 1000,
-      approvalDate: Date.now() - 10 * 24 * 60 * 60 * 1000,
-      notes: 'Recently approved, starting outreach'
-    }
-  ]);
-
-  const [opportunities, setOpportunities] = useState<LoungeOpportunity[]>([
-    {
-      id: 'opp_001',
-      name: 'Oasis Hookah Lounge',
-      city: 'Los Angeles',
-      connectorId: 'conn_001',
-      status: 'signed_up',
-      estimatedRevenue: 5000,
-      contactInfo: 'owner@oasislounge.com',
-      notes: 'High-end lounge, premium clientele'
-    },
-    {
-      id: 'opp_002',
-      name: 'Cloud Nine Hookah',
-      city: 'Los Angeles',
-      connectorId: 'conn_001',
-      status: 'interested',
-      estimatedRevenue: 3500,
-      contactInfo: 'manager@cloudnine.com',
-      notes: 'Student-focused, good location'
-    }
-  ]);
-
+  const [connectors, setConnectors] = useState<ConnectorProfile[]>([]);
+  const [opportunities, setOpportunities] = useState<LoungeOpportunity[]>([]);
+  const [metrics, setMetrics] = useState<ConnectorData['metrics'] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showAddConnector, setShowAddConnector] = useState(false);
   const [showAddOpportunity, setShowAddOpportunity] = useState(false);
   const [selectedConnector, setSelectedConnector] = useState<ConnectorProfile | null>(null);
 
-  const totalRevenue = connectors.reduce((sum, c) => sum + c.revenueEarned, 0);
-  const totalLounges = opportunities.filter(o => o.status === 'signed_up').length;
-  const activeConnectors = connectors.filter(c => c.status === 'active').length;
+  // Form states
+  const [connectorForm, setConnectorForm] = useState({
+    name: '',
+    city: '',
+    specialties: '',
+    notes: ''
+  });
+
+  const [opportunityForm, setOpportunityForm] = useState({
+    name: '',
+    city: '',
+    connectorId: '',
+    contactInfo: '',
+    estimatedRevenue: '',
+    notes: ''
+  });
+
+  async function fetchConnectorData() {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/connectors');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setConnectors(data.data.connectors);
+          setOpportunities(data.data.opportunities);
+          setMetrics(data.data.metrics);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching connector data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function addConnector() {
+    try {
+      const res = await fetch('/api/connectors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_connector',
+          data: {
+            name: connectorForm.name,
+            city: connectorForm.city,
+            specialties: connectorForm.specialties.split(',').map(s => s.trim()).filter(Boolean),
+            notes: connectorForm.notes
+          }
+        })
+      });
+      
+      if (res.ok) {
+        await fetchConnectorData();
+        setShowAddConnector(false);
+        setConnectorForm({ name: '', city: '', specialties: '', notes: '' });
+      }
+    } catch (error) {
+      console.error('Error adding connector:', error);
+    }
+  }
+
+  async function addOpportunity() {
+    try {
+      const res = await fetch('/api/connectors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_opportunity',
+          data: {
+            name: opportunityForm.name,
+            city: opportunityForm.city,
+            connectorId: opportunityForm.connectorId,
+            contactInfo: opportunityForm.contactInfo,
+            estimatedRevenue: parseInt(opportunityForm.estimatedRevenue) || 0,
+            notes: opportunityForm.notes
+          }
+        })
+      });
+      
+      if (res.ok) {
+        await fetchConnectorData();
+        setShowAddOpportunity(false);
+        setOpportunityForm({ name: '', city: '', connectorId: '', contactInfo: '', estimatedRevenue: '', notes: '' });
+      }
+    } catch (error) {
+      console.error('Error adding opportunity:', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchConnectorData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
+        <div className="text-center text-zinc-400">Loading Connector Partnership Program...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
@@ -113,24 +172,26 @@ export default function ConnectorPartnershipManager() {
       </div>
 
       {/* Program Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-zinc-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-teal-400">{activeConnectors}</div>
-          <div className="text-zinc-400 text-sm">Active Connectors</div>
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-zinc-800 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-teal-400">{metrics.activeConnectors}</div>
+            <div className="text-zinc-400 text-sm">Active Connectors</div>
+          </div>
+          <div className="bg-zinc-800 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-blue-400">{metrics.totalLounges}</div>
+            <div className="text-zinc-400 text-sm">Lounges Signed Up</div>
+          </div>
+          <div className="bg-zinc-800 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-green-400">${metrics.totalRevenue}</div>
+            <div className="text-zinc-400 text-sm">Revenue Shared</div>
+          </div>
+          <div className="bg-zinc-800 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-purple-400">5%</div>
+            <div className="text-zinc-400 text-sm">Revenue Share</div>
+          </div>
         </div>
-        <div className="bg-zinc-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-blue-400">{totalLounges}</div>
-          <div className="text-zinc-400 text-sm">Lounges Signed Up</div>
-        </div>
-        <div className="bg-zinc-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">${totalRevenue}</div>
-          <div className="text-zinc-400 text-sm">Revenue Shared</div>
-        </div>
-        <div className="bg-zinc-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-purple-400">5%</div>
-          <div className="text-zinc-400 text-sm">Revenue Share</div>
-        </div>
-      </div>
+      )}
 
       {/* Connectors List */}
       <div className="mb-6">
@@ -236,15 +297,28 @@ export default function ConnectorPartnershipManager() {
               <input
                 type="text"
                 placeholder="Name"
+                value={connectorForm.name}
+                onChange={(e) => setConnectorForm({...connectorForm, name: e.target.value})}
                 className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
               />
               <input
                 type="text"
                 placeholder="City"
+                value={connectorForm.city}
+                onChange={(e) => setConnectorForm({...connectorForm, city: e.target.value})}
+                className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Specialties (comma-separated)"
+                value={connectorForm.specialties}
+                onChange={(e) => setConnectorForm({...connectorForm, specialties: e.target.value})}
                 className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
               />
               <textarea
-                placeholder="Specialties & Notes"
+                placeholder="Notes"
+                value={connectorForm.notes}
+                onChange={(e) => setConnectorForm({...connectorForm, notes: e.target.value})}
                 className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
                 rows={3}
               />
@@ -257,7 +331,7 @@ export default function ConnectorPartnershipManager() {
                 Cancel
               </button>
               <button
-                onClick={() => setShowAddConnector(false)}
+                onClick={addConnector}
                 className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 Add Connector
@@ -276,23 +350,47 @@ export default function ConnectorPartnershipManager() {
               <input
                 type="text"
                 placeholder="Lounge Name"
+                value={opportunityForm.name}
+                onChange={(e) => setOpportunityForm({...opportunityForm, name: e.target.value})}
                 className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
               />
-              <select className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none">
-                <option>Select Connector</option>
+              <select 
+                value={opportunityForm.connectorId}
+                onChange={(e) => setOpportunityForm({...opportunityForm, connectorId: e.target.value})}
+                className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
+              >
+                <option value="">Select Connector</option>
                 {connectors.map(c => (
                   <option key={c.id} value={c.id}>{c.name} - {c.city}</option>
                 ))}
               </select>
               <input
                 type="text"
+                placeholder="City"
+                value={opportunityForm.city}
+                onChange={(e) => setOpportunityForm({...opportunityForm, city: e.target.value})}
+                className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
+              />
+              <input
+                type="text"
                 placeholder="Contact Info"
+                value={opportunityForm.contactInfo}
+                onChange={(e) => setOpportunityForm({...opportunityForm, contactInfo: e.target.value})}
                 className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
               />
               <input
                 type="number"
                 placeholder="Estimated Revenue"
+                value={opportunityForm.estimatedRevenue}
+                onChange={(e) => setOpportunityForm({...opportunityForm, estimatedRevenue: e.target.value})}
                 className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
+              />
+              <textarea
+                placeholder="Notes"
+                value={opportunityForm.notes}
+                onChange={(e) => setOpportunityForm({...opportunityForm, notes: e.target.value})}
+                className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
+                rows={2}
               />
             </div>
             <div className="flex gap-2 mt-4">
@@ -303,7 +401,7 @@ export default function ConnectorPartnershipManager() {
                 Cancel
               </button>
               <button
-                onClick={() => setShowAddOpportunity(false)}
+                onClick={addOpportunity}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 Add Opportunity
