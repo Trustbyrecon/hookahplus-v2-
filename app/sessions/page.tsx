@@ -299,7 +299,7 @@ export default function SessionsDashboard() {
                 <div className="text-2xl font-bold text-red-400">
                   {sessions.filter(s => s.coalStatus === 'burnt_out').length}
                 </div>
-                <div className="text-zinc-400 text-sm">Burnt Out</div>
+                <div className="text-zinc-400 text-sm">Paused (Burnt Out)</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-400">
