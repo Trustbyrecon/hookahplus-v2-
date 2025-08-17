@@ -9,18 +9,28 @@ const startTime = new Date();
 startTime.setHours(startTime.getHours() - 2); // 2 hours ago
 const endTime = new Date(); // Current time
 
-// Realistic hookah flavors and durations
+// Enhanced flavor combinations based on real lounge atmosphere
 const flavors = [
-  'Blue Mist + Mint',
   'Double Apple',
-  'Grape + Mint', 
-  'Peach + Mint',
+  'Mint',
+  'Strawberry',
+  'Grape',
+  'Rose',
+  'Vanilla',
+  'Coconut',
+  'Pineapple',
+  'Lavender',
+  'Honey',
+  'Cardamom',
+  'Peach',
+  'Blueberry',
+  'Cherry',
+  'Orange',
   'Strawberry + Mint',
-  'Watermelon + Mint',
-  'Mango + Mint',
-  'Pineapple + Mint',
-  'Rose + Mint',
-  'Lavender + Mint'
+  'Grape + Mint',
+  'Rose + Cardamom',
+  'Coconut + Pineapple',
+  'Lavender + Honey'
 ];
 
 const durations = [
@@ -122,30 +132,32 @@ const customerProfiles = [
   }
 ];
 
-// Generate realistic order timestamps over the past 2 hours + current
-function generateOrderTimes() {
-  const times: Date[] = [];
-  const baseTime = startTime.getTime();
-  const duration = endTime.getTime() - baseTime;
-  
-  // Generate 20-30 orders over the time period
-  const numOrders = Math.floor(Math.random() * 11) + 20; // 20-30 orders
-  
-  for (let i = 0; i < numOrders; i++) {
-    // More orders during peak hours (7-9 PM)
-    let timeOffset;
-    if (i < numOrders * 0.6) { // 60% of orders in peak time
-      timeOffset = (duration * 0.2) + (Math.random() * duration * 0.6); // 7-9 PM equivalent
-    } else {
-      timeOffset = Math.random() * duration; // Spread remaining orders
+  // Generate realistic order timestamps over the past 2 hours + current
+  function generateOrderTimes() {
+    const times: Date[] = [];
+    const baseTime = startTime.getTime();
+    const duration = endTime.getTime() - baseTime;
+    
+    // Generate 20-30 orders over the time period
+    const numOrders = Math.floor(Math.random() * 11) + 20; // 20-30 orders
+    
+    for (let i = 0; i < numOrders; i++) {
+      // More orders during peak hours (7-9 PM)
+      let timeOffset;
+      if (i < numOrders * 0.6) { // 60% of orders in peak time
+        timeOffset = (duration * 0.2) + (Math.random() * duration * 0.6); // 7-9 PM equivalent
+      } else {
+        timeOffset = Math.random() * duration; // Spread remaining orders
+      }
+      
+      const orderTime = new Date(baseTime + timeOffset);
+      times.push(orderTime);
     }
     
-    const orderTime = new Date(baseTime + timeOffset);
-    times.push(orderTime);
+    return times.sort((a, b) => a.getTime() - b.getTime()); // Sort chronologically
   }
-  
-  return times.sort((a, b) => a.getTime() - b.getTime()); // Sort chronologically
-}
+
+
 
 export async function POST() {
   try {
@@ -190,6 +202,7 @@ export async function POST() {
     console.log('Generating', orderTimes.length, 'orders');
     
     orderTimes.forEach((orderTime, index) => {
+      // Enhanced flavor selection with realistic combinations
       const flavor = flavors[Math.floor(Math.random() * flavors.length)];
       const duration = durations[Math.floor(Math.random() * durations.length)];
       const tableConfig = tableConfigs[Math.floor(Math.random() * tableConfigs.length)];

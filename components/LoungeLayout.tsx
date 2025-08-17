@@ -53,13 +53,13 @@ export default function LoungeLayout({ sessions, onTableClick }: LoungeLayoutPro
   // Function to get table label
   function getTableLabel(tableType?: string) {
     switch (tableType) {
-      case 'high_boy': return 'HB';
-      case 'table': return 'T';
-      case '2x_booth': return '2B';
-      case '4x_booth': return '4B';
-      case '8x_sectional': return '8S';
-      case '4x_sofa': return '4S';
-      default: return 'T';
+      case 'high_boy': return '🍺';
+      case 'table': return '🪑';
+      case '2x_booth': return '🛋️';
+      case '4x_booth': return '🛋️';
+      case '8x_sectional': return '🪑';
+      case '4x_sofa': return '🛋️';
+      default: return '🪑';
     }
   }
 
@@ -68,9 +68,9 @@ export default function LoungeLayout({ sessions, onTableClick }: LoungeLayoutPro
       <h3 className="text-xl font-semibold text-teal-300 mb-4">Lounge Layout (ScreenCoder Integration)</h3>
       
       <div className="relative bg-zinc-800 rounded-lg p-4" style={{ height: '500px' }}>
-        {/* Bar */}
+        {/* Bar Area */}
         <div
-          className="absolute bg-gradient-to-r from-amber-600 to-amber-800 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+          className="absolute bg-gradient-to-r from-amber-900 to-amber-800 border-2 border-amber-500 rounded-lg flex items-center justify-center text-white font-bold text-sm"
           style={{
             left: barPosition.x,
             top: barPosition.y,
@@ -80,6 +80,17 @@ export default function LoungeLayout({ sessions, onTableClick }: LoungeLayoutPro
         >
           🍺 BAR
         </div>
+        
+        {/* Windows (Left Wall) */}
+        <div className="absolute left-2 top-20 w-2 h-32 bg-blue-400 bg-opacity-30 rounded"></div>
+        <div className="absolute left-2 top-170 w-2 h-32 bg-blue-400 bg-opacity-30 rounded"></div>
+        <div className="absolute left-2 top-320 w-2 h-32 bg-blue-400 bg-opacity-30 rounded"></div>
+        
+        {/* Track Lighting */}
+        <div className="absolute top-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-60"></div>
+        <div className="absolute top-2 left-1/4 w-1 h-1 bg-yellow-400 rounded-full"></div>
+        <div className="absolute top-2 left-1/2 w-1 h-1 bg-yellow-400 rounded-full"></div>
+        <div className="absolute top-2 left-3/4 w-1 h-1 bg-yellow-400 rounded-full"></div>
 
         {/* Tables */}
         {sessions.map((session) => {
@@ -186,12 +197,18 @@ export default function LoungeLayout({ sessions, onTableClick }: LoungeLayoutPro
         <div className="absolute bottom-4 right-4 bg-zinc-700 bg-opacity-90 p-3 rounded-lg text-xs">
           <div className="text-white font-bold mb-2">Table Types</div>
           <div className="space-y-1">
-            <div className="text-zinc-300">HB: High Boy</div>
-            <div className="text-zinc-300">T: Table</div>
-            <div className="text-zinc-300">2B: 2x Booth</div>
-            <div className="text-zinc-300">4B: 4x Booth</div>
-            <div className="text-zinc-300">8S: 8x Sectional</div>
-            <div className="text-zinc-300">4S: 4x Sofa</div>
+            <div className="flex items-center gap-2">
+              <span>🍺</span>
+              <span className="text-zinc-300">Bar High Boy</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>🪑</span>
+              <span className="text-zinc-300">Standard Table</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>🛋️</span>
+              <span className="text-zinc-300">Booth/Sofa</span>
+            </div>
           </div>
         </div>
       </div>

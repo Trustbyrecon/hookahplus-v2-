@@ -283,6 +283,12 @@ export default function SessionsDashboard() {
               🌐 {sessions.filter(s => s.customerId).length} Network Customers
             </div>
             <a
+              href="/demo"
+              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              🎯 Lounge Demo
+            </a>
+            <a
               href="/moat-analytics"
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
