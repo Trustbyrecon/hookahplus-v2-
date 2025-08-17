@@ -87,8 +87,22 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { action, data } = body;
 
+    if (!data) {
+      return NextResponse.json({
+        success: false,
+        message: 'Missing data'
+      }, { status: 400 });
+    }
+
     switch (action) {
-      case 'add_connector':
+                   case 'add_connector':
+        if (!data.name || !data.city) {
+          return NextResponse.json({
+            success: false,
+            message: 'Name and city are required'
+          }, { status: 400 });
+        }
+        
         const newConnector = {
           id: `conn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           name: data.name,
@@ -100,6 +114,7 @@ export async function POST(request: Request) {
           specialties: data.specialties || [],
           socialMedia: data.socialMedia || [],
           applicationDate: Date.now(),
+          approvalDate: undefined, // Will be set when approved
           notes: data.notes || ''
         };
         connectors.push(newConnector);

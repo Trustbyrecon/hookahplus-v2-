@@ -51,6 +51,7 @@ export default function ConnectorPartnershipManager() {
     name: '',
     city: '',
     specialties: '',
+    socialMedia: '',
     notes: ''
   });
 
@@ -93,6 +94,7 @@ export default function ConnectorPartnershipManager() {
             name: connectorForm.name,
             city: connectorForm.city,
             specialties: connectorForm.specialties.split(',').map(s => s.trim()).filter(Boolean),
+            socialMedia: connectorForm.socialMedia.split(',').map(s => s.trim()).filter(Boolean),
             notes: connectorForm.notes
           }
         })
@@ -101,7 +103,7 @@ export default function ConnectorPartnershipManager() {
       if (res.ok) {
         await fetchConnectorData();
         setShowAddConnector(false);
-        setConnectorForm({ name: '', city: '', specialties: '', notes: '' });
+        setConnectorForm({ name: '', city: '', specialties: '', socialMedia: '', notes: '' });
       }
     } catch (error) {
       console.error('Error adding connector:', error);
@@ -313,6 +315,13 @@ export default function ConnectorPartnershipManager() {
                 placeholder="Specialties (comma-separated)"
                 value={connectorForm.specialties}
                 onChange={(e) => setConnectorForm({...connectorForm, specialties: e.target.value})}
+                className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Social Media (comma-separated)"
+                value={connectorForm.socialMedia}
+                onChange={(e) => setConnectorForm({...connectorForm, socialMedia: e.target.value})}
                 className="w-full bg-zinc-800 text-white px-3 py-2 rounded-lg border border-zinc-600 focus:border-teal-500 focus:outline-none"
               />
               <textarea
