@@ -268,24 +268,27 @@ export default function SessionsDashboard() {
               <h2 className="text-xl text-zinc-300">SESSION TRACKER</h2>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={fetchSessions}
-              disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              {isLoading ? '🔄' : '🔄'} Refresh
-            </button>
-            <div className="text-sm text-zinc-400">
-              {sessions.length} Active Sessions
-            </div>
-          </div>
+                     <div className="flex items-center gap-4">
+             <button
+               onClick={fetchSessions}
+               disabled={isLoading}
+               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+             >
+               {isLoading ? '🔄' : '🔄'} Refresh
+             </button>
+             <div className="text-sm text-zinc-400">
+               {sessions.length} Active Sessions
+             </div>
+             <div className="text-sm text-purple-400 font-medium">
+               🌐 {sessions.filter(s => s.customerId).length} Network Customers
+             </div>
+           </div>
         </div>
 
         {/* Session Summary - Moved below header */}
         {sessions.length > 0 && (
           <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-teal-300 mb-4">Session Summary</h3>
+            <h3 className="text-lg font-semibold text-teal-300 mb-4">Session Summary & MOAT Metrics</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-400">
@@ -310,6 +313,29 @@ export default function SessionsDashboard() {
                   ${(sessions.reduce((sum, s) => sum + (s.totalRevenue || s.amount), 0) / 100).toFixed(2)}
                 </div>
                 <div className="text-zinc-400 text-sm">Total Revenue</div>
+              </div>
+            </div>
+            {/* MOAT Growth Indicators */}
+            <div className="mt-4 pt-4 border-t border-zinc-700">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-purple-400">
+                    {sessions.filter(s => s.customerId).length}
+                  </div>
+                  <div className="text-zinc-400 text-xs">Network Customers</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-amber-400">
+                    {sessions.filter(s => s.customerPreferences).length}
+                  </div>
+                  <div className="text-zinc-400 text-xs">Profiled Customers</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-cyan-400">
+                    {sessions.filter(s => s.previousSessions && s.previousSessions.length > 0).length}
+                  </div>
+                  <div className="text-zinc-400 text-xs">Returning Customers</div>
+                </div>
               </div>
             </div>
           </div>
@@ -496,6 +522,9 @@ export default function SessionsDashboard() {
 
         {/* Customer Profile Manager */}
         <CustomerProfileManager />
+
+        {/* Connector Partnership Program - MOAT Scale Growth */}
+        <ConnectorPartnershipManager />
 
         {/* Lounge Layout for ScreenCoder Integration */}
         <LoungeLayout 
