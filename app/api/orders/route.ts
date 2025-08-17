@@ -3,5 +3,8 @@ import { NextResponse } from "next/server";
 import { listOrders } from "@/lib/orders";
 
 export async function GET() {
-  return NextResponse.json({ orders: listOrders() });
+  const orders = listOrders();
+  console.log('Orders API called, returning', orders.length, 'orders');
+  console.log('Sample orders:', orders.slice(0, 3));
+  return NextResponse.json({ orders });
 }

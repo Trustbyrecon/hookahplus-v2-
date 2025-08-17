@@ -57,6 +57,7 @@ export async function POST() {
   try {
     // Clear existing orders before generating new ones
     clearOrders();
+    console.log('Cleared existing orders');
     
     // Define the order type to match lib/orders.ts
     type Order = {
@@ -71,6 +72,7 @@ export async function POST() {
     
     const orderTimes = generateOrderTimes();
     const orders: Order[] = [];
+    console.log('Generating', orderTimes.length, 'orders');
     
     orderTimes.forEach((orderTime, index) => {
       const flavor = flavors[Math.floor(Math.random() * flavors.length)];
@@ -97,12 +99,15 @@ export async function POST() {
       
       // Add to the orders system
       addOrder(order);
+      console.log(`Added order ${index + 1}:`, orderId, order.status, order.flavor);
       
       // If paid, mark it as paid
       if (isPaid) {
         markPaid(orderId);
       }
     });
+    
+    console.log('Final order count in system:', orders.length);
     
     return NextResponse.json({ 
       success: true,
@@ -114,6 +119,7 @@ export async function POST() {
     });
     
   } catch (error: any) {
+    console.error('Error in demo-data generation:', error);
     return NextResponse.json({ 
       success: false, 
       error: error.message 
