@@ -31,16 +31,32 @@ const durations = [
 ];
 
 // Table configuration for ScreenCoder integration
-const tableConfigs = [
-  { id: 'T-001', type: 'high_boy' as const, position: { x: 100, y: 150 }, capacity: 2 },
-  { id: 'T-002', type: 'table' as const, position: { x: 250, y: 150 }, capacity: 4 },
-  { id: 'T-003', type: '2x_booth' as const, position: { x: 400, y: 150 }, capacity: 2 },
-  { id: 'T-004', type: '4x_booth' as const, position: { x: 550, y: 150 }, capacity: 4 },
-  { id: 'T-005', type: '8x_sectional' as const, position: { x: 100, y: 300 }, capacity: 8 },
-  { id: 'T-006', type: '4x_sofa' as const, position: { x: 350, y: 300 }, capacity: 4 },
-  { id: 'T-007', type: 'high_boy' as const, position: { x: 600, y: 300 }, capacity: 2 },
-  { id: 'T-008', type: 'table' as const, position: { x: 750, y: 300 }, capacity: 4 }
-];
+  const tableConfigs = [
+    // Bar Area (Left side)
+    { id: 'BAR-01', type: 'high_boy' as const, position: { x: 50, y: 100 }, capacity: 2 },
+    { id: 'BAR-02', type: 'high_boy' as const, position: { x: 150, y: 100 }, capacity: 2 },
+    { id: 'BAR-03', type: 'high_boy' as const, position: { x: 250, y: 100 }, capacity: 2 },
+    
+    // Main Seating Area (Center)
+    { id: 'T-001', type: 'table' as const, position: { x: 100, y: 200 }, capacity: 4 },
+    { id: 'T-002', type: 'table' as const, position: { x: 250, y: 200 }, capacity: 4 },
+    { id: 'T-003', type: 'table' as const, position: { x: 400, y: 200 }, capacity: 4 },
+    { id: 'T-004', type: 'table' as const, position: { x: 550, y: 200 }, capacity: 4 },
+    
+    // Booth Seating (Right wall)
+    { id: 'B-001', type: '2x_booth' as const, position: { x: 700, y: 150 }, capacity: 2 },
+    { id: 'B-002', type: '4x_booth' as const, position: { x: 700, y: 250 }, capacity: 4 },
+    { id: 'B-003', type: '2x_booth' as const, position: { x: 700, y: 350 }, capacity: 2 },
+    
+    // Communal Sectionals (Center-back)
+    { id: 'C-001', type: '8x_sectional' as const, position: { x: 200, y: 350 }, capacity: 8 },
+    { id: 'C-002', type: '4x_sofa' as const, position: { x: 500, y: 350 }, capacity: 4 },
+    
+    // Window Tables (Left wall)
+    { id: 'W-001', type: 'table' as const, position: { x: 50, y: 250 }, capacity: 4 },
+    { id: 'W-002', type: 'table' as const, position: { x: 50, y: 350 }, capacity: 4 },
+    { id: 'W-003', type: 'table' as const, position: { x: 50, y: 450 }, capacity: 4 }
+  ];
 
 // Customer profiles for network ecosystem simulation
 const customerProfiles = [
