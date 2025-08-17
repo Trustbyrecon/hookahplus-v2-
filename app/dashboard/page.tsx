@@ -18,26 +18,39 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
 
-  async function fetchOrders() {
-    const res = await fetch("/api/orders", { cache: "no-store" });
-    const json = await res.json();
-    setOrders(json.orders || []);
-  }
-
   async function generateDemoData() {
     setIsGenerating(true);
     try {
+      console.log('Generating demo data...');
       const res = await fetch('/api/demo-data', { method: 'POST' });
       const data = await res.json();
+      console.log('Demo data response:', data);
+      
       if (data.success) {
         setLastGenerated(`${data.orders} orders (${data.paid} paid, ${data.pending} pending) - ${data.timeRange}`);
-        // Refresh orders immediately
-        await fetchOrders();
+        
+        // Wait a moment for the data to be processed, then refresh
+        setTimeout(async () => {
+          console.log('Refreshing orders after demo generation...');
+          await fetchOrders();
+        }, 500);
       }
     } catch (error) {
       console.error('Error generating demo data:', error);
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function fetchOrders() {
+    console.log('Fetching orders...');
+    try {
+      const res = await fetch("/api/orders", { cache: "no-store" });
+      const json = await res.json();
+      console.log('Orders response:', json);
+      setOrders(json.orders || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
     }
   }
 
