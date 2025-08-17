@@ -252,6 +252,3 @@ class ReflexOrchestrator {
 
 // Export singleton instance
 export const reflexOrchestrator = new ReflexOrchestrator();
-
-// Export types for use in other modules
-export type { ReflexCycle, AgentScore };
