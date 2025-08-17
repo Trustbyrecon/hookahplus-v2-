@@ -74,7 +74,11 @@ export default function ConnectorPartnershipManager() {
           setConnectors(data.data.connectors);
           setOpportunities(data.data.opportunities);
           setMetrics(data.data.metrics);
+        } else {
+          console.error('API error:', data.message);
         }
+      } else {
+        console.error('HTTP error:', res.status);
       }
     } catch (error) {
       console.error('Error fetching connector data:', error);
@@ -101,9 +105,16 @@ export default function ConnectorPartnershipManager() {
       });
       
       if (res.ok) {
-        await fetchConnectorData();
-        setShowAddConnector(false);
-        setConnectorForm({ name: '', city: '', specialties: '', socialMedia: '', notes: '' });
+        const result = await res.json();
+        if (result.success) {
+          await fetchConnectorData();
+          setShowAddConnector(false);
+          setConnectorForm({ name: '', city: '', specialties: '', socialMedia: '', notes: '' });
+        } else {
+          console.error('Failed to add connector:', result.message);
+        }
+      } else {
+        console.error('HTTP error:', res.status);
       }
     } catch (error) {
       console.error('Error adding connector:', error);
