@@ -42,9 +42,31 @@ export default function Dashboard() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl md:text-4xl font-bold text-teal-400">Lounge Dashboard</h1>
-          <div className="flex items-center gap-2">
-            <span className="text-green-400">🔒</span>
-            <span className="text-teal-200">Trust-Lock: Active</span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/demo-data', { method: 'POST' });
+                  const data = await res.json();
+                  if (data.success) {
+                    alert(`✅ Generated ${data.orders} demo orders!\n${data.paid} paid, ${data.pending} pending\nTime: ${data.timeRange}`);
+                    // Refresh orders
+                    fetchOrders();
+                  } else {
+                    alert('❌ Failed to generate demo data');
+                  }
+                } catch (error) {
+                  alert('❌ Error generating demo data');
+                }
+              }}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              🎭 Generate Demo Data
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-green-400">🔒</span>
+              <span className="text-teal-200">Trust-Lock: Active</span>
+            </div>
           </div>
         </div>
 
