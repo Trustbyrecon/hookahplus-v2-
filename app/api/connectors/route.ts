@@ -125,6 +125,13 @@ export async function POST(request: Request) {
         });
 
       case 'add_opportunity':
+        if (!data.name || !data.city || !data.connectorId) {
+          return NextResponse.json({
+            success: false,
+            message: 'Name, city, and connector ID are required'
+          }, { status: 400 });
+        }
+        
         const newOpportunity = {
           id: `opp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           name: data.name,
