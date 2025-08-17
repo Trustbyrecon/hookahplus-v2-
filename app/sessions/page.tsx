@@ -427,6 +427,9 @@ export default function SessionsDashboard() {
                   onClick={() => {
                     if (session.coalStatus === 'needs_refill') {
                       handleRefill(session.id);
+                    } else if (session.coalStatus === 'burnt_out') {
+                      // Resume session from burnout
+                      updateCoalStatus(session.id, 'active');
                     } else {
                       updateCoalStatus(session.id, 'needs_refill');
                     }
@@ -434,10 +437,17 @@ export default function SessionsDashboard() {
                   className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     session.coalStatus === 'needs_refill'
                       ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : session.coalStatus === 'burnt_out'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
                       : 'bg-orange-600 hover:bg-orange-700 text-white'
                   }`}
                 >
-                  {session.coalStatus === 'needs_refill' ? 'Complete Refill' : 'Refill'}
+                  {session.coalStatus === 'needs_refill' 
+                    ? 'Complete Refill' 
+                    : session.coalStatus === 'burnt_out'
+                    ? 'Resume Session'
+                    : 'Refill'
+                  }
                 </button>
                 <button
                   onClick={() => updateCoalStatus(session.id, 'burnt_out')}
