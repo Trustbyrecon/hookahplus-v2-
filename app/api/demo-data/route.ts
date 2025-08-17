@@ -2,7 +2,7 @@
 // Generate demo data for dashboard testing
 
 import { NextResponse } from "next/server";
-import { addOrder, markPaid, clearOrders } from "@/lib/orders";
+import { addOrder, markPaid, clearOrders } from "../../../lib/orders";
 
 // Simulate orders over a 2-hour period (8 PM - 10 PM)
 const startTime = new Date('2025-08-16T20:00:00Z'); // 8:00 PM
