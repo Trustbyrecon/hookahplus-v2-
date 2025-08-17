@@ -268,21 +268,27 @@ export default function SessionsDashboard() {
               <h2 className="text-xl text-zinc-300">SESSION TRACKER</h2>
             </div>
           </div>
-                     <div className="flex items-center gap-4">
-             <button
-               onClick={fetchSessions}
-               disabled={isLoading}
-               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-             >
-               {isLoading ? '🔄' : '🔄'} Refresh
-             </button>
-             <div className="text-sm text-zinc-400">
-               {sessions.length} Active Sessions
-             </div>
-             <div className="text-sm text-purple-400 font-medium">
-               🌐 {sessions.filter(s => s.customerId).length} Network Customers
-             </div>
-           </div>
+                               <div className="flex items-center gap-4">
+            <button
+              onClick={fetchSessions}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              {isLoading ? '🔄' : '🔄'} Refresh
+            </button>
+            <div className="text-sm text-zinc-400">
+              {sessions.length} Active Sessions
+            </div>
+            <div className="text-sm text-purple-400 font-medium">
+              🌐 {sessions.filter(s => s.customerId).length} Network Customers
+            </div>
+            <a
+              href="/moat-analytics"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              📊 MOAT Analytics
+            </a>
+          </div>
         </div>
 
         {/* Session Summary - Moved below header */}
