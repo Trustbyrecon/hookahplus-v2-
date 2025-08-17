@@ -29,7 +29,7 @@ const tables = ['T-001', 'T-002', 'T-003', 'T-004', 'T-005', 'T-006'];
 
 // Generate realistic order timestamps (more orders during peak hours)
 function generateOrderTimes() {
-  const times = [];
+  const times: Date[] = [];
   const baseTime = startTime.getTime();
   const duration = endTime.getTime() - baseTime;
   
@@ -61,7 +61,7 @@ export async function POST() {
     // This would require adding a clearOrders function to lib/orders.ts
     
     const orderTimes = generateOrderTimes();
-    const orders = [];
+    const orders: any[] = [];
     
     orderTimes.forEach((orderTime, index) => {
       const flavor = flavors[Math.floor(Math.random() * flavors.length)];
