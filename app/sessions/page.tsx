@@ -300,6 +300,24 @@ export default function SessionsDashboard() {
             >
               📊 MOAT Analytics
             </a>
+            <a
+              href="/demo-video"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              🎬 Demo Video
+            </a>
+            <a
+              href="/ep-agent-launch"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              🚀 EP Agent Launch
+            </a>
+            <a
+              href="/alethia-clover-app"
+              className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              📱 Clover App
+            </a>
           </div>
         </div>
 

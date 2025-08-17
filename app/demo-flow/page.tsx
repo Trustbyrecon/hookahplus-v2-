@@ -264,20 +264,26 @@ export default function DemoFlowPage() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={resetDemo}
-                className="bg-zinc-600 hover:bg-zinc-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              >
-                🔄 Restart Demo
-              </button>
-              <a
-                href="/sessions"
-                className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              >
-                🚀 Try Live System
-              </a>
-            </div>
+                                 <div className="flex gap-4 justify-center">
+                       <button
+                         onClick={resetDemo}
+                         className="bg-zinc-600 hover:bg-zinc-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                       >
+                         🔄 Restart Demo
+                       </button>
+                       <a
+                         href="/sessions"
+                         className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                       >
+                         🚀 Try Live System
+                       </a>
+                       <a
+                         href="/owner-cta?form=preorder"
+                         className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                       >
+                         💳 Start Preorders
+                       </a>
+                     </div>
           </div>
         )}
 

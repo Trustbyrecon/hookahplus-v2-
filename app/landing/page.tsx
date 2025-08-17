@@ -44,18 +44,18 @@ export default function LandingPage() {
             
             {/* Primary CTA */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link
-                href="/demo"
-                className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl"
-              >
-                🚀 Start Preorders
-              </Link>
-              <Link
-                href="/demo"
-                className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-xl text-xl font-medium transition-colors border border-zinc-600"
-              >
-                🎯 See Demo
-              </Link>
+                                         <Link
+                             href="/owner-cta?form=preorder"
+                             className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl"
+                           >
+                             🚀 Start Preorders
+                           </Link>
+                           <Link
+                             href="/demo-video"
+                             className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-xl text-xl font-medium transition-colors border border-zinc-600"
+                           >
+                             🎯 See Demo
+                           </Link>
             </div>
 
             {/* Trust Indicators */}
@@ -137,18 +137,18 @@ export default function LandingPage() {
             Join the future of hookah lounge management with AI-powered personalization
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/demo"
-              className="bg-white text-teal-900 hover:bg-gray-100 px-8 py-4 rounded-xl text-xl font-bold transition-colors"
-            >
-              🎯 Experience the Demo
-            </Link>
-            <Link
-              href="/demo"
-              className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-teal-900 px-8 py-4 rounded-xl text-xl font-bold transition-colors"
-            >
-              🚀 Start Preorders
-            </Link>
+                                     <Link
+                           href="/demo-video"
+                           className="bg-white text-teal-900 hover:bg-gray-100 px-8 py-4 rounded-xl text-xl font-bold transition-colors"
+                         >
+                           🎯 Experience the Demo
+                         </Link>
+                         <Link
+                           href="/owner-cta?form=preorder"
+                           className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-teal-900 px-8 py-4 rounded-xl text-xl font-bold transition-colors"
+                         >
+                           🚀 Start Preorders
+                         </Link>
           </div>
         </div>
       </div>

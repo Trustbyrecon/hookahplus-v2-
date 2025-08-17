@@ -5,6 +5,19 @@ type FormType = 'demo' | 'waitlist' | 'preorder';
 
 export default function OwnerCTAPage() {
   const [activeForm, setActiveForm] = useState<FormType>('demo');
+
+  // Handle URL parameters for pre-selecting forms
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const formParam = urlParams.get('form');
+    if (formParam === 'preorder') {
+      setActiveForm('preorder');
+    } else if (formParam === 'waitlist') {
+      setActiveForm('waitlist');
+    } else if (formParam === 'demo') {
+      setActiveForm('demo');
+    }
+  }, []);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
