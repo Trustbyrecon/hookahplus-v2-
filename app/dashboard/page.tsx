@@ -124,6 +124,19 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Data Status */}
+        <div className="bg-zinc-800/50 border border-zinc-600 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-zinc-300">
+              <span className="font-medium">Data Status:</span> 
+              {isLoading ? ' 🔄 Refreshing...' : ` 📊 ${totalOrders} orders loaded`}
+            </div>
+            <div className="text-sm text-zinc-400">
+              Last updated: {new Date().toLocaleTimeString()}
+            </div>
+          </div>
+        </div>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4">
