@@ -62,52 +62,62 @@ const durations = [
 const customerProfiles = [
   {
     id: 'cust_001',
-    name: 'Alex Johnson',
+    name: 'Alex Rodriguez',
     preferences: {
-      favoriteFlavors: ['Peach + Mint', 'Strawberry + Mint'],
-      sessionDuration: 90,
-      addOnPreferences: ['Mint', 'Grape'],
-      notes: 'Prefers strong mint flavors, regular customer'
+      favoriteFlavors: ['Double Apple', 'Mint'],
+      sessionDuration: 120,
+      addOnPreferences: ['Extra Coal', 'Premium Tobacco'],
+      notes: 'Prefers window seating, regular customer'
     }
   },
   {
     id: 'cust_002',
     name: 'Sarah Chen',
     preferences: {
-      favoriteFlavors: ['Blue Mist + Mint', 'Lavender + Mint'],
-      sessionDuration: 60,
-      addOnPreferences: ['Rose', 'Lavender'],
-      notes: 'Likes floral notes, moderate session length'
+      favoriteFlavors: ['Strawberry', 'Vanilla'],
+      sessionDuration: 90,
+      addOnPreferences: ['Fruit Bowl', 'Herbal Tea'],
+      notes: 'Likes booth seating, brings laptop'
     }
   },
   {
     id: 'cust_003',
-    name: 'Mike Rodriguez',
+    name: 'Mike Johnson',
     preferences: {
-      favoriteFlavors: ['Double Apple', 'Mango + Mint'],
-      sessionDuration: 120,
-      addOnPreferences: ['Mint', 'Pineapple'],
-      notes: 'Long sessions, prefers classic flavors'
+      favoriteFlavors: ['Grape', 'Mint'],
+      sessionDuration: 150,
+      addOnPreferences: ['Extra Coal', 'Snacks'],
+      notes: 'Bar area regular, sports fan'
     }
   },
   {
     id: 'cust_004',
-    name: 'Emily Davis',
+    name: 'Jasmine Williams',
     preferences: {
-      favoriteFlavors: ['Watermelon + Mint', 'Grape + Mint'],
-      sessionDuration: 60,
-      addOnPreferences: ['Mint', 'Strawberry'],
-      notes: 'Fruit-forward preferences, quick sessions'
+      favoriteFlavors: ['Rose', 'Cardamom'],
+      sessionDuration: 180,
+      addOnPreferences: ['Premium Tea', 'Dessert'],
+      notes: 'Communal seating, social butterfly'
     }
   },
   {
     id: 'cust_005',
-    name: 'David Kim',
+    name: 'Carlos Martinez',
     preferences: {
-      favoriteFlavors: ['Rose + Mint', 'Pineapple + Mint'],
-      sessionDuration: 90,
-      addOnPreferences: ['Mint', 'Lavender'],
-      notes: 'Sophisticated palate, medium sessions'
+      favoriteFlavors: ['Coconut', 'Pineapple'],
+      sessionDuration: 100,
+      addOnPreferences: ['Tropical Mix', 'Cold Drinks'],
+      notes: 'Booth seating, date night regular'
+    }
+  },
+  {
+    id: 'cust_006',
+    name: 'Emma Thompson',
+    preferences: {
+      favoriteFlavors: ['Lavender', 'Honey'],
+      sessionDuration: 140,
+      addOnPreferences: ['Herbal Infusion', 'Light Snacks'],
+      notes: 'Window table, book reader'
     }
   }
 ];
