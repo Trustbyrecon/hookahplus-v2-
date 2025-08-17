@@ -10,7 +10,7 @@ type Order = {
   // New fields for enhanced tracking
   sessionStartTime?: number;
   sessionDuration?: number; // in minutes
-  coalStatus?: "active" | "needs_refill" | "burnt_out";
+  coalStatus?: "active" | "needs_refill" | "burnt_out" | "paused";
   addOnFlavors?: string[];
   baseRate?: number;
   addOnRate?: number;
@@ -29,6 +29,8 @@ type Order = {
   tableType?: "high_boy" | "table" | "2x_booth" | "4x_booth" | "8x_sectional" | "4x_sofa";
   tablePosition?: { x: number; y: number }; // Coordinates for lounge layout
   refillTimerStart?: number; // When refill status was set
+  sessionPauseTime?: number; // When session was paused due to burnout
+  totalPausedTime?: number; // Total time session has been paused
 };
 
 let ORDERS: Order[] = [];
@@ -78,11 +80,12 @@ export function startSession(orderId: string) {
   if (order && order.status === 'paid') {
     order.sessionStartTime = Date.now();
     order.coalStatus = "active";
+    order.totalPausedTime = 0;
     console.log('Started session for order:', orderId);
   }
 }
 
-export function updateCoalStatus(orderId: string, status: "active" | "needs_refill" | "burnt_out") {
+export function updateCoalStatus(orderId: string, status: "active" | "needs_refill" | "burnt_out" | "paused") {
   const order = ORDERS.find(o => o.id === orderId);
   if (order) {
     order.coalStatus = status;
@@ -97,9 +100,24 @@ export function updateCoalStatus(orderId: string, status: "active" | "needs_refi
         const currentOrder = ORDERS.find(o => o.id === orderId);
         if (currentOrder && currentOrder.coalStatus === 'needs_refill') {
           currentOrder.coalStatus = 'burnt_out';
+          currentOrder.sessionPauseTime = Date.now();
           console.log('Auto-changed to burnt_out after 10 seconds for order:', orderId);
         }
       }, 10000); // 10 seconds
+    }
+    
+    // Handle burnout - pause the session but don't end it
+    if (status === 'burnt_out') {
+      order.sessionPauseTime = Date.now();
+      console.log('Session paused due to burnout for order:', orderId);
+    }
+    
+    // Handle resuming from burnout
+    if (status === 'active' && order.sessionPauseTime) {
+      const pauseDuration = Date.now() - order.sessionPauseTime;
+      order.totalPausedTime = (order.totalPausedTime || 0) + pauseDuration;
+      order.sessionPauseTime = undefined;
+      console.log('Session resumed from burnout for order:', orderId);
     }
     
     console.log('Updated coal status for order:', orderId, 'to:', status);
@@ -125,6 +143,18 @@ export function getRefillTimeRemaining(orderId: string): number {
     const elapsed = Date.now() - order.refillTimerStart;
     const remaining = 10000 - elapsed; // 10 seconds total
     return Math.max(0, Math.ceil(remaining / 1000));
+  }
+  return 0;
+}
+
+// Function to get current session time accounting for pauses
+export function getCurrentSessionTime(orderId: string): number {
+  const order = ORDERS.find(o => o.id === orderId);
+  if (order && order.sessionStartTime) {
+    const totalElapsed = Date.now() - order.sessionStartTime;
+    const totalPaused = order.totalPausedTime || 0;
+    const currentPause = order.sessionPauseTime ? (Date.now() - order.sessionPauseTime) : 0;
+    return totalElapsed - totalPaused - currentPause;
   }
   return 0;
 }
