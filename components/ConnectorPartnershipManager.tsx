@@ -42,6 +42,7 @@ export default function ConnectorPartnershipManager() {
   const [opportunities, setOpportunities] = useState<LoungeOpportunity[]>([]);
   const [metrics, setMetrics] = useState<ConnectorData['metrics'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddConnector, setShowAddConnector] = useState(false);
   const [showAddOpportunity, setShowAddOpportunity] = useState(false);
   const [selectedConnector, setSelectedConnector] = useState<ConnectorProfile | null>(null);
@@ -74,10 +75,13 @@ export default function ConnectorPartnershipManager() {
           setConnectors(data.data.connectors);
           setOpportunities(data.data.opportunities);
           setMetrics(data.data.metrics);
+          setError(null);
         } else {
+          setError(data.message || 'Failed to fetch data');
           console.error('API error:', data.message);
         }
       } else {
+        setError(`HTTP error: ${res.status}`);
         console.error('HTTP error:', res.status);
       }
     } catch (error) {
@@ -140,9 +144,16 @@ export default function ConnectorPartnershipManager() {
       });
       
       if (res.ok) {
-        await fetchConnectorData();
-        setShowAddOpportunity(false);
-        setOpportunityForm({ name: '', city: '', connectorId: '', contactInfo: '', estimatedRevenue: '', notes: '' });
+        const result = await res.json();
+        if (result.success) {
+          await fetchConnectorData();
+          setShowAddOpportunity(false);
+          setOpportunityForm({ name: '', city: '', connectorId: '', contactInfo: '', estimatedRevenue: '', notes: '' });
+        } else {
+          console.error('Failed to add opportunity:', result.message);
+        }
+      } else {
+        console.error('HTTP error:', res.status);
       }
     } catch (error) {
       console.error('Error adding opportunity:', error);
@@ -170,6 +181,12 @@ export default function ConnectorPartnershipManager() {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={fetchConnectorData}
+            className="bg-zinc-600 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            🔄 Refresh
+          </button>
+          <button
             onClick={() => setShowAddConnector(true)}
             className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
@@ -183,6 +200,14 @@ export default function ConnectorPartnershipManager() {
           </button>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-900 border border-red-700 rounded-lg p-4 mb-6">
+          <div className="text-red-300 font-medium">Error</div>
+          <div className="text-red-200 text-sm">{error}</div>
+        </div>
+      )}
 
       {/* Program Overview */}
       {metrics && (
