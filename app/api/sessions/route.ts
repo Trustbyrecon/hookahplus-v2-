@@ -18,7 +18,7 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action, orderId, data } = body;
