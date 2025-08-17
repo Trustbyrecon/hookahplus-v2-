@@ -1,12 +1,39 @@
 import { NextResponse } from "next/server";
 
+// Type definitions to match the frontend interface
+interface ConnectorProfile {
+  id: string;
+  name: string;
+  city: string;
+  status: 'pending' | 'approved' | 'active';
+  loungesIdentified: number;
+  loungesSignedUp: number;
+  revenueEarned: number;
+  specialties: string[];
+  socialMedia: string[];
+  applicationDate: number;
+  approvalDate?: number;
+  notes: string;
+}
+
+interface LoungeOpportunity {
+  id: string;
+  name: string;
+  city: string;
+  connectorId: string;
+  status: 'identified' | 'contacted' | 'interested' | 'signed_up';
+  estimatedRevenue: number;
+  contactInfo: string;
+  notes: string;
+}
+
 // Mock data for connectors and opportunities
-let connectors = [
+let connectors: ConnectorProfile[] = [
   {
     id: 'conn_001',
     name: 'Alex Johnson',
     city: 'Los Angeles',
-    status: 'active' as const,
+    status: 'active',
     loungesIdentified: 8,
     loungesSignedUp: 5,
     revenueEarned: 1250,
@@ -20,7 +47,7 @@ let connectors = [
     id: 'conn_002',
     name: 'Sarah Chen',
     city: 'New York',
-    status: 'approved' as const,
+    status: 'approved',
     loungesIdentified: 6,
     loungesSignedUp: 0,
     revenueEarned: 0,
@@ -32,13 +59,13 @@ let connectors = [
   }
 ];
 
-let opportunities = [
+let opportunities: LoungeOpportunity[] = [
   {
     id: 'opp_001',
     name: 'Oasis Hookah Lounge',
     city: 'Los Angeles',
     connectorId: 'conn_001',
-    status: 'signed_up' as const,
+    status: 'signed_up',
     estimatedRevenue: 5000,
     contactInfo: 'owner@oasislounge.com',
     notes: 'High-end lounge, premium clientele'
@@ -48,7 +75,7 @@ let opportunities = [
     name: 'Cloud Nine Hookah',
     city: 'Los Angeles',
     connectorId: 'conn_001',
-    status: 'interested' as const,
+    status: 'interested',
     estimatedRevenue: 3500,
     contactInfo: 'manager@cloudnine.com',
     notes: 'Student-focused, good location'
@@ -103,11 +130,11 @@ export async function POST(request: Request) {
           }, { status: 400 });
         }
         
-        const newConnector = {
+        const newConnector: ConnectorProfile = {
           id: `conn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           name: data.name,
           city: data.city,
-          status: 'pending' as const,
+          status: 'pending',
           loungesIdentified: 0,
           loungesSignedUp: 0,
           revenueEarned: 0,
@@ -132,12 +159,12 @@ export async function POST(request: Request) {
           }, { status: 400 });
         }
         
-        const newOpportunity = {
+        const newOpportunity: LoungeOpportunity = {
           id: `opp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           name: data.name,
           city: data.city,
           connectorId: data.connectorId,
-          status: 'identified' as const,
+          status: 'identified',
           estimatedRevenue: data.estimatedRevenue || 0,
           contactInfo: data.contactInfo || '',
           notes: data.notes || ''
