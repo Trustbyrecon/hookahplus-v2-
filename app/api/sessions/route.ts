@@ -1,6 +1,6 @@
 // app/api/sessions/route.ts
 import { NextResponse } from "next/server";
-import { getActiveSessions, updateCoalStatus, addFlavorToSession, startSession } from "@/lib/orders";
+import { getActiveSessions, updateCoalStatus, addFlavorToSession, startSession, handleRefill, getFlavorMixLibrary, getCustomerPreviousSessions } from "@/lib/orders";
 
 export async function GET() {
   try {
@@ -32,9 +32,25 @@ export async function POST(request: Request) {
         updateCoalStatus(orderId, data.status);
         return NextResponse.json({ success: true, message: 'Coal status updated' });
         
+      case 'handle_refill':
+        const refillSuccess = handleRefill(orderId);
+        return NextResponse.json({ 
+          success: refillSuccess, 
+          message: refillSuccess ? 'Refill completed, status reset to active' : 'Refill failed or not needed' 
+        });
+        
       case 'add_flavor':
         addFlavorToSession(orderId, data.flavor, data.rate);
         return NextResponse.json({ success: true, message: 'Flavor added' });
+        
+      case 'get_flavor_suggestions':
+        const flavorLibrary = getFlavorMixLibrary();
+        const customerHistory = data.customerId ? getCustomerPreviousSessions(data.customerId, orderId) : [];
+        return NextResponse.json({ 
+          success: true, 
+          flavorLibrary,
+          customerHistory
+        });
         
       default:
         return NextResponse.json({ 
