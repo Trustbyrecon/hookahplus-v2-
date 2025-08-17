@@ -15,11 +15,30 @@ type Order = {
 
 export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [lastGenerated, setLastGenerated] = useState<string | null>(null);
 
   async function fetchOrders() {
     const res = await fetch("/api/orders", { cache: "no-store" });
     const json = await res.json();
     setOrders(json.orders || []);
+  }
+
+  async function generateDemoData() {
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/demo-data', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setLastGenerated(`${data.orders} orders (${data.paid} paid, ${data.pending} pending) - ${data.timeRange}`);
+        // Refresh orders immediately
+        await fetchOrders();
+      }
+    } catch (error) {
+      console.error('Error generating demo data:', error);
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   useEffect(() => {
@@ -37,6 +56,12 @@ export default function Dashboard() {
     return () => clearInterval(t);
   }, []);
 
+  // Calculate metrics
+  const totalOrders = orders.length;
+  const paidOrders = orders.filter(o => o.status === 'paid').length;
+  const totalRevenue = orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + o.amount, 0) / 100;
+  const pendingOrders = orders.filter(o => o.status === 'created').length;
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white p-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -44,24 +69,12 @@ export default function Dashboard() {
           <h1 className="text-3xl md:text-4xl font-bold text-teal-400">Lounge Dashboard</h1>
           <div className="flex items-center gap-4">
             <button
-              onClick={async () => {
-                try {
-                  const res = await fetch('/api/demo-data', { method: 'POST' });
-                  const data = await res.json();
-                  if (data.success) {
-                    alert(`✅ Generated ${data.orders} demo orders!\n${data.paid} paid, ${data.pending} pending\nTime: ${data.timeRange}`);
-                    // Refresh orders
-                    fetchOrders();
-                  } else {
-                    alert('❌ Failed to generate demo data');
-                  }
-                } catch (error) {
-                  alert('❌ Error generating demo data');
-                }
-              }}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              onClick={generateDemoData}
+              disabled={isGenerating}
+              className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
-              🎭 Generate Demo Data
+              {isGenerating ? '🔄' : '🎭'} 
+              {isGenerating ? 'Generating...' : 'Generate Demo Data'}
             </button>
             <div className="flex items-center gap-2">
               <span className="text-green-400">🔒</span>
@@ -70,23 +83,33 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Generation Status */}
+        {lastGenerated && (
+          <div className="bg-green-900/20 border border-green-500 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-green-400">✅</span>
+              <span className="text-green-200">Demo data generated: {lastGenerated}</span>
+            </div>
+          </div>
+        )}
+
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4">
-            <div className="text-2xl font-bold text-teal-400">{orders.length}</div>
+            <div className="text-2xl font-bold text-teal-400">{totalOrders}</div>
             <div className="text-zinc-400">Total Orders</div>
           </div>
-          <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-400">
-              {orders.filter(o => o.status === 'paid').length}
-            </div>
+          <div className="bg-zinc-900 border border-green-500 rounded-lg p-4">
+            <div className="text-2xl font-bold text-green-400">{paidOrders}</div>
             <div className="text-zinc-400">Paid Orders</div>
           </div>
-          <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-400">
-              ${(orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + o.amount, 0) / 100).toFixed(2)}
-            </div>
+          <div className="bg-zinc-900 border border-blue-500 rounded-lg p-4">
+            <div className="text-2xl font-bold text-blue-400">${totalRevenue.toFixed(2)}</div>
             <div className="text-zinc-400">Total Revenue</div>
+          </div>
+          <div className="bg-zinc-900 border border-yellow-500 rounded-lg p-4">
+            <div className="text-2xl font-bold text-yellow-400">{pendingOrders}</div>
+            <div className="text-zinc-400">Pending Orders</div>
           </div>
         </div>
 
@@ -94,7 +117,7 @@ export default function Dashboard() {
         <div className="bg-zinc-900 border border-teal-500 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-teal-500">
             <h2 className="text-xl font-semibold text-teal-300">Live Orders</h2>
-            <p className="text-zinc-400 text-sm">Real-time updates every 5 seconds</p>
+            <p className="text-zinc-400 text-sm">Real-time updates every 5 seconds • {totalOrders} orders</p>
           </div>
           
           <div className="overflow-x-auto">
@@ -138,7 +161,7 @@ export default function Dashboard() {
                       <div className="space-y-2">
                         <div className="text-4xl">🍃</div>
                         <div>No orders yet…</div>
-                        <div className="text-sm">Orders will appear here as customers place them</div>
+                        <div className="text-sm">Click "Generate Demo Data" to populate the dashboard</div>
                       </div>
                     </td>
                   </tr>
@@ -157,7 +180,11 @@ export default function Dashboard() {
               {(() => {
                 const topFlavors = getTopFlavors();
                 if (!topFlavors) {
-                  return <p className="text-zinc-500 text-sm">Need 3+ paid orders to show trends</p>;
+                  return (
+                    <div className="text-zinc-500 text-sm">
+                      {totalOrders === 0 ? 'Generate demo data to see trends' : 'Need 3+ paid orders to show trends'}
+                    </div>
+                  );
                 }
                 return (
                   <div className="space-y-2">
@@ -176,7 +203,11 @@ export default function Dashboard() {
               {(() => {
                 const returningCount = getReturningCustomers();
                 if (!returningCount) {
-                  return <p className="text-zinc-500 text-sm">Need 3+ paid orders to calculate</p>;
+                  return (
+                    <div className="text-zinc-500 text-sm">
+                      {totalOrders === 0 ? 'Generate demo data to see patterns' : 'Need 3+ paid orders to calculate'}
+                    </div>
+                  );
                 }
                 return (
                   <div className="text-center">
