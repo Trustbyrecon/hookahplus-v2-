@@ -1,7 +1,4 @@
 // lib/orders.ts
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
-
 type Order = {
   id: string;
   tableId?: string;
@@ -20,49 +17,10 @@ type Order = {
   totalRevenue?: number;
 };
 
-const ORDERS_FILE = join(process.cwd(), 'data', 'orders.json');
-
-// Ensure data directory exists
-function ensureDataDir() {
-  const dataDir = join(process.cwd(), 'data');
-  if (!existsSync(dataDir)) {
-    try {
-      require('fs').mkdirSync(dataDir, { recursive: true });
-    } catch (error) {
-      console.log('Data directory creation failed:', error);
-    }
-  }
-}
-
-// Load orders from file
-function loadOrders(): Order[] {
-  try {
-    ensureDataDir();
-    if (existsSync(ORDERS_FILE)) {
-      const data = readFileSync(ORDERS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading orders:', error);
-  }
-  return [];
-}
-
-// Save orders to file
-function saveOrders(orders: Order[]) {
-  try {
-    ensureDataDir();
-    writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
-  } catch (error) {
-    console.error('Error saving orders:', error);
-  }
-}
-
-let ORDERS: Order[] = loadOrders();
+let ORDERS: Order[] = [];
 
 export function addOrder(o: Order) {
   ORDERS.unshift(o);
-  saveOrders(ORDERS);
   console.log('Added order:', o.id, 'Total orders now:', ORDERS.length);
 }
 
@@ -75,7 +33,6 @@ export function markPaid(id: string) {
   const o = ORDERS.find(x => x.id === id);
   if (o) {
     o.status = "paid";
-    saveOrders(ORDERS);
     console.log('Marked order as paid:', id);
   }
 }
@@ -83,7 +40,6 @@ export function markPaid(id: string) {
 export function clearOrders() {
   console.log('Clearing orders, previous count:', ORDERS.length);
   ORDERS = [];
-  saveOrders(ORDERS);
 }
 
 export function getOrderCount() {
@@ -108,7 +64,6 @@ export function startSession(orderId: string) {
   if (order && order.status === 'paid') {
     order.sessionStartTime = Date.now();
     order.coalStatus = "active";
-    saveOrders(ORDERS);
     console.log('Started session for order:', orderId);
   }
 }
@@ -117,7 +72,6 @@ export function updateCoalStatus(orderId: string, status: "active" | "needs_refi
   const order = ORDERS.find(o => o.id === orderId);
   if (order) {
     order.coalStatus = status;
-    saveOrders(ORDERS);
     console.log('Updated coal status for order:', orderId, 'to:', status);
   }
 }
@@ -129,7 +83,6 @@ export function addFlavorToSession(orderId: string, flavor: string, addOnRate: n
     order.addOnFlavors.push(flavor);
     order.addOnRate = (order.addOnRate || 0) + addOnRate;
     order.totalRevenue = (order.baseRate || order.amount) + order.addOnRate;
-    saveOrders(ORDERS);
     console.log('Added flavor to session:', orderId, flavor);
   }
 }

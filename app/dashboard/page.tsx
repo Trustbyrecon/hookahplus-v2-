@@ -11,6 +11,14 @@ type Order = {
   currency: string;
   status: "created" | "paid" | "failed";
   createdAt: number;
+  // Enhanced fields for session management
+  sessionStartTime?: number;
+  sessionDuration?: number;
+  coalStatus?: "active" | "needs_refill" | "burnt_out";
+  addOnFlavors?: string[];
+  baseRate?: number;
+  addOnRate?: number;
+  totalRevenue?: number;
 };
 
 export default function Dashboard() {

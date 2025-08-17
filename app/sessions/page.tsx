@@ -159,7 +159,7 @@ export default function SessionsDashboard() {
                 </h3>
                 <div className="text-sm text-zinc-400">
                   #{session.id.slice(-6)}
-                </h3>
+                </div>
               </div>
 
               {/* Timer */}
