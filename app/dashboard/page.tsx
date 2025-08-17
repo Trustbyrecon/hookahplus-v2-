@@ -91,6 +91,12 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl md:text-4xl font-bold text-teal-400">Lounge Dashboard</h1>
           <div className="flex items-center gap-4">
+            <a
+              href="/sessions"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              🎯 Live Sessions
+            </a>
             <button
               onClick={fetchOrders}
               disabled={isLoading}
