@@ -1,6 +1,7 @@
 // app/sessions/page.tsx
 "use client";
 import { useEffect, useState } from "react";
+import CustomerProfileManager from "@/components/CustomerProfileManager";
 
 type Session = {
   id: string;
@@ -375,6 +376,9 @@ export default function SessionsDashboard() {
             </div>
           </div>
         )}
+
+        {/* Customer Profile Manager */}
+        <CustomerProfileManager />
       </div>
 
       {/* Flavor Selection Modal */}
