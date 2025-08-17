@@ -166,8 +166,8 @@ export default function Dashboard() {
         {/* Orders Table */}
         <div className="bg-zinc-900 border border-teal-500 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-teal-500">
-            <h2 className="text-xl font-semibold text-teal-300">Live Orders</h2>
-            <p className="text-zinc-400 text-sm">Real-time updates every 5 seconds • {totalOrders} orders</p>
+            <h2 className="text-xl font-semibold text-teal-300">Live Orders & Historical Data</h2>
+            <p className="text-zinc-400 text-sm">Real-time updates every 5 seconds • {totalOrders} orders • Shows last 2 hours + current</p>
           </div>
           
           <div className="overflow-x-auto">
@@ -177,8 +177,11 @@ export default function Dashboard() {
                   <th className="p-4 text-left">Order ID</th>
                   <th className="p-4 text-left">Table</th>
                   <th className="p-4 text-left">Flavor</th>
+                  <th className="p-4 text-left">Duration</th>
                   <th className="p-4 text-left">Amount</th>
                   <th className="p-4 text-left">Status</th>
+                  <th className="p-4 text-left">Coal Status</th>
+                  <th className="p-4 text-left">Session</th>
                   <th className="p-4 text-left">Created</th>
                 </tr>
               </thead>
@@ -187,8 +190,29 @@ export default function Dashboard() {
                   <tr key={o.id} className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                     <td className="p-4 font-mono text-teal-400">{o.id}</td>
                     <td className="p-4">{o.tableId || '—'}</td>
-                    <td className="p-4">{o.flavor || '—'}</td>
-                    <td className="p-4">${(o.amount / 100).toFixed(2)}</td>
+                    <td className="p-4">
+                      <div>
+                        <div className="text-white">{o.flavor || '—'}</div>
+                        {o.addOnFlavors && o.addOnFlavors.length > 0 && (
+                          <div className="text-xs text-teal-400">
+                            + {o.addOnFlavors.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {o.sessionDuration ? `${o.sessionDuration} min` : '—'}
+                    </td>
+                    <td className="p-4">
+                      <div>
+                        <div className="text-white">${(o.amount / 100).toFixed(2)}</div>
+                        {o.addOnRate && o.addOnRate > 0 && (
+                          <div className="text-xs text-teal-400">
+                            Base: ${(o.baseRate || 0) / 100} + Add-ons: ${o.addOnRate / 100}
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         o.status === "paid" 
@@ -200,6 +224,34 @@ export default function Dashboard() {
                         {o.status}
                       </span>
                     </td>
+                    <td className="p-4">
+                      {o.coalStatus ? (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          o.coalStatus === "active" 
+                            ? "bg-green-900 text-green-400" 
+                            : o.coalStatus === "needs_refill"
+                            ? "bg-yellow-900 text-yellow-400"
+                            : "bg-red-900 text-red-400"
+                        }`}>
+                          {o.coalStatus === "active" ? "Active" : 
+                           o.coalStatus === "needs_refill" ? "Refill" : "Burnt Out"}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500">—</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {o.sessionStartTime ? (
+                        <div className="text-xs">
+                          <div className="text-teal-400">Active</div>
+                          <div className="text-zinc-400">
+                            {Math.floor((Date.now() - o.sessionStartTime) / 60000)}m ago
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-500">—</span>
+                      )}
+                    </td>
                     <td className="p-4 text-zinc-400">
                       {new Date(o.createdAt).toLocaleTimeString()}
                     </td>
@@ -207,7 +259,7 @@ export default function Dashboard() {
                 ))}
                 {orders.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-zinc-500">
+                    <td colSpan={9} className="p-8 text-center text-zinc-500">
                       <div className="space-y-2">
                         <div className="text-4xl">🍃</div>
                         <div>No orders yet…</div>
@@ -266,6 +318,60 @@ export default function Dashboard() {
                   </div>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+
+        {/* Profit Margin Analysis */}
+        <div className="bg-zinc-900 border border-green-500 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-green-300 mb-4">💰 Profit Margin Analysis</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <h4 className="text-md font-medium text-green-200 mb-3">Base Revenue</h4>
+              <div className="text-2xl font-bold text-green-400">
+                ${(orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.baseRate || o.amount), 0) / 100).toFixed(2)}
+              </div>
+              <div className="text-zinc-400 text-sm">from session fees</div>
+            </div>
+            <div className="text-center">
+              <h4 className="text-md font-medium text-blue-200 mb-3">Add-on Revenue</h4>
+              <div className="text-2xl font-bold text-blue-400">
+                ${(orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 100).toFixed(2)}
+              </div>
+              <div className="text-zinc-400 text-sm">from flavor upgrades</div>
+            </div>
+            <div className="text-center">
+              <h4 className="text-md font-medium text-purple-200 mb-3">Total Revenue</h4>
+              <div className="text-2xl font-bold text-purple-400">
+                ${totalRevenue.toFixed(2)}
+              </div>
+              <div className="text-zinc-400 text-sm">combined earnings</div>
+            </div>
+          </div>
+          
+          {/* Profit Margin Insights */}
+          <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg">
+            <h4 className="text-md font-medium text-yellow-200 mb-3">💡 Transparency Insights</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-zinc-300 mb-2">Session Management:</div>
+                <div className="text-zinc-400">
+                  • Active sessions: {orders.filter(o => o.coalStatus === 'active').length}<br/>
+                  • Need refill: {orders.filter(o => o.coalStatus === 'needs_refill').length}<br/>
+                  • Burnt out: {orders.filter(o => o.coalStatus === 'burnt_out').length}
+                </div>
+              </div>
+              <div>
+                <div className="text-zinc-300 mb-2">Revenue Optimization:</div>
+                <div className="text-zinc-400">
+                  • Add-on rate: {orders.filter(o => o.addOnRate && o.addOnRate > 0).length} orders<br/>
+                  • Avg add-on: ${orders.filter(o => o.addOnRate && o.addOnRate > 0).length > 0 ? 
+                    (orders.filter(o => o.addOnRate && o.addOnRate > 0).reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 
+                     orders.filter(o => o.addOnRate && o.addOnRate > 0).length / 100).toFixed(2) : '0.00'}<br/>
+                  • Profit margin: {totalRevenue > 0 ? 
+                    ((orders.filter(o => o.addOnRate && o.addOnRate > 0).reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 100) / totalRevenue * 100).toFixed(1) : '0'}%
+                </div>
+              </div>
             </div>
           </div>
         </div>
