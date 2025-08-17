@@ -2,11 +2,12 @@
 // Generate demo data for dashboard testing
 
 import { NextResponse } from "next/server";
-import { addOrder, markPaid, clearOrders } from "@/lib/orders";
+import { addOrder, markPaid, clearOrders, startSession, updateCoalStatus, addFlavorToSession } from "@/lib/orders";
 
-// Simulate orders over a 2-hour period (8 PM - 10 PM)
-const startTime = new Date('2025-08-16T20:00:00Z'); // 8:00 PM
-const endTime = new Date('2025-08-16T22:00:00Z');   // 10:00 PM
+// Simulate orders over a 4-hour period (6 PM - 10 PM) to show historical data
+const startTime = new Date();
+startTime.setHours(startTime.getHours() - 2); // 2 hours ago
+const endTime = new Date(); // Current time
 
 // Realistic hookah flavors and durations
 const flavors = [
@@ -17,31 +18,34 @@ const flavors = [
   'Strawberry + Mint',
   'Watermelon + Mint',
   'Mango + Mint',
-  'Pineapple + Mint'
+  'Pineapple + Mint',
+  'Rose + Mint',
+  'Lavender + Mint'
 ];
 
 const durations = [
   { label: '30 min', value: 3000, time: 30 },
   { label: '60 min', value: 5000, time: 60 },
-  { label: '90 min', value: 7000, time: 90 }
+  { label: '90 min', value: 7000, time: 90 },
+  { label: '120 min', value: 9000, time: 120 }
 ];
 
-const tables = ['T-001', 'T-002', 'T-003', 'T-004', 'T-005', 'T-006'];
+const tables = ['T-001', 'T-002', 'T-003', 'T-004', 'T-005', 'T-006', 'T-007', 'T-008'];
 
-// Generate realistic order timestamps (more orders during peak hours)
+// Generate realistic order timestamps over the past 2 hours + current
 function generateOrderTimes() {
   const times: Date[] = [];
   const baseTime = startTime.getTime();
   const duration = endTime.getTime() - baseTime;
   
-  // Generate 15-20 orders over 2 hours
-  const numOrders = Math.floor(Math.random() * 6) + 15; // 15-20 orders
+  // Generate 20-30 orders over the time period
+  const numOrders = Math.floor(Math.random() * 11) + 20; // 20-30 orders
   
   for (let i = 0; i < numOrders; i++) {
-    // More orders between 8:30-9:30 PM (peak time)
+    // More orders during peak hours (7-9 PM)
     let timeOffset;
-    if (i < numOrders * 0.7) { // 70% of orders in peak time
-      timeOffset = (duration * 0.25) + (Math.random() * duration * 0.5); // 8:30-9:30 PM
+    if (i < numOrders * 0.6) { // 60% of orders in peak time
+      timeOffset = (duration * 0.2) + (Math.random() * duration * 0.6); // 7-9 PM equivalent
     } else {
       timeOffset = Math.random() * duration; // Spread remaining orders
     }
@@ -68,6 +72,13 @@ export async function POST() {
       currency: string;
       status: "created" | "paid" | "failed";
       createdAt: number;
+      sessionStartTime?: number;
+      sessionDuration?: number;
+      coalStatus?: "active" | "needs_refill" | "burnt_out";
+      addOnFlavors?: string[];
+      baseRate?: number;
+      addOnRate?: number;
+      totalRevenue?: number;
     };
     
     const orderTimes = generateOrderTimes();
@@ -80,19 +91,29 @@ export async function POST() {
       const table = tables[Math.floor(Math.random() * tables.length)];
       
       // Create order ID
-      const orderId = `demo_${Math.random().toString(36).slice(2, 10)}`;
+      const orderId = `demo_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       
       // Simulate some orders being paid, some still pending
-      const isPaid = Math.random() > 0.3; // 70% paid, 30% pending
+      const isPaid = Math.random() > 0.2; // 80% paid, 20% pending
+      
+      // Base rate + potential add-ons
+      const baseRate = duration.value;
+      const hasAddOns = Math.random() > 0.5; // 50% chance of add-ons
+      const addOnRate = hasAddOns ? Math.floor(Math.random() * 3 + 1) * 500 : 0; // 1-3 add-ons
+      const totalAmount = baseRate + addOnRate;
       
       const order: Order = {
         id: orderId,
         tableId: table,
         flavor: flavor,
-        amount: duration.value,
+        amount: totalAmount,
         currency: 'usd',
         status: isPaid ? 'paid' : 'created',
-        createdAt: orderTime.getTime()
+        createdAt: orderTime.getTime(),
+        sessionDuration: duration.time,
+        baseRate: baseRate,
+        addOnRate: addOnRate,
+        totalRevenue: totalAmount
       };
       
       orders.push(order);
@@ -101,9 +122,37 @@ export async function POST() {
       addOrder(order);
       console.log(`Added order ${index + 1}:`, orderId, order.status, order.flavor);
       
-      // If paid, mark it as paid
+      // If paid, mark it as paid and potentially start session
       if (isPaid) {
         markPaid(orderId);
+        
+        // Simulate session management for some orders
+        if (Math.random() > 0.3) { // 70% of paid orders get sessions
+          // Start session
+          startSession(orderId);
+          
+          // Simulate coal status changes over time
+          setTimeout(() => {
+            if (Math.random() > 0.6) {
+              updateCoalStatus(orderId, "needs_refill");
+            }
+          }, Math.random() * 30000 + 10000); // 10-40 seconds later
+          
+          // Simulate some orders getting burnt out
+          setTimeout(() => {
+            if (Math.random() > 0.7) {
+              updateCoalStatus(orderId, "burnt_out");
+            }
+          }, Math.random() * 60000 + 30000); // 30-90 seconds later
+          
+          // Simulate add-on flavors for some sessions
+          if (hasAddOns) {
+            setTimeout(() => {
+              const addOnFlavor = flavors[Math.floor(Math.random() * flavors.length)];
+              addFlavorToSession(orderId, addOnFlavor, 500);
+            }, Math.random() * 20000 + 15000); // 15-35 seconds later
+          }
+        }
       }
     });
     
@@ -115,7 +164,8 @@ export async function POST() {
       orders: orders.length,
       paid: orders.filter(o => o.status === 'paid').length,
       pending: orders.filter(o => o.status === 'created').length,
-      timeRange: `${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}`
+      timeRange: `${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}`,
+      activeSessions: orders.filter(o => o.status === 'paid' && o.sessionStartTime).length
     });
     
   } catch (error: any) {
