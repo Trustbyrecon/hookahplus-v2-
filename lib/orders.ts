@@ -25,6 +25,10 @@ type Order = {
     notes?: string;
   };
   previousSessions?: string[]; // Array of previous session IDs
+  // Table mapping for ScreenCoder integration
+  tableType?: "high_boy" | "table" | "2x_booth" | "4x_booth" | "8x_sectional" | "4x_sofa";
+  tablePosition?: { x: number; y: number }; // Coordinates for lounge layout
+  refillTimerStart?: number; // When refill status was set
 };
 
 let ORDERS: Order[] = [];
@@ -82,6 +86,22 @@ export function updateCoalStatus(orderId: string, status: "active" | "needs_refi
   const order = ORDERS.find(o => o.id === orderId);
   if (order) {
     order.coalStatus = status;
+    
+    // Start refill timer when status changes to needs_refill
+    if (status === 'needs_refill') {
+      order.refillTimerStart = Date.now();
+      console.log('Started refill timer for order:', orderId);
+      
+      // Set timeout to automatically change to burnt_out after 10 seconds
+      setTimeout(() => {
+        const currentOrder = ORDERS.find(o => o.id === orderId);
+        if (currentOrder && currentOrder.coalStatus === 'needs_refill') {
+          currentOrder.coalStatus = 'burnt_out';
+          console.log('Auto-changed to burnt_out after 10 seconds for order:', orderId);
+        }
+      }, 10000); // 10 seconds
+    }
+    
     console.log('Updated coal status for order:', orderId, 'to:', status);
   }
 }
@@ -91,10 +111,32 @@ export function handleRefill(orderId: string) {
   const order = ORDERS.find(o => o.id === orderId);
   if (order && order.coalStatus === 'needs_refill') {
     order.coalStatus = 'active';
+    order.refillTimerStart = undefined; // Clear the refill timer
     console.log('Refilled and reset status to active for order:', orderId);
     return true;
   }
   return false;
+}
+
+// Function to get remaining refill time in seconds
+export function getRefillTimeRemaining(orderId: string): number {
+  const order = ORDERS.find(o => o.id === orderId);
+  if (order && order.coalStatus === 'needs_refill' && order.refillTimerStart) {
+    const elapsed = Date.now() - order.refillTimerStart;
+    const remaining = 10000 - elapsed; // 10 seconds total
+    return Math.max(0, Math.ceil(remaining / 1000));
+  }
+  return 0;
+}
+
+// Function to set table type and position for ScreenCoder integration
+export function setTableMapping(orderId: string, tableType: Order['tableType'], position: { x: number; y: number }) {
+  const order = ORDERS.find(o => o.id === orderId);
+  if (order) {
+    order.tableType = tableType;
+    order.tablePosition = position;
+    console.log('Set table mapping for order:', orderId, tableType, position);
+  }
 }
 
 export function addFlavorToSession(orderId: string, flavor: string, addOnRate: number = 500) {

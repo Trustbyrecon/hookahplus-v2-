@@ -2,6 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import CustomerProfileManager from "@/components/CustomerProfileManager";
+import LoungeLayout from "@/components/LoungeLayout";
 
 type Session = {
   id: string;
@@ -27,6 +28,10 @@ type Session = {
     notes?: string;
   };
   previousSessions?: string[];
+  // Table mapping for ScreenCoder integration
+  tableType?: "high_boy" | "table" | "2x_booth" | "4x_booth" | "8x_sectional" | "4x_sofa";
+  tablePosition?: { x: number; y: number };
+  refillTimerStart?: number;
 };
 
 type FlavorSuggestion = {
@@ -50,6 +55,7 @@ export default function SessionsDashboard() {
   } | null>(null);
   const [showFlavorModal, setShowFlavorModal] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [refillTimers, setRefillTimers] = useState<Record<string, number>>({});
 
   async function fetchSessions() {
     setIsLoading(true);
@@ -185,11 +191,54 @@ export default function SessionsDashboard() {
     }
   }
 
+  // Function to get table type display name
+  function getTableTypeDisplay(tableType?: string) {
+    switch (tableType) {
+      case 'high_boy': return 'High Boy';
+      case 'table': return 'Table';
+      case '2x_booth': return '2x Booth';
+      case '4x_booth': return '4x Booth';
+      case '8x_sectional': return '8x Sectional';
+      case '4x_sofa': return '4x Sofa';
+      default: return 'Table';
+    }
+  }
+
+  // Function to get table type color
+  function getTableTypeColor(tableType?: string) {
+    switch (tableType) {
+      case 'high_boy': return 'text-blue-400';
+      case 'table': return 'text-green-400';
+      case '2x_booth': return 'text-yellow-400';
+      case '4x_booth': return 'text-orange-400';
+      case '8x_sectional': return 'text-purple-400';
+      case '4x_sofa': return 'text-pink-400';
+      default: return 'text-gray-400';
+    }
+  }
+
   useEffect(() => {
     fetchSessions();
     const interval = setInterval(fetchSessions, 5000); // Update every 5 seconds
     return () => clearInterval(interval);
   }, []);
+
+  // Update refill timers every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const timers: Record<string, number> = {};
+      sessions.forEach(session => {
+        if (session.coalStatus === 'needs_refill' && session.refillTimerStart) {
+          const elapsed = Date.now() - session.refillTimerStart;
+          const remaining = 10000 - elapsed; // 10 seconds total
+          timers[session.id] = Math.max(0, Math.ceil(remaining / 1000));
+        }
+      });
+      setRefillTimers(timers);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sessions]);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white p-8">
@@ -217,15 +266,57 @@ export default function SessionsDashboard() {
           </div>
         </div>
 
+        {/* Session Summary - Moved below header */}
+        {sessions.length > 0 && (
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-teal-300 mb-4">Session Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">
+                  {sessions.filter(s => s.coalStatus === 'active').length}
+                </div>
+                <div className="text-zinc-400 text-sm">Active</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-400">
+                  {sessions.filter(s => s.coalStatus === 'needs_refill').length}
+                </div>
+                <div className="text-zinc-400 text-sm">Need Refill</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-400">
+                  {sessions.filter(s => s.coalStatus === 'burnt_out').length}
+                </div>
+                <div className="text-zinc-400 text-sm">Burnt Out</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-400">
+                  ${(sessions.reduce((sum, s) => sum + (s.totalRevenue || s.amount), 0) / 100).toFixed(2)}
+                </div>
+                <div className="text-zinc-400 text-sm">Total Revenue</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sessions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sessions.map((session) => (
-            <div key={session.id} className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 space-y-4">
-              {/* Table Header with Customer Info */}
+            <div 
+              key={session.id} 
+              id={`session-${session.id}`}
+              className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 space-y-4 transition-all duration-200"
+            >
+              {/* Table Header with Customer Info and Table Type */}
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white">
-                  {session.tableId || 'Unknown Table'}
-                </h3>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    {session.tableId || 'Unknown Table'}
+                  </h3>
+                  <div className={`text-sm font-medium ${getTableTypeColor(session.tableType)}`}>
+                    {getTableTypeDisplay(session.tableType)}
+                  </div>
+                </div>
                 <div className="text-right">
                   <div className="text-sm text-zinc-400">
                     #{session.id.slice(-6)}
@@ -277,12 +368,24 @@ export default function SessionsDashboard() {
                 )}
               </div>
 
-              {/* Coal Status */}
+              {/* Coal Status with Refill Timer */}
               <div className="bg-zinc-800 rounded-lg p-3">
                 <div className="text-sm text-zinc-400 mb-2">Status</div>
                 <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${getCoalStatusColor(session.coalStatus || 'unknown')}`}>
                   {getCoalStatusText(session.coalStatus || 'unknown')}
                 </div>
+                {/* Refill Timer Display */}
+                {session.coalStatus === 'needs_refill' && refillTimers[session.id] !== undefined && (
+                  <div className="mt-2 text-center">
+                    <div className="text-xs text-zinc-400 mb-1">Auto-burnout in:</div>
+                    <div className={`text-lg font-mono font-bold ${
+                      refillTimers[session.id] <= 3 ? 'text-red-400' : 
+                      refillTimers[session.id] <= 6 ? 'text-yellow-400' : 'text-orange-400'
+                    }`}>
+                      {refillTimers[session.id]}s
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Amount */}
@@ -331,6 +434,19 @@ export default function SessionsDashboard() {
               >
                 Add Flavor (+$5.00)
               </button>
+
+              {/* ScreenCoder Integration Info */}
+              {session.tablePosition && (
+                <div className="bg-zinc-800 rounded-lg p-3">
+                  <div className="text-sm text-zinc-400 mb-1">ScreenCoder Position</div>
+                  <div className="text-xs text-zinc-300">
+                    X: {session.tablePosition.x}, Y: {session.tablePosition.y}
+                  </div>
+                  <div className="text-xs text-blue-400 mt-1">
+                    Click to view lounge layout
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 
@@ -344,41 +460,25 @@ export default function SessionsDashboard() {
           )}
         </div>
 
-        {/* Session Summary */}
-        {sessions.length > 0 && (
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-teal-300 mb-4">Session Summary</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-400">
-                  {sessions.filter(s => s.coalStatus === 'active').length}
-                </div>
-                <div className="text-zinc-400 text-sm">Active</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-400">
-                  {sessions.filter(s => s.coalStatus === 'needs_refill').length}
-                </div>
-                <div className="text-zinc-400 text-sm">Need Refill</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-400">
-                  {sessions.filter(s => s.coalStatus === 'burnt_out').length}
-                </div>
-                <div className="text-zinc-400 text-sm">Burnt Out</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-400">
-                  ${(sessions.reduce((sum, s) => sum + (s.totalRevenue || s.amount), 0) / 100).toFixed(2)}
-                </div>
-                <div className="text-zinc-400 text-sm">Total Revenue</div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Customer Profile Manager */}
         <CustomerProfileManager />
+
+        {/* Lounge Layout for ScreenCoder Integration */}
+        <LoungeLayout 
+          sessions={sessions}
+          onTableClick={(session) => {
+            // Scroll to the session card
+            const sessionElement = document.getElementById(`session-${session.id}`);
+            if (sessionElement) {
+              sessionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // Add highlight effect
+              sessionElement.classList.add('ring-2', 'ring-teal-400');
+              setTimeout(() => {
+                sessionElement.classList.remove('ring-2', 'ring-teal-400');
+              }, 2000);
+            }
+          }}
+        />
       </div>
 
       {/* Flavor Selection Modal */}

@@ -2,7 +2,7 @@
 // Generate demo data for dashboard testing
 
 import { NextResponse } from "next/server";
-import { addOrder, markPaid, clearOrders, startSession, updateCoalStatus, addFlavorToSession } from "@/lib/orders";
+import { addOrder, markPaid, clearOrders, startSession, updateCoalStatus, addFlavorToSession, setTableMapping } from "@/lib/orders";
 
 // Simulate orders over a 4-hour period (6 PM - 10 PM) to show historical data
 const startTime = new Date();
@@ -30,7 +30,17 @@ const durations = [
   { label: '120 min', value: 9000, time: 120 }
 ];
 
-const tables = ['T-001', 'T-002', 'T-003', 'T-004', 'T-005', 'T-006', 'T-007', 'T-008'];
+// Table configuration for ScreenCoder integration
+const tableConfigs = [
+  { id: 'T-001', type: 'high_boy' as const, position: { x: 100, y: 150 }, capacity: 2 },
+  { id: 'T-002', type: 'table' as const, position: { x: 250, y: 150 }, capacity: 4 },
+  { id: 'T-003', type: '2x_booth' as const, position: { x: 400, y: 150 }, capacity: 2 },
+  { id: 'T-004', type: '4x_booth' as const, position: { x: 550, y: 150 }, capacity: 4 },
+  { id: 'T-005', type: '8x_sectional' as const, position: { x: 100, y: 300 }, capacity: 8 },
+  { id: 'T-006', type: '4x_sofa' as const, position: { x: 350, y: 300 }, capacity: 4 },
+  { id: 'T-007', type: 'high_boy' as const, position: { x: 600, y: 300 }, capacity: 2 },
+  { id: 'T-008', type: 'table' as const, position: { x: 750, y: 300 }, capacity: 4 }
+];
 
 // Customer profiles for network ecosystem simulation
 const customerProfiles = [
@@ -143,6 +153,10 @@ export async function POST() {
         notes?: string;
       };
       previousSessions?: string[];
+      // Table mapping for ScreenCoder integration
+      tableType?: "high_boy" | "table" | "2x_booth" | "4x_booth" | "8x_sectional" | "4x_sofa";
+      tablePosition?: { x: number; y: number };
+      refillTimerStart?: number;
     };
     
     const orderTimes = generateOrderTimes();
@@ -152,7 +166,7 @@ export async function POST() {
     orderTimes.forEach((orderTime, index) => {
       const flavor = flavors[Math.floor(Math.random() * flavors.length)];
       const duration = durations[Math.floor(Math.random() * durations.length)];
-      const table = tables[Math.floor(Math.random() * tables.length)];
+      const tableConfig = tableConfigs[Math.floor(Math.random() * tableConfigs.length)];
       
       // Create order ID
       const orderId = `demo_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -172,7 +186,7 @@ export async function POST() {
       
       const order: Order = {
         id: orderId,
-        tableId: table,
+        tableId: tableConfig.id,
         flavor: flavor,
         amount: totalAmount,
         currency: 'usd',
@@ -186,14 +200,21 @@ export async function POST() {
         customerName: customerProfile?.name || 'Staff Customer',
         customerId: customerProfile?.id,
         customerPreferences: customerProfile?.preferences,
-        previousSessions: customerProfile ? [`prev_${Math.random().toString(36).slice(2, 8)}`] : undefined
+        previousSessions: customerProfile ? [`prev_${Math.random().toString(36).slice(2, 8)}`] : undefined,
+        // Table mapping data
+        tableType: tableConfig.type,
+        tablePosition: tableConfig.position
       };
       
       orders.push(order);
       
       // Add to the orders system
       addOrder(order);
-      console.log(`Added order ${index + 1}:`, orderId, order.status, order.flavor, customerProfile?.name || 'Staff Customer');
+      
+      // Set table mapping for ScreenCoder integration
+      setTableMapping(orderId, tableConfig.type, tableConfig.position);
+      
+      console.log(`Added order ${index + 1}:`, orderId, order.status, order.flavor, customerProfile?.name || 'Staff Customer', `at ${tableConfig.id}`);
       
       // If paid, mark it as paid and potentially start session
       if (isPaid) {
@@ -239,7 +260,8 @@ export async function POST() {
       pending: orders.filter(o => o.status === 'created').length,
       timeRange: `${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}`,
       activeSessions: orders.filter(o => o.status === 'paid' && o.sessionStartTime).length,
-      customersWithProfiles: orders.filter(o => o.customerId).length
+      customersWithProfiles: orders.filter(o => o.customerId).length,
+      tableConfigs: tableConfigs.length
     });
     
   } catch (error: any) {
@@ -256,7 +278,7 @@ export async function GET() {
     message: "POST to /api/demo-data to generate demo orders",
     timeRange: `${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}`,
     flavors: flavors,
-    tables: tables,
+    tables: tableConfigs,
     customerProfiles: customerProfiles.length
   });
 }
