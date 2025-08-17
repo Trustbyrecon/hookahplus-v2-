@@ -49,7 +49,7 @@ function generateOrderTimes() {
     times.push(orderTime);
   }
   
-  return times.sort((a, b) => a - b); // Sort chronologically
+  return times.sort((a, b) => a.getTime() - b.getTime()); // Sort chronologically
 }
 
 export async function POST() {
