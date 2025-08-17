@@ -15,6 +15,16 @@ type Order = {
   baseRate?: number;
   addOnRate?: number;
   totalRevenue?: number;
+  // Customer profile metadata for network ecosystem
+  customerName?: string;
+  customerId?: string; // Unique identifier across lounges
+  customerPreferences?: {
+    favoriteFlavors?: string[];
+    sessionDuration?: number;
+    addOnPreferences?: string[];
+    notes?: string;
+  };
+  previousSessions?: string[]; // Array of previous session IDs
 };
 
 let ORDERS: Order[] = [];
@@ -76,6 +86,17 @@ export function updateCoalStatus(orderId: string, status: "active" | "needs_refi
   }
 }
 
+// New function to handle refill and reset status
+export function handleRefill(orderId: string) {
+  const order = ORDERS.find(o => o.id === orderId);
+  if (order && order.coalStatus === 'needs_refill') {
+    order.coalStatus = 'active';
+    console.log('Refilled and reset status to active for order:', orderId);
+    return true;
+  }
+  return false;
+}
+
 export function addFlavorToSession(orderId: string, flavor: string, addOnRate: number = 500) {
   const order = ORDERS.find(o => o.id === orderId);
   if (order && order.status === 'paid') {
@@ -135,4 +156,43 @@ export function getReturningCustomers() {
   // Simple calculation: count unique table IDs
   const uniqueTables = new Set(paidOrders.map(o => o.tableId).filter(Boolean));
   return uniqueTables.size;
+}
+
+// Get customer's previous 3 sessions for flavor recommendations
+export function getCustomerPreviousSessions(customerId: string, currentSessionId: string) {
+  const customerOrders = ORDERS.filter(o => 
+    o.customerId === customerId && 
+    o.id !== currentSessionId && 
+    o.status === 'paid' &&
+    o.sessionStartTime
+  );
+  
+  return customerOrders
+    .sort((a, b) => (b.sessionStartTime || 0) - (a.sessionStartTime || 0))
+    .slice(0, 3);
+}
+
+// Get flavor mix library (popular combinations)
+export function getFlavorMixLibrary() {
+  const paidOrders = ORDERS.filter(o => o.status === 'paid');
+  const flavorCombinations: Record<string, number> = {};
+  
+  paidOrders.forEach(o => {
+    if (o.flavor) {
+      const baseFlavor = o.flavor;
+      if (o.addOnFlavors && o.addOnFlavors.length > 0) {
+        o.addOnFlavors.forEach(addOn => {
+          const combination = `${baseFlavor} + ${addOn}`;
+          flavorCombinations[combination] = (flavorCombinations[combination] || 0) + 1;
+        });
+      } else {
+        flavorCombinations[baseFlavor] = (flavorCombinations[baseFlavor] || 0) + 1;
+      }
+    }
+  });
+  
+  return Object.entries(flavorCombinations)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10) // Top 10 combinations
+    .map(([combination, count]) => ({ combination, count }));
 }
