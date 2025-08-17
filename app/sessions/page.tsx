@@ -156,10 +156,22 @@ export default function SessionsDashboard() {
     }
   }
 
-  function getSessionTimer(sessionStartTime: number, sessionDuration: number) {
+  function getSessionTimer(sessionStartTime: number, sessionDuration: number, coalStatus?: string, refillTimerStart?: number, totalPausedTime?: number) {
     if (!sessionStartTime) return "—";
     
-    const elapsed = Date.now() - sessionStartTime;
+    let elapsed = Date.now() - sessionStartTime;
+    
+    // Subtract total paused time
+    if (totalPausedTime) {
+      elapsed -= totalPausedTime;
+    }
+    
+    // If currently paused (burnt_out), don't count current pause time
+    if (coalStatus === 'burnt_out' && refillTimerStart) {
+      const currentPauseTime = Date.now() - refillTimerStart;
+      elapsed -= currentPauseTime;
+    }
+    
     const elapsedMinutes = Math.floor(elapsed / 60000);
     const elapsedSeconds = Math.floor((elapsed % 60000) / 1000);
     
@@ -350,19 +362,27 @@ export default function SessionsDashboard() {
               {/* Timer */}
               <div className="text-center">
                 <div className="text-3xl font-mono font-bold text-teal-400">
-                  {getSessionTimer(session.sessionStartTime || 0, session.sessionDuration || 0)}
+                  {getSessionTimer(
+                    session.sessionStartTime || 0, 
+                    session.sessionDuration || 0,
+                    session.coalStatus,
+                    session.refillTimerStart,
+                    session.totalPausedTime
+                  )}
                 </div>
-                <div className="text-sm text-zinc-400">Session Timer</div>
+                <div className="text-sm text-zinc-400">
+                  {session.coalStatus === 'burnt_out' ? 'Session Paused' : 'Session Timer'}
+                </div>
               </div>
 
               {/* Flavor */}
               <div className="bg-zinc-800 rounded-lg p-3">
-                <div className="text-sm text-zinc-400 mb-1">Flavor</div>
+                <div className="text-sm text-zinc-400 mb-1">Current Flavor</div>
                 <div className="text-white font-medium">
                   {session.flavor || 'Choose flavors'}
                 </div>
                 {session.addOnFlavors && session.addOnFlavors.length > 0 && (
-                  <div className="mt-2 text-sm text-teal-400">
+                  <div className="mt-2 text-sm text-white">
                     + {session.addOnFlavors.join(', ')}
                   </div>
                 )}

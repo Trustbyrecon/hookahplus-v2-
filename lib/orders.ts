@@ -186,12 +186,12 @@ export function getRecentOrders(hoursBack: number = 2) {
   return ORDERS.filter(o => o.createdAt >= cutoffTime);
 }
 
-// Get active sessions
+// Get active sessions (including paused ones)
 export function getActiveSessions() {
   return ORDERS.filter(o => 
     o.status === 'paid' && 
     o.sessionStartTime && 
-    o.coalStatus !== 'burnt_out'
+    (o.coalStatus === 'active' || o.coalStatus === 'needs_refill' || o.coalStatus === 'burnt_out')
   );
 }
 
