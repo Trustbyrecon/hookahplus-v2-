@@ -1,6 +1,36 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Download,
+  Play,
+  Pause,
+  Zap,
+  RefreshCcw,
+  ShieldCheck,
+  Activity,
+  TrendingUp,
+  Settings,
+  CornerDownLeft,
+  ArrowLeft,
+  Rocket,
+  CheckCircle2,
+  AlertTriangle,
+  ListChecks,
+  Server,
+  Users,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts";
 import AgentConsensusDashboard from "@/components/AgentConsensusDashboard";
 
 // -----------------------------------------------------------------------------
@@ -230,10 +260,10 @@ export default function AdminControlCenter() {
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI icon="📊" label="Sessions" value={kpis.sessions.toLocaleString()} />
-        <KPI icon="💰" label="Revenue" value={usd(kpis.revenue)} />
-        <KPI icon="⚡" label="Avg Margin" value={`${kpis.avgMarginPct.toFixed(1)}%`} />
-        <KPI icon="🛡️" label="Trust Score" value={`${kpis.trustScore}`} />
+        <KPI icon={<Activity className="w-5 h-5" />} label="Sessions" value={kpis.sessions.toLocaleString()} />
+        <KPI icon={<TrendingUp className="w-5 h-5" />} label="Revenue" value={usd(kpis.revenue)} />
+        <KPI icon={<Zap className="w-5 h-5" />} label="Avg Margin" value={`${kpis.avgMarginPct.toFixed(1)}%`} />
+        <KPI icon={<ShieldCheck className="w-5 h-5" />} label="Trust Score" value={`${kpis.trustScore}`} />
       </div>
 
       {/* Tab Navigation */}
@@ -286,7 +316,8 @@ export default function AdminControlCenter() {
               : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
           }`}
         >
-          👥 Agent Consensus
+          <Users className="w-4 h-4 mr-2 inline" />
+          Agent Consensus
         </button>
       </div>
 
@@ -335,7 +366,7 @@ export default function AdminControlCenter() {
                   />
                 </div>
                 <button onClick={runReflexScan} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center">
-                  ▶️ Run Scan
+                  <Play className="w-4 h-4" /> Run Scan
                 </button>
               </div>
             </div>
@@ -343,21 +374,16 @@ export default function AdminControlCenter() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
                 <h3 className="text-sm font-medium mb-3">Trust Pulses</h3>
-                <div className="h-52 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl mb-2">📈</div>
-                    <div className="text-sm text-zinc-400">Trust Score Chart</div>
-                    <div className="text-lg font-semibold text-emerald-400 mt-2">
-                      Current: {trustSeries[trustSeries.length - 1]?.score || 83}
-                    </div>
-                    <div className="text-xs text-zinc-500 mt-1">
-                      {trustSeries.map((point, i) => (
-                        <span key={i} className="mr-2">
-                          {point.t}: {point.score}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trustSeries} margin={{ left: 12, right: 12 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="t" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <YAxis domain={[60, 100]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <Tooltip contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
+                      <Line type="monotone" dataKey="score" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
@@ -365,13 +391,13 @@ export default function AdminControlCenter() {
                 <h3 className="text-sm font-medium">Controls</h3>
                 <div className="flex flex-wrap items-center gap-3">
                   <button className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={startCalibration}>
-                    ⚡ Start Calibration
+                    <Zap className="w-4 h-4" /> Start Calibration
                   </button>
                   <button className="border border-zinc-600 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={stopCalibration}>
-                    ⏸️ Stop Calibration
+                    <Pause className="w-4 h-4" /> Stop Calibration
                   </button>
                   <button className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg gap-2 flex items-center">
-                    🔄 Replay Trust Echo
+                    <RefreshCcw className="w-4 h-4" /> Replay Trust Echo
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
@@ -395,7 +421,7 @@ export default function AdminControlCenter() {
               </div>
               <div className="flex items-center gap-2">
                 <button className="border border-zinc-600 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={exportCSV}>
-                  📥 Export CSV
+                  <Download className="w-4 h-4" /> Export CSV
                 </button>
               </div>
             </div>
@@ -403,18 +429,16 @@ export default function AdminControlCenter() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
                 <h3 className="text-sm font-medium mb-3">Margin % by Item</h3>
-                <div className="h-56 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">📊</div>
-                    <div className="text-sm text-zinc-400">Margin Chart</div>
-                    <div className="text-xs text-zinc-500 mt-2">
-                      {rows.map((r, i) => (
-                        <div key={i} className="mb-1">
-                          {r.item}: {r.marginPct.toFixed(1)}%
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={rows} margin={{ left: 12, right: 12 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="item" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <YAxis tickFormatter={(v) => `${v}%`} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
+                      <Bar dataKey="marginPct" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
               <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-2">
@@ -480,10 +504,10 @@ export default function AdminControlCenter() {
                   <option value="prod">Prod</option>
                 </select>
                 <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={triggerDeploy}>
-                  🚀 Deploy
+                  <Rocket className="w-4 h-4" /> Deploy
                 </button>
                 <button className="border border-zinc-600 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={triggerRollback}>
-                  ↩️ Rollback
+                  <CornerDownLeft className="w-4 h-4" /> Rollback
                 </button>
               </div>
             </div>
@@ -581,10 +605,10 @@ function AdminNavHeader({ env, onEnvChange }: { env: DeployState["env"]; onEnvCh
           className="border border-zinc-600 hover:bg-zinc-700 text-white px-3 py-2 rounded-lg gap-2 flex items-center text-sm" 
           onClick={() => (window.location.href = "/dashboard")}
         >
-          ← Dashboard
+          <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
         <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-          ⚙️ Admin Control Center
+          <Settings className="w-5 h-5" /> Admin Control Center
         </h1>
       </div>
       <div className="flex items-center gap-3">
@@ -598,7 +622,7 @@ function AdminNavHeader({ env, onEnvChange }: { env: DeployState["env"]; onEnvCh
           <option value="prod">Prod</option>
         </select>
         <button 
-          className="bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded-lg gap-2 flex items-center text-sm" 
+          className="bg-zinc-700 hover:bg-zinc-700 text-white px-3 py-2 rounded-lg gap-2 flex items-center text-sm" 
           onClick={() => (window.location.href = "/admin")}
         >
           ⚙️ Admin
@@ -608,11 +632,11 @@ function AdminNavHeader({ env, onEnvChange }: { env: DeployState["env"]; onEnvCh
   );
 }
 
-function KPI({ icon, label, value }: { icon: string; label: string; value: string }) {
+function KPI({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4">
       <div className="flex items-center gap-3">
-        <div className="rounded-2xl bg-zinc-950 p-2 border border-zinc-800 text-2xl">{icon}</div>
+        <div className="rounded-2xl bg-zinc-950 p-2 border border-zinc-800">{icon}</div>
         <div>
           <div className="text-xs text-zinc-400">{label}</div>
           <div className="text-lg font-semibold tracking-tight">{value}</div>
@@ -642,7 +666,7 @@ function StatusPill({ label, value, intent = "neutral" as "ok" | "warn" | "error
 function ChecklistItem({ label, checked = false }: { label: string; checked?: boolean }) {
   return (
     <li className="flex items-center gap-2">
-      {checked ? <span className="text-emerald-400">✅</span> : <span className="text-amber-400">⚠️</span>}
+      {checked ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className="w-4 h-4 text-amber-400" />}
       <span>{label}</span>
     </li>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { Activity, Shield, CreditCard, Navigation, Brain, Zap, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { agentConsensus, ConsensusState, AgentPulse } from '@/lib/agentConsensus';
 
 interface AgentIconProps {
@@ -10,13 +11,13 @@ interface AgentIconProps {
 
 function AgentIcon({ agentId, size = 20 }: AgentIconProps) {
   const icons = {
-    aliethia: '🧠',
-    ep: '💳',
-    navigator: '🧭',
-    sentinel: '🛡️',
+    aliethia: <Brain className={`w-${size} h-${size}`} />,
+    ep: <CreditCard className={`w-${size} h-${size}`} />,
+    navigator: <Navigation className={`w-${size} h-${size}`} />,
+    sentinel: <Shield className={`w-${size} h-${size}`} />,
   };
   
-  return <span style={{ fontSize: size }}>{icons[agentId as keyof typeof icons] || '📊'}</span>;
+  return icons[agentId as keyof typeof icons] || <Activity className={`w-${size} h-${size}`} />;
 }
 
 function AgentPulseDisplay({ pulse }: { pulse: AgentPulse }) {
@@ -27,14 +28,14 @@ function AgentPulseDisplay({ pulse }: { pulse: AgentPulse }) {
   };
   
   const statusIcons = {
-    green: '✅',
-    amber: '⚠️',
-    red: '❌',
+    green: <CheckCircle className="w-4 h-4" />,
+    amber: <AlertTriangle className="w-4 h-4" />,
+    red: <XCircle className="w-4 h-4" />,
   };
 
   return (
     <div className="flex items-center gap-3 p-3 bg-zinc-900/40 rounded-lg border border-zinc-800">
-      <div className={`${statusColors[pulse.status]} text-xl`}>
+      <div className={`${statusColors[pulse.status]}`}>
         {statusIcons[pulse.status]}
       </div>
       <div className="flex-1">
@@ -127,7 +128,7 @@ export default function AgentConsensusDashboard() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-medium flex items-center gap-2">
-            <span className="text-purple-400 text-xl">⚡</span>
+            <Zap className="w-5 h-5 text-purple-400" />
             Agent Consensus Dashboard
           </h2>
           <p className="text-sm text-zinc-400">
