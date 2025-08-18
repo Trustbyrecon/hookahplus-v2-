@@ -4,6 +4,7 @@ publish = ".next"
 
 [build.environment]
 NODE_VERSION = "20.19.0"
+NPM_FLAGS = "--legacy-peer-deps"
 
 # Production environment
 [context.production.environment]
@@ -37,6 +38,9 @@ TRUSTLOCK_SECRET = "your_staging_trustlock_secret_here"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
+
+[plugins."@netlify/plugin-nextjs"]
+enableTypeScript = true
 
 [[redirects]]
 from = "/demo"
