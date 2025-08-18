@@ -246,27 +246,34 @@ let _agentConsensus: AgentConsensus | null = null;
 export function getAgentConsensus(): AgentConsensus {
   if (typeof window === 'undefined') {
     // Server-side: return a mock instance
-    return {
-      getState: () => ({
-        agents: {
-          aliethia: { agentId: 'aliethia', status: 'amber', message: 'Server-side', timestamp: Date.now() },
-          ep: { agentId: 'ep', status: 'amber', message: 'Server-side', timestamp: Date.now() },
-          navigator: { agentId: 'navigator', status: 'amber', message: 'Server-side', timestamp: Date.now() },
-          sentinel: { agentId: 'sentinel', status: 'amber', message: 'Server-side', timestamp: Date.now() },
-        },
-        consensus: false,
-        reflexScore: { score: 75, confirmedOrders: 0, returningCustomers: 0, anomalyFlags: 0, trustLockUptime: 0, lastUpdate: Date.now() },
-        lastCycle: Date.now(),
-        cycleCount: 0,
-      }),
-      subscribe: () => () => {},
-      aliethiaPulse: () => {},
-      epPulse: () => {},
-      navigatorPulse: () => {},
-      sentinelPulse: () => {},
-      triggerOrder: () => {},
-      destroy: () => {},
-    } as AgentConsensus;
+    class MockAgentConsensus extends AgentConsensus {
+      constructor() {
+        super();
+        // Override the state with mock data
+        this.state = {
+          agents: {
+            aliethia: { agentId: 'aliethia', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+            ep: { agentId: 'ep', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+            navigator: { agentId: 'navigator', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+            sentinel: { agentId: 'sentinel', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+          },
+          consensus: false,
+          reflexScore: { score: 75, confirmedOrders: 0, returningCustomers: 0, anomalyFlags: 0, trustLockUptime: 0, lastUpdate: Date.now() },
+          lastCycle: Date.now(),
+          cycleCount: 0,
+        };
+      }
+      
+      // Override methods to be no-ops for server-side
+      public aliethiaPulse() {}
+      public epPulse() {}
+      public navigatorPulse() {}
+      public sentinelPulse() {}
+      public triggerOrder() {}
+      public destroy() {}
+    }
+    
+    return new MockAgentConsensus();
   }
   
   if (!_agentConsensus) {
