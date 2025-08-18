@@ -35,7 +35,7 @@ export interface ConsensusState {
 export class AgentConsensus {
   private state: ConsensusState;
   private listeners: Set<(state: ConsensusState) => void> = new Set();
-  private cycleInterval: number | null = null;
+  private cycleInterval: any = null;
   private readonly CYCLE_DURATION = 5000; // 5 second operational cycles
   private readonly CONSENSUS_THRESHOLD = 3; // ≥3 green pulses required
 
