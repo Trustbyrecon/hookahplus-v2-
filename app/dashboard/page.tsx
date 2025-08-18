@@ -1,8 +1,8 @@
 // app/dashboard/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { getTopFlavors, getReturningCustomers, listOrders, getTotalRevenue, getPaidOrderCount, getPendingOrderCount } from "@/lib/orders";
-import AdminNavHeader from "@/components/AdminNavHeader";
+import { getTopFlavors, getReturningCustomers, listOrders, getTotalRevenue, getPaidOrderCount, getPendingOrderCount } from "../../lib/orders";
+import AdminNavHeader from "../../components/AdminNavHeader";
 
 type Order = {
   id: string;

@@ -1,9 +1,9 @@
 // app/sessions/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import CustomerProfileManager from "@/components/CustomerProfileManager";
-import LoungeLayout from "@/components/LoungeLayout";
-import ConnectorPartnershipManager from "@/components/ConnectorPartnershipManager";
+import CustomerProfileManager from "../../components/CustomerProfileManager";
+import LoungeLayout from "../../components/LoungeLayout";
+import ConnectorPartnershipManager from "../../components/ConnectorPartnershipManager";
 
 type Session = {
   id: string;
