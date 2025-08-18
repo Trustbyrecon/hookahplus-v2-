@@ -56,8 +56,8 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/checkout?success=1&order=${orderId}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/checkout?canceled=1&order=${orderId}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout?success=1&order=${orderId}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout?canceled=1&order=${orderId}`,
       line_items: [
         { price_data: { currency: "usd", product_data: { name: `Hookah Session — ${flavor}` }, unit_amount: amount }, quantity: 1 },
       ],
