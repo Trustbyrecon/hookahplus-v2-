@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Activity, Shield, CreditCard, Navigation, Brain, Zap, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
-import { agentConsensus, ConsensusState, AgentPulse } from '../lib/agentConsensus';
+import agentConsensus, { ConsensusState, AgentPulse } from '../lib/agentConsensus';
 
 interface AgentIconProps {
   agentId: string;
