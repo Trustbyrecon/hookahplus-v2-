@@ -2,6 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { getTopFlavors, getReturningCustomers } from "@/lib/orders";
+import AdminNavHeader from "@/components/AdminNavHeader";
 
 type Order = {
   id: string;
@@ -94,16 +95,18 @@ export default function Dashboard() {
   const pendingOrders = orders.filter(o => o.status === 'created').length;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
+      <AdminNavHeader />
+      <div className="p-8">
+        <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl md:text-4xl font-bold text-teal-400">Lounge Dashboard</h1>
           <div className="flex items-center gap-4">
             <a
-              href="/reflex-monitoring"
+              href="/admin"
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
-              🧠 Reflex Monitoring
+              ⚙️ Admin Control
             </a>
             <a
               href="/sessions"
@@ -336,59 +339,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Profit Margin Analysis */}
-        <div className="bg-zinc-900 border border-green-500 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-green-300 mb-4">💰 Profit Margin Analysis</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <h4 className="text-md font-medium text-green-200 mb-3">Base Revenue</h4>
-              <div className="text-2xl font-bold text-green-400">
-                ${(orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.baseRate || o.amount), 0) / 100).toFixed(2)}
-              </div>
-              <div className="text-zinc-400 text-sm">from session fees</div>
-            </div>
-            <div className="text-center">
-              <h4 className="text-md font-medium text-blue-200 mb-3">Add-on Revenue</h4>
-              <div className="text-2xl font-bold text-blue-400">
-                ${(orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 100).toFixed(2)}
-              </div>
-              <div className="text-zinc-400 text-sm">from flavor upgrades</div>
-            </div>
-            <div className="text-center">
-              <h4 className="text-md font-medium text-purple-200 mb-3">Total Revenue</h4>
-              <div className="text-2xl font-bold text-purple-400">
-                ${totalRevenue.toFixed(2)}
-              </div>
-              <div className="text-zinc-400 text-sm">combined earnings</div>
-            </div>
-          </div>
-          
-          {/* Profit Margin Insights */}
-          <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg">
-            <h4 className="text-md font-medium text-yellow-200 mb-3">💡 Transparency Insights</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-zinc-300 mb-2">Session Management:</div>
-                <div className="text-zinc-400">
-                  • Active sessions: {orders.filter(o => o.coalStatus === 'active').length}<br/>
-                  • Need refill: {orders.filter(o => o.coalStatus === 'needs_refill').length}<br/>
-                  • Burnt out: {orders.filter(o => o.coalStatus === 'burnt_out').length}
-                </div>
-              </div>
-              <div>
-                <div className="text-zinc-300 mb-2">Revenue Optimization:</div>
-                <div className="text-zinc-400">
-                  • Add-on rate: {orders.filter(o => o.addOnRate && o.addOnRate > 0).length} orders<br/>
-                  • Avg add-on: ${orders.filter(o => o.addOnRate && o.addOnRate > 0).length > 0 ? 
-                    (orders.filter(o => o.addOnRate && o.addOnRate > 0).reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 
-                     orders.filter(o => o.addOnRate && o.addOnRate > 0).length / 100).toFixed(2) : '0.00'}<br/>
-                  • Profit margin: {totalRevenue > 0 ? 
-                    ((orders.filter(o => o.addOnRate && o.addOnRate > 0).reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 100) / totalRevenue * 100).toFixed(1) : '0'}%
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         {/* Reflex Agent Status */}
         <div className="bg-zinc-900 border border-teal-500 rounded-lg p-6">
@@ -411,6 +362,13 @@ export default function Dashboard() {
               <div className="text-sm text-zinc-400">Aliethia (Memory)</div>
             </div>
           </div>
+          <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg border border-teal-500/50">
+            <p className="text-sm text-zinc-400 text-center">
+              💡 For detailed monitoring, analytics, and MVP controls, visit the{' '}
+              <a href="/admin" className="text-teal-400 hover:text-teal-300 underline">Admin Control Center</a>
+            </p>
+          </div>
+        </div>
         </div>
       </div>
     </main>
