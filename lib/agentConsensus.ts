@@ -33,7 +33,7 @@ export interface ConsensusState {
 }
 
 export class AgentConsensus {
-  private state: ConsensusState;
+  protected state: ConsensusState;
   private listeners: Set<(state: ConsensusState) => void> = new Set();
   private cycleInterval: any = null;
   private readonly CYCLE_DURATION = 5000; // 5 second operational cycles
