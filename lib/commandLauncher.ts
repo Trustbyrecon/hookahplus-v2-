@@ -4,7 +4,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { agentConsensus } from './agentConsensus';
+import agentConsensus from './agentConsensus';
 
 const execAsync = promisify(exec);
 
