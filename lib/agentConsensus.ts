@@ -35,13 +35,16 @@ export interface ConsensusState {
 export class AgentConsensus {
   private state: ConsensusState;
   private listeners: Set<(state: ConsensusState) => void> = new Set();
-  private cycleInterval: NodeJS.Timeout | null = null;
+  private cycleInterval: number | null = null;
   private readonly CYCLE_DURATION = 5000; // 5 second operational cycles
   private readonly CONSENSUS_THRESHOLD = 3; // ≥3 green pulses required
 
   constructor() {
     this.state = this.initializeState();
-    this.startOperationalCycle();
+    // Only start operational cycle on client side
+    if (typeof window !== 'undefined') {
+      this.startOperationalCycle();
+    }
   }
 
   private initializeState(): ConsensusState {
@@ -237,8 +240,41 @@ export class AgentConsensus {
   }
 }
 
-// Global instance
-export const agentConsensus = new AgentConsensus();
+// Global instance - lazy initialization for browser safety
+let _agentConsensus: AgentConsensus | null = null;
 
-// Export for use in components
+export function getAgentConsensus(): AgentConsensus {
+  if (typeof window === 'undefined') {
+    // Server-side: return a mock instance
+    return {
+      getState: () => ({
+        agents: {
+          aliethia: { agentId: 'aliethia', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+          ep: { agentId: 'ep', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+          navigator: { agentId: 'navigator', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+          sentinel: { agentId: 'sentinel', status: 'amber', message: 'Server-side', timestamp: Date.now() },
+        },
+        consensus: false,
+        reflexScore: { score: 75, confirmedOrders: 0, returningCustomers: 0, anomalyFlags: 0, trustLockUptime: 0, lastUpdate: Date.now() },
+        lastCycle: Date.now(),
+        cycleCount: 0,
+      }),
+      subscribe: () => () => {},
+      aliethiaPulse: () => {},
+      epPulse: () => {},
+      navigatorPulse: () => {},
+      sentinelPulse: () => {},
+      triggerOrder: () => {},
+      destroy: () => {},
+    } as AgentConsensus;
+  }
+  
+  if (!_agentConsensus) {
+    _agentConsensus = new AgentConsensus();
+  }
+  
+  return _agentConsensus;
+}
+
+export const agentConsensus = getAgentConsensus();
 export default agentConsensus;

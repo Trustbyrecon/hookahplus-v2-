@@ -31,7 +31,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import AgentConsensusDashboard from "@/components/AgentConsensusDashboard";
+
 
 // -----------------------------------------------------------------------------
 // Admin Control Center — Hookah+ (Agent-Ready v0.4)
@@ -146,10 +146,16 @@ export default function AdminControlCenter() {
   const { rows, totals } = useMarginTable(margins);
 
   const intervalRef = useRef<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Initial load
   useEffect(() => {
-    refreshAll();
+    try {
+      refreshAll();
+    } catch (err) {
+      console.error('Error in initial load:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lounge, range]);
 
@@ -253,6 +259,24 @@ export default function AdminControlCenter() {
       "admin.mvp.status": fetchConsensus,
     };
   }, [env, lounge, range]);
+
+  // Error boundary
+  if (error) {
+    return (
+      <div className="min-h-screen w-full bg-black text-zinc-100 p-6">
+        <div className="max-w-2xl mx-auto text-center space-y-4">
+          <h1 className="text-2xl font-bold text-red-400">⚠️ Admin Control Center Error</h1>
+          <p className="text-zinc-400">{error}</p>
+          <button 
+            onClick={() => setError(null)} 
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-black text-zinc-100 p-6 space-y-6">
@@ -542,7 +566,14 @@ export default function AdminControlCenter() {
       {/* AGENT CONSENSUS */}
       {activeTab === 'agents' && (
         <div className="space-y-4">
-          <AgentConsensusDashboard />
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6">
+            <h2 className="text-lg font-medium mb-4">Agent Consensus System</h2>
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">⚡</div>
+              <p className="text-zinc-400 mb-4">Agent Consensus Dashboard</p>
+              <p className="text-sm text-zinc-500">Real-time agent coordination and Reflex Score monitoring</p>
+            </div>
+          </div>
         </div>
       )}
 
