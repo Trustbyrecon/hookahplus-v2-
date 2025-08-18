@@ -15,7 +15,7 @@ type Order = {
   // Enhanced fields for session management
   sessionStartTime?: number;
   sessionDuration?: number;
-  coalStatus?: "active" | "needs_refill" | "burnt_out";
+  coalStatus?: "active" | "needs_refill" | "burnt_out" | "paused";
   addOnFlavors?: string[];
   baseRate?: number;
   addOnRate?: number;
@@ -219,6 +219,8 @@ export default function Dashboard() {
         return { color: 'text-yellow-400', icon: '⚠️', label: 'Needs Refill' };
       case 'burnt_out':
         return { color: 'text-red-400', icon: '💀', label: 'Burnt Out' };
+      case 'paused':
+        return { color: 'text-blue-400', icon: '⏸️', label: 'Paused' };
       default:
         return { color: 'text-gray-400', icon: '❓', label: 'N/A' };
     }
