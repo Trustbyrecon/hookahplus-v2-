@@ -43,23 +43,23 @@ export default function LandingPage() {
             </p>
             
             {/* Primary CTA */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-                                         <Link
-                             href="/owner-cta?form=preorder"
-                             className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl"
-                           >
-                             🚀 Start Preorders
-                           </Link>
-                           <Link
-                             href="/demo-video"
-                             className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-xl text-xl font-medium transition-colors border border-zinc-600"
-                           >
-                             🎯 See Demo
-                           </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
+              <Link
+                href="/owner-cta?form=preorder"
+                className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl"
+              >
+                🚀 Start Preorders
+              </Link>
+              <Link
+                href="/demo-video"
+                className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-xl text-xl font-medium transition-colors border border-zinc-600"
+              >
+                🎯 See Demo
+              </Link>
             </div>
 
             {/* Trust Indicators */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-8">
               <div className="text-center">
                 <div className="text-4xl mb-3">🤖</div>
                 <h3 className="text-lg font-semibold text-teal-300 mb-2">AI-Powered</h3>
@@ -81,9 +81,9 @@ export default function LandingPage() {
       </div>
 
       {/* Features Preview */}
-      <div className="py-24 bg-zinc-900/50">
+      <div className="py-32 bg-zinc-900/50">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-20">
             Why Lounge Owners Choose Hookah+
           </h2>
           
