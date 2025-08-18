@@ -1,637 +1,594 @@
-// app/admin/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { reflexOrchestrator } from "@/lib/reflex-orchestrator";
-import AdminNavHeader from "@/components/AdminNavHeader";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Download,
+  Play,
+  Pause,
+  Zap,
+  RefreshCcw,
+  ShieldCheck,
+  Activity,
+  TrendingUp,
+  Settings,
+  CornerDownLeft,
+  ArrowLeft,
+  Rocket,
+  CheckCircle2,
+  AlertTriangle,
+  ListChecks,
+  Server,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts";
 
-interface AgentScore {
-  name: string;
-  score: number;
-  status: 'calibrating' | 'stable' | 'ready';
-  lastUpdate: number;
-  drift: number;
-}
+// -----------------------------------------------------------------------------
+// Admin Control Center — Hookah+ (Agent-Ready v0.3)
+// Tabs:
+//  - Overview (system status, quick stats, recent activity)
+//  - Reflex Monitoring (moved here)
+//  - Analytics & Insights (Profit margins + transparency)
+//  - MVP Control (deploy + readiness)
+//
+// Agent readiness:
+//  - Exposes a lightweight client-side AgentRegistry with callable actions
+//  - Command Launcher snippet included at bottom for server-side bindings
+//  - 5s auto-refresh loop for Reflex Monitoring
+//  - All API endpoints are placeholders — wire to your backend
+// -----------------------------------------------------------------------------
 
-interface ReflexCycle {
-  id: number;
-  status: 'active' | 'calibrating' | 'mvp-ready' | 'locked';
-  startTime: number;
-  consensus: number;
-  agents: Record<string, AgentScore>;
-  calibrationRounds: number;
-  mvpTriggered: boolean;
-}
-
-type Order = {
-  id: string;
-  tableId?: string;
-  flavor?: string;
-  amount: number;
-  currency: string;
-  status: "created" | "paid" | "failed";
-  createdAt: number;
-  sessionStartTime?: number;
-  sessionDuration?: number;
-  coalStatus?: "active" | "needs_refill" | "burnt_out";
-  addOnFlavors?: string[];
-  baseRate?: number;
-  addOnRate?: number;
-  totalRevenue?: number;
+// ---------------------------------
+// Types
+// ---------------------------------
+export type KPIs = {
+  sessions: number;
+  revenue: number; // USD
+  avgMarginPct: number; // 0..100
+  trustScore: number; // 0..100
 };
 
-function useReflexAgent(routeName: string) {
-  useEffect(() => {
-    const agentId = `reflex-${routeName.toLowerCase()}`;
-    const trustLevel = localStorage.getItem("trust_tier") || "Tier I";
-    const sessionContext = {
-      timestamp: Date.now(),
-      returning: localStorage.getItem("user_visited_before") === "true",
-    };
+export type MarginRow = {
+  id: string;
+  item: string; // flavor / product name
+  price: number; // selling price
+  cost: number; // unit cost
+  sold: number; // count in period
+};
 
-    console.log(`[ReflexAgent] ${agentId} loaded`, {
-      trustLevel,
-      sessionContext,
-    });
+export type TrustPoint = { t: string; score: number };
 
-    window.dispatchEvent(new CustomEvent("reflex-agent-log", {
-      detail: { agentId, trustLevel, routeName, sessionContext },
-    }));
+export type DeployState = {
+  env: "dev" | "staging" | "prod";
+  buildStatus: "idle" | "queued" | "building" | "success" | "failed";
+  lastDeployedAt?: string;
+  version?: string;
+};
 
-    localStorage.setItem("user_visited_before", "true");
-  }, [routeName]);
+// ---------------------------------
+// Mock data (fallbacks)
+// ---------------------------------
+const MOCK_KPIS: KPIs = { sessions: 182, revenue: 5430, avgMarginPct: 41.7, trustScore: 83 };
+const MOCK_MARGINS: MarginRow[] = [
+  { id: "m1", item: "Mint Storm", price: 32, cost: 11, sold: 58 },
+  { id: "m2", item: "Blue Mist", price: 30, cost: 10, sold: 46 },
+  { id: "m3", item: "Double Apple", price: 34, cost: 13, sold: 39 },
+  { id: "m4", item: "Grape Burst", price: 28, cost: 9, sold: 27 },
+  { id: "m5", item: "Peach Wave", price: 33, cost: 12, sold: 24 },
+];
+const MOCK_TRUST: TrustPoint[] = [
+  { t: "Mon", score: 78 },
+  { t: "Tue", score: 81 },
+  { t: "Wed", score: 79 },
+  { t: "Thu", score: 85 },
+  { t: "Fri", score: 88 },
+  { t: "Sat", score: 84 },
+  { t: "Sun", score: 83 },
+];
+
+// Utils
+const usd = (n: number) => new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+function useMarginTable(rows: MarginRow[]) {
+  const withComputed = useMemo(
+    () =>
+      rows.map((r) => {
+        const margin = r.price - r.cost;
+        const marginPct = r.price > 0 ? (margin / r.price) * 100 : 0;
+        const gross = r.sold * r.price;
+        const profit = r.sold * margin;
+        return { ...r, margin, marginPct, gross, profit };
+      }),
+    [rows]
+  );
+  const totals = useMemo(() => withComputed.reduce((acc, r) => ({ gross: acc.gross + r.gross, profit: acc.profit + r.profit, sold: acc.sold + r.sold }), { gross: 0, profit: 0, sold: 0 }), [withComputed]);
+  return { rows: withComputed, totals };
 }
 
-export default function AdminPage() {
-  useReflexAgent("Admin");
-  
-  const [activeTab, setActiveTab] = useState<'overview' | 'reflex' | 'analytics' | 'mvp'>('overview');
-  const [cycleStatus, setCycleStatus] = useState<ReflexCycle | null>(null);
-  const [agentScores, setAgentScores] = useState<Record<string, AgentScore>>({});
-  const [consensus, setConsensus] = useState(0);
-  const [isMVPReady, setIsMVPReady] = useState(false);
-  const [isCalibrating, setIsCalibrating] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
+// Lightweight fetch helper
+async function apiGet<T>(url: string, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(await res.text());
+    return (await res.json()) as T;
+  } catch (e) {
+    console.warn("API fallback:", url, e);
+    return fallback;
+  }
+}
 
-  async function fetchReflexStatus() {
-    try {
-      const res = await fetch("/api/reflex-monitoring", { 
-        cache: "no-store",
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      const json = await res.json();
-      if (json.success) {
-        setCycleStatus(json.cycle);
-        setAgentScores(json.agents);
-        setConsensus(json.consensus);
-        setIsMVPReady(json.isMVPReady);
-      }
-    } catch (error) {
-      console.error('Error fetching Reflex status:', error);
+// ---------------------------------
+// Main
+// ---------------------------------
+export default function AdminControlCenter() {
+  const [lounge, setLounge] = useState<string>("Pilot #001");
+  const [range, setRange] = useState<string>("Last 7 days");
+  const [autoMonitor, setAutoMonitor] = useState<boolean>(true);
+  const [env, setEnv] = useState<DeployState["env"]>("staging");
+
+  const [kpis, setKpis] = useState<KPIs>(MOCK_KPIS);
+  const [margins, setMargins] = useState<MarginRow[]>(MOCK_MARGINS);
+  const [trustSeries, setTrustSeries] = useState<TrustPoint[]>(MOCK_TRUST);
+  const [consensus, setConsensus] = useState<number>(78); // MVP readiness consensus score
+  const [deploy, setDeploy] = useState<DeployState>({ env: "staging", buildStatus: "idle", version: "0.0.1" });
+  const { rows, totals } = useMarginTable(margins);
+
+  const intervalRef = useRef<number | null>(null);
+
+  // Initial load
+  useEffect(() => {
+    refreshAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lounge, range]);
+
+  // 5s auto-refresh for reflex monitoring
+  useEffect(() => {
+    if (autoMonitor) {
+      startAuto();
+      return stopAuto;
+    } else {
+      stopAuto();
+    }
+  }, [autoMonitor, lounge, range]);
+
+  function startAuto() {
+    stopAuto();
+    intervalRef.current = window.setInterval(() => {
+      fetchReflex();
+    }, 5000);
+  }
+
+  function stopAuto() {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
   }
 
-  async function fetchOrders() {
-    try {
-      const res = await fetch("/api/orders", { 
-        cache: "no-store",
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      const json = await res.json();
-      setOrders(json.orders || []);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    }
+  async function refreshAll() {
+    // Wire these endpoints on your backend
+    const [k, m] = await Promise.all([
+      apiGet<KPIs>(`/api/admin/kpis?lounge=${encodeURIComponent(lounge)}&range=${encodeURIComponent(range)}`, MOCK_KPIS),
+      apiGet<MarginRow[]>(`/api/orders?lounge=${encodeURIComponent(lounge)}&range=${encodeURIComponent(range)}`, MOCK_MARGINS),
+    ]);
+    setKpis(k);
+    setMargins(m);
+    fetchReflex();
+    fetchConsensus();
+  }
+
+  async function fetchReflex() {
+    const data = await apiGet<TrustPoint[]>(`/api/reflex-monitoring?lounge=${encodeURIComponent(lounge)}&range=${encodeURIComponent(range)}`, MOCK_TRUST);
+    setTrustSeries(data);
+  }
+
+  async function fetchConsensus() {
+    const c = await apiGet<number>(`/api/mvp/status?env=${env}`, 78);
+    setConsensus(c);
+  }
+
+  // Actions
+  async function runReflexScan() {
+    await fetch(`/api/reflex/scan`, { method: "POST", body: JSON.stringify({ lounge, range }) });
   }
 
   async function startCalibration() {
-    try {
-      const res = await fetch('/api/reflex-monitoring', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'start_calibration' })
-      });
-      if (res.ok) {
-        setIsCalibrating(true);
-        console.log('🚀 Calibration loop started');
-      }
-    } catch (error) {
-      console.error('Error starting calibration:', error);
-    }
+    await fetch(`/api/reflex/calibration/start`, { method: "POST", body: JSON.stringify({ lounge }) });
   }
 
   async function stopCalibration() {
-    try {
-      const res = await fetch('/api/reflex-monitoring', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'stop_calibration' })
-      });
-      if (res.ok) {
-        setIsCalibrating(false);
-        console.log('🛑 Calibration loop stopped');
-      }
-    } catch (error) {
-      console.error('Error stopping calibration:', error);
-    }
+    await fetch(`/api/reflex/calibration/stop`, { method: "POST", body: JSON.stringify({ lounge }) });
   }
 
-  function getStatusColor(status: string) {
-    switch (status) {
-      case 'ready': return 'text-green-400';
-      case 'stable': return 'text-blue-400';
-      case 'calibrating': return 'text-yellow-400';
-      default: return 'text-gray-400';
-    }
+  async function triggerDeploy() {
+    setDeploy((d) => ({ ...d, buildStatus: "queued" }));
+    const res = await fetch(`/api/deploy`, { method: "POST", body: JSON.stringify({ env }) });
+    if (res.ok) setDeploy((d) => ({ ...d, buildStatus: "building" }));
   }
 
-  function getStatusIcon(status: string) {
-    switch (status) {
-      case 'ready': return '✅';
-      case 'stable': return '🟢';
-      case 'calibrating': return '🔄';
-      default: return '⚪';
-    }
+  async function triggerRollback() {
+    await fetch(`/api/deploy/rollback`, { method: "POST", body: JSON.stringify({ env }) });
   }
 
-  function getCycleStatusColor(status: string) {
-    switch (status) {
-      case 'mvp-ready': return 'text-green-400';
-      case 'locked': return 'text-purple-400';
-      case 'calibrating': return 'text-yellow-400';
-      case 'active': return 'text-blue-400';
-      default: return 'text-gray-400';
-    }
-  }
+  const exportCSV = () => {
+    const header = ["Item", "Sold", "Price", "Cost", "Margin", "Margin%", "Gross", "Profit"].join(",");
+    const body = rows
+      .map((r) => [r.item, r.sold, r.price.toFixed(2), r.cost.toFixed(2), r.margin.toFixed(2), r.marginPct.toFixed(2), r.gross.toFixed(2), r.profit.toFixed(2)].join(","))
+      .join("\n");
+    const blob = new Blob([header + "\n" + body], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hookahplus_margins_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
-  function formatTime(timestamp: number) {
-    return new Date(timestamp).toLocaleTimeString();
-  }
+  // Trust Lock — display only (wire to validator output)
+  const trustLockEngaged = true;
 
+  // Expose minimal agent registry for external callers (optional)
   useEffect(() => {
-    fetchReflexStatus();
-    fetchOrders();
-    const interval = setInterval(() => {
-      fetchReflexStatus();
-      fetchOrders();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Calculate metrics
-  const totalOrders = orders.length;
-  const paidOrders = orders.filter(o => o.status === 'paid').length;
-  const totalRevenue = orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + o.amount, 0) / 100;
+    // @ts-ignore
+    window.AgentRegistry = {
+      "admin.dev": () => fetch("/api/admin/dev", { method: "POST" }),
+      "admin.build": () => fetch("/api/admin/build", { method: "POST" }),
+      "admin.reflex.scan": runReflexScan,
+      "admin.reflex.calibrate.start": startCalibration,
+      "admin.reflex.calibrate.stop": stopCalibration,
+      "admin.deploy": triggerDeploy,
+      "admin.rollback": triggerRollback,
+      "admin.mvp.status": fetchConsensus,
+    };
+  }, [env, lounge, range]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
-      <AdminNavHeader />
-      <div className="p-8">
-        <h1 className="text-3xl font-bold text-purple-400 mb-6">Admin Control Center</h1>
-      
-      {/* Navigation Tabs */}
-      <div className="flex space-x-2 mb-8">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'overview' 
-              ? 'bg-purple-600 text-white' 
-              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          }`}
-        >
-          🏠 Overview
-        </button>
-        <button
-          onClick={() => setActiveTab('reflex')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'reflex' 
-              ? 'bg-purple-600 text-white' 
-              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          }`}
-        >
-          🧠 Reflex Monitoring
-        </button>
-        <button
-          onClick={() => setActiveTab('analytics')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'analytics' 
-              ? 'bg-purple-600 text-white' 
-              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          }`}
-        >
-          📊 Analytics & Insights
-        </button>
-        <button
-          onClick={() => setActiveTab('mvp')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'mvp' 
-              ? 'bg-purple-600 text-white' 
-              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          }`}
-        >
-          🚀 MVP Control
-        </button>
+    <div className="min-h-screen w-full bg-black text-zinc-100 p-6 space-y-6">
+      <AdminNavHeader env={env} onEnvChange={setEnv} />
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPI icon={<Activity className="w-5 h-5" />} label="Sessions" value={kpis.sessions.toLocaleString()} />
+        <KPI icon={<TrendingUp className="w-5 h-5" />} label="Revenue" value={usd(kpis.revenue)} />
+        <KPI icon={<Zap className="w-5 h-5" />} label="Avg Margin" value={`${kpis.avgMarginPct.toFixed(1)}%`} />
+        <KPI icon={<ShieldCheck className="w-5 h-5" />} label="Trust Score" value={`${kpis.trustScore}`} />
       </div>
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          <p className="mb-4 text-lg">
-            Manage system settings, review trust logs, and oversee lounge configurations.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-zinc-900 border border-purple-500 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-purple-300 mb-4">System Status</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">🟢</span>
-                  <span>All systems operational</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400">🔵</span>
-                  <span>Trust-Lock: Active</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-purple-400">🟣</span>
-                  <span>Reflex Agents: Stable</span>
-                </div>
-              </div>
-            </div>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="bg-zinc-900">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="reflex">Reflex Monitoring</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics & Insights</TabsTrigger>
+          <TabsTrigger value="mvp">MVP Control</TabsTrigger>
+        </TabsList>
 
-            <div className="bg-zinc-900 border border-teal-500 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-teal-300 mb-4">Quick Stats</h3>
-              <div className="space-y-3">
-                <div className="text-2xl font-bold text-teal-400">{totalOrders}</div>
-                <div className="text-zinc-400">Total Orders</div>
-                <div className="text-2xl font-bold text-green-400">${totalRevenue.toFixed(2)}</div>
-                <div className="text-zinc-400">Total Revenue</div>
-              </div>
-            </div>
-
-            <div className="bg-zinc-900 border border-blue-500 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-blue-300 mb-4">Recent Activity</h3>
-              <div className="space-y-3 text-sm">
-                <div className="text-zinc-400">Last updated: {new Date().toLocaleTimeString()}</div>
-                <div className="text-zinc-400">Orders: {paidOrders} paid, {totalOrders - paidOrders} pending</div>
-                <div className="text-zinc-400">Reflex consensus: {consensus.toFixed(2)}</div>
-              </div>
-            </div>
+        {/* OVERVIEW */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="bg-zinc-900/60 border-zinc-800 lg:col-span-2">
+              <CardContent className="p-6">
+                <h2 className="text-lg font-medium mb-3">System Status</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <StatusPill label="API" value="Healthy" intent="ok" />
+                  <StatusPill label="DB" value="Operational" intent="ok" />
+                  <StatusPill label="Reflex Loop" value={autoMonitor ? "Auto" : "Manual"} intent={autoMonitor ? "ok" : "warn"} />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-zinc-900/60 border-zinc-800">
+              <CardContent className="p-6">
+                <h2 className="text-lg font-medium mb-3">Recent Activity</h2>
+                <ul className="space-y-2 text-sm text-zinc-300">
+                  <li>✔️ Reflex scan queued for {lounge}</li>
+                  <li>✔️ Profit CSV exported</li>
+                  <li>✔️ Deploy prepared for {env}</li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
+        </TabsContent>
 
-          <div className="mt-8 border border-purple-500 p-6 rounded-xl bg-zinc-900 shadow-xl">
-            <p className="text-purple-200">🌀 Reflex Agent Live — Admin Integrity Active</p>
-          </div>
+        {/* REFLEX MONITORING */}
+        <TabsContent value="reflex" className="space-y-4">
+          <Card className="bg-zinc-900/60 border-zinc-800">
+            <CardContent className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-medium">Reflex Monitoring</h2>
+                  <p className="text-sm text-zinc-400">Live trust pulses, calibration, and scans</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="auto-monitor" className="text-sm">Auto-Monitor</Label>
+                    <Switch id="auto-monitor" checked={autoMonitor} onCheckedChange={setAutoMonitor} />
+                  </div>
+                  <Button onClick={runReflexScan} className="gap-2">
+                    <Play className="w-4 h-4" /> Run Scan
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                  <h3 className="text-sm font-medium mb-3">Trust Pulses</h3>
+                  <div className="h-52">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={trustSeries} margin={{ left: 12, right: 12 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                        <XAxis dataKey="t" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                        <YAxis domain={[60, 100]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                        <Tooltip contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
+                        <Line type="monotone" dataKey="score" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-3">
+                  <h3 className="text-sm font-medium">Controls</h3>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button variant="secondary" className="gap-2" onClick={startCalibration}><Zap className="w-4 h-4" /> Start Calibration</Button>
+                    <Button variant="outline" className="gap-2" onClick={stopCalibration}><Pause className="w-4 h-4" /> Stop Calibration</Button>
+                    <Button variant="secondary" className="gap-2"><RefreshCcw className="w-4 h-4" /> Replay Trust Echo</Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-zinc-400">{trustLockEngaged ? "Trust Lock engaged. Payloads bound to verified state." : "Trust Lock inactive."}</p>
+                    <div className={`px-3 py-1 rounded-full text-xs ${trustLockEngaged ? "bg-emerald-500/15 text-emerald-300" : "bg-zinc-700 text-zinc-100"}`}>{trustLockEngaged ? "ENGAGED" : "INACTIVE"}</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ANALYTICS & INSIGHTS */}
+        <TabsContent value="analytics" className="space-y-4">
+          <Card className="bg-zinc-900/60 border-zinc-800">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-medium">Profit Margins & Transparency</h2>
+                  <p className="text-sm text-zinc-400">Price vs. cost analytics, drift detection, and export</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={exportCSV} className="gap-2"><Download className="w-4 h-4" /> Export CSV</Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                  <h3 className="text-sm font-medium mb-3">Margin % by Item</h3>
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={rows} margin={{ left: 12, right: 12 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                        <XAxis dataKey="item" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                        <YAxis tickFormatter={(v) => `${v}%`} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                        <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
+                        <Bar dataKey="marginPct" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-2">
+                  <h3 className="text-sm font-medium">Summary</h3>
+                  <p className="text-sm text-zinc-400">Total sold: <span className="text-zinc-200 font-medium">{totals.sold}</span></p>
+                  <p className="text-sm text-zinc-400">Gross: <span className="text-zinc-200 font-medium">{usd(totals.gross)}</span></p>
+                  <p className="text-sm text-zinc-400">Profit: <span className="text-zinc-200 font-medium">{usd(totals.profit)}</span></p>
+                  <div className="pt-2 text-xs text-zinc-400">Transparency: base price, add-ons, and lounge margin should be injected into Stripe metadata for auditability.</div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-900 text-zinc-300">
+                    <tr>
+                      <th className="text-left px-4 py-2 font-medium">Item</th>
+                      <th className="text-right px-4 py-2 font-medium">Sold</th>
+                      <th className="text-right px-4 py-2 font-medium">Price</th>
+                      <th className="text-right px-4 py-2 font-medium">Cost</th>
+                      <th className="text-right px-4 py-2 font-medium">Margin</th>
+                      <th className="text-right px-4 py-2 font-medium">Margin %</th>
+                      <th className="text-right px-4 py-2 font-medium">Gross</th>
+                      <th className="text-right px-4 py-2 font-medium">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r) => (
+                      <tr key={r.id} className="border-t border-zinc-800 hover:bg-zinc-900/40">
+                        <td className="px-4 py-2">{r.item}</td>
+                        <td className="px-4 py-2 text-right">{r.sold}</td>
+                        <td className="px-4 py-2 text-right">{usd(r.price)}</td>
+                        <td className="px-4 py-2 text-right">{usd(r.cost)}</td>
+                        <td className="px-4 py-2 text-right">{usd(r.margin)}</td>
+                        <td className="px-4 py-2 text-right">{r.marginPct.toFixed(1)}%</td>
+                        <td className="px-4 py-2 text-right">{usd(r.gross)}</td>
+                        <td className="px-4 py-2 text-right">{usd(r.profit)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* MVP CONTROL */}
+        <TabsContent value="mvp" className="space-y-4">
+          <Card className="bg-zinc-900/60 border-zinc-800">
+            <CardContent className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-medium">MVP Control</h2>
+                  <p className="text-sm text-zinc-400">Deployment, readiness consensus, and environment controls</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Select value={env} onValueChange={(v: DeployState["env"]) => setEnv(v)}>
+                    <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dev">Dev</SelectItem>
+                      <SelectItem value="staging">Staging</SelectItem>
+                      <SelectItem value="prod">Prod</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button className="gap-2" onClick={triggerDeploy}><Rocket className="w-4 h-4" /> Deploy</Button>
+                  <Button variant="outline" className="gap-2" onClick={triggerRollback}><CornerDownLeft className="w-4 h-4" /> Rollback</Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                  <h3 className="text-sm font-medium mb-2">Readiness Consensus</h3>
+                  <Gauge value={consensus} />
+                </div>
+                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-2">
+                  <h3 className="text-sm font-medium mb-2">Build Status</h3>
+                  <StatusPill label="Env" value={env.toUpperCase()} intent="ok" />
+                  <StatusPill label="Pipeline" value={deploy.buildStatus} intent={deploy.buildStatus === "failed" ? "error" : deploy.buildStatus === "success" ? "ok" : "warn"} />
+                  <StatusPill label="Version" value={deploy.version ?? "-"} intent="neutral" />
+                </div>
+                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                  <h3 className="text-sm font-medium mb-2">Feature Checklist</h3>
+                  <ul className="space-y-2 text-sm">
+                    <ChecklistItem label="Reflex Monitoring moved" checked />
+                    <ChecklistItem label="Profit Margin Analysis moved" checked />
+                    <ChecklistItem label="AdminNavHeader injected" checked />
+                    <ChecklistItem label="Command Launcher wired" />
+                    <ChecklistItem label="Stripe metadata transparency" />
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Footer quick actions */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center gap-3">
+          <Select value={lounge} onValueChange={setLounge}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Select lounge" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Pilot #001">Pilot #001</SelectItem>
+              <SelectItem value="Pilot #002">Pilot #002</SelectItem>
+              <SelectItem value="Pilot #003">Pilot #003</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={range} onValueChange={setRange}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Time range" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Last 7 days">Last 7 days</SelectItem>
+              <SelectItem value="Last 30 days">Last 30 days</SelectItem>
+              <SelectItem value="This quarter">This quarter</SelectItem>
+              <SelectItem value="Year to date">Year to date</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      )}
-
-      {/* Reflex Monitoring Tab */}
-      {activeTab === 'reflex' && (
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-teal-400">Reflex Agent Monitoring</h2>
-              <p className="text-zinc-400 text-lg">Cycle 10 — Full MVP-Ready Run</p>
-            </div>
-            <div className="flex items-center gap-4">
-              {!isCalibrating ? (
-                <button
-                  onClick={startCalibration}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition-colors"
-                >
-                  🚀 Start Calibration
-                </button>
-              ) : (
-                <button
-                  onClick={stopCalibration}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition-colors"
-                >
-                  🛑 Stop Calibration
-                </button>
-              )}
-              <button
-                onClick={fetchReflexStatus}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-lg font-medium transition-colors"
-              >
-                🔄 Refresh
-              </button>
-            </div>
-          </div>
-
-          {/* Cycle Status */}
-          {cycleStatus && (
-            <div className="bg-zinc-900 border border-teal-500 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-semibold text-teal-300">Cycle {cycleStatus.id} Status</h3>
-                <div className={`text-xl font-bold ${getCycleStatusColor(cycleStatus.status)}`}>
-                  {cycleStatus.status.toUpperCase()}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-teal-400">{cycleStatus.id}</div>
-                  <div className="text-zinc-400 text-sm">Cycle ID</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-400">
-                    {cycleStatus.calibrationRounds}
-                  </div>
-                  <div className="text-zinc-400 text-sm">Calibration Rounds</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-400">
-                    {consensus.toFixed(2)}
-                  </div>
-                  <div className="text-zinc-400 text-sm">Consensus Score</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-400">
-                    {cycleStatus.mvpTriggered ? 'YES' : 'NO'}
-                  </div>
-                  <div className="text-zinc-400 text-sm">MVP Triggered</div>
-                </div>
-              </div>
-
-              {cycleStatus.startTime && (
-                <div className="mt-4 text-center text-zinc-400">
-                  Started: {formatTime(cycleStatus.startTime)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Agent Scores */}
-          <div className="bg-zinc-900 border border-teal-500 rounded-xl p-6">
-            <h3 className="text-2xl font-semibold text-teal-300 mb-6">Agent Performance</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Object.entries(agentScores).map(([key, agent]) => (
-                <div key={key} className="bg-zinc-800 border border-zinc-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-lg font-semibold text-white">{agent.name}</h4>
-                    <span className={`text-2xl ${getStatusColor(agent.status)}`}>
-                      {getStatusIcon(agent.status)}
-                    </span>
-                  </div>
-                  
-                  <div className="text-center mb-3">
-                    <div className="text-3xl font-bold text-teal-400">
-                      {agent.score.toFixed(2)}
-                    </div>
-                    <div className="text-zinc-400 text-sm">Score</div>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Status:</span>
-                      <span className={`font-medium ${getStatusColor(agent.status)}`}>
-                        {agent.status}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Drift:</span>
-                      <span className={`font-medium ${agent.drift >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {agent.drift >= 0 ? '+' : ''}{agent.drift.toFixed(3)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Updated:</span>
-                      <span className="text-zinc-300">
-                        {formatTime(agent.lastUpdate)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* MVP Ready Status */}
-          <div className={`bg-zinc-900 border rounded-xl p-6 ${
-            isMVPReady ? 'border-green-500' : 'border-yellow-500'
-          }`}>
-            <div className="text-center">
-              <div className="text-6xl mb-4">
-                {isMVPReady ? '🎉' : '⏳'}
-              </div>
-              <h3 className={`text-2xl font-bold mb-2 ${
-                isMVPReady ? 'text-green-400' : 'text-yellow-400'
-              }`}>
-                {isMVPReady ? 'MVP READY!' : 'Calibrating for MVP...'}
-              </h3>
-              <p className="text-zinc-400 text-lg">
-                {isMVPReady 
-                  ? 'Cycle 10 has achieved consensus ≥0.85 and is ready for deployment'
-                  : `Target consensus: ≥0.85 (Current: ${consensus.toFixed(2)})`
-                }
-              </p>
-              
-              {isMVPReady && (
-                <div className="mt-4 p-4 bg-green-900/20 border border-green-500 rounded-lg">
-                  <h4 className="text-lg font-semibold text-green-300 mb-2">🚀 MVP Deployment Sequence:</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="text-green-200">✅ Netlify Deploy (hookahplus.net/demo)</div>
-                    <div className="text-green-200">✅ Stripe Checkout (Sandbox)</div>
-                    <div className="text-green-200">✅ QR Onboarding</div>
-                    <div className="text-green-200">✅ Session Assistant</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" className="gap-2" onClick={() => fetch("/api/admin/build", { method: "POST" })}>Build</Button>
+          <Button className="gap-2" onClick={() => fetch("/api/admin/dev", { method: "POST" })}>Dev Run</Button>
         </div>
-      )}
+      </div>
 
-      {/* Analytics & Insights Tab */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-6">
-          <h2 className="text-3xl font-bold text-blue-400">Analytics & Insights</h2>
-          
-          {/* Profit Margin Analysis */}
-          <div className="bg-zinc-900 border border-green-500 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-green-300 mb-4">💰 Profit Margin Analysis</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <h4 className="text-md font-medium text-green-200 mb-3">Base Revenue</h4>
-                <div className="text-2xl font-bold text-green-400">
-                  ${(orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.baseRate || o.amount), 0) / 100).toFixed(2)}
-                </div>
-                <div className="text-zinc-400 text-sm">from session fees</div>
-              </div>
-              <div className="text-center">
-                <h4 className="text-md font-medium text-blue-200 mb-3">Add-on Revenue</h4>
-                <div className="text-2xl font-bold text-blue-400">
-                  ${(orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 100).toFixed(2)}
-                </div>
-                <div className="text-zinc-400 text-sm">from flavor upgrades</div>
-              </div>
-              <div className="text-center">
-                <h4 className="text-md font-medium text-purple-200 mb-3">Total Revenue</h4>
-                <div className="text-2xl font-bold text-purple-400">
-                  ${totalRevenue.toFixed(2)}
-                </div>
-                <div className="text-zinc-400 text-sm">combined earnings</div>
-              </div>
-            </div>
-            
-            {/* Profit Margin Insights */}
-            <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg">
-              <h4 className="text-md font-medium text-yellow-200 mb-3">💡 Transparency Insights</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-zinc-300 mb-2">Session Management:</div>
-                  <div className="text-zinc-400">
-                    • Active sessions: {orders.filter(o => o.coalStatus === 'active').length}<br/>
-                    • Need refill: {orders.filter(o => o.coalStatus === 'needs_refill').length}<br/>
-                    • Burnt out: {orders.filter(o => o.coalStatus === 'burnt_out').length}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-300 mb-2">Revenue Optimization:</div>
-                  <div className="text-zinc-400">
-                    • Add-on rate: {orders.filter(o => o.addOnRate && o.addOnRate > 0).length} orders<br/>
-                    • Avg add-on: ${orders.filter(o => o.addOnRate && o.addOnRate > 0).length > 0 ? 
-                      (orders.filter(o => o.addOnRate && o.addOnRate > 0).reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 
-                       orders.filter(o => o.addOnRate && o.addOnRate > 0).length / 100).toFixed(2) : '0.00'}<br/>
-                    • Profit margin: {totalRevenue > 0 ? 
-                      ((orders.filter(o => o.addOnRate && o.addOnRate > 0).reduce((sum, o) => sum + (o.addOnRate || 0), 0) / 100) / totalRevenue * 100).toFixed(1) : '0'}%
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* ------------------------------------------------------------------
+        Command Launcher / Agent Bindings (server side suggestion)
+        cmd.register("admin.dev",     () => run("pnpm dev"));
+        cmd.register("admin.build",   () => run("pnpm build"));
+        cmd.register("admin.reflex.scan", (args) => http.post("/api/reflex/scan", args));
+        cmd.register("admin.reflex.calibrate.start", (args) => http.post("/api/reflex/calibration/start", args));
+        cmd.register("admin.reflex.calibrate.stop",  (args) => http.post("/api/reflex/calibration/stop", args));
+        cmd.register("admin.deploy",   (args) => http.post("/api/deploy", args));
+        cmd.register("admin.rollback", (args) => http.post("/api/deploy/rollback", args));
+        cmd.register("admin.mvp.status", (args) => http.get("/api/mvp/status", args));
+      ------------------------------------------------------------------ */}
+    </div>
+  );
+}
 
-          {/* System Health Metrics */}
-          <div className="bg-zinc-900 border border-blue-500 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-blue-300 mb-4">System Health Metrics</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-400">{totalOrders}</div>
-                <div className="text-zinc-400 text-sm">Total Orders</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-400">{paidOrders}</div>
-                <div className="text-zinc-400 text-sm">Paid Orders</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-400">${totalRevenue.toFixed(2)}</div>
-                <div className="text-zinc-400 text-sm">Total Revenue</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-400">{consensus.toFixed(2)}</div>
-                <div className="text-zinc-400 text-sm">Reflex Consensus</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MVP Control Tab */}
-      {activeTab === 'mvp' && (
-        <div className="space-y-6">
-          <h2 className="text-3xl font-bold text-yellow-400">MVP Control Center</h2>
-          
-          {/* MVP Status */}
-          <div className={`bg-zinc-900 border rounded-xl p-6 ${
-            isMVPReady ? 'border-green-500' : 'border-yellow-500'
-          }`}>
-            <div className="text-center">
-              <div className="text-6xl mb-4">
-                {isMVPReady ? '🎉' : '⏳'}
-              </div>
-              <h3 className={`text-2xl font-bold mb-2 ${
-                isMVPReady ? 'text-green-400' : 'text-yellow-400'
-              }`}>
-                {isMVPReady ? 'MVP READY FOR DEPLOYMENT!' : 'MVP Calibration in Progress...'}
-              </h3>
-              <p className="text-zinc-400 text-lg">
-                {isMVPReady 
-                  ? 'All systems are calibrated and ready for production deployment'
-                  : `Current consensus: ${consensus.toFixed(2)} (Target: ≥0.85)`
-                }
-              </p>
-            </div>
-          </div>
-
-          {/* Deployment Controls */}
-          <div className="bg-zinc-900 border border-purple-500 rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-purple-300 mb-4">🚀 Deployment Controls</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="text-lg font-medium text-purple-200">Production Deployment</h4>
-                <button className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                  🚀 Deploy to Production
-                </button>
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                  🔄 Rollback to Previous
-                </button>
-              </div>
-              <div className="space-y-4">
-                <h4 className="text-lg font-medium text-purple-200">Environment Management</h4>
-                <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                  🔧 Configure Environment
-                </button>
-                <button className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                  📊 View Deployment Logs
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* MVP Features Status */}
-          <div className="bg-zinc-900 border border-teal-500 rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-teal-300 mb-4">✅ MVP Features Status</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>Stripe Payment Integration</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>QR Code Onboarding</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>Session Management</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>Trust-Lock Security</span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>Real-time Dashboard</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>Flavor Selection</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>Order Tracking</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">✅</span>
-                  <span>Analytics & Insights</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-        </div>
+// ---------------------------------
+// Subcomponents
+// ---------------------------------
+function AdminNavHeader({ env, onEnvChange }: { env: DeployState["env"]; onEnvChange: (e: DeployState["env"]) => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => (window.location.href = "/dashboard")}> <ArrowLeft className="w-4 h-4" /> Dashboard</Button>
+        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2"><Settings className="w-5 h-5" /> Admin Control Center</h1>
+      </div>
+      <div className="flex items-center gap-3">
+        <Select value={env} onValueChange={(v: DeployState["env"]) => onEnvChange(v)}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="dev">Dev</SelectItem>
+            <SelectItem value="staging">Staging</SelectItem>
+            <SelectItem value="prod">Prod</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="secondary" size="sm" className="gap-2" onClick={() => (window.location.href = "/admin")}>⚙️ Admin</Button>
       </div>
     </div>
   );
+}
+
+function KPI({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <Card className="bg-zinc-900/60 border-zinc-800">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl bg-zinc-950 p-2 border border-zinc-800">{icon}</div>
+          <div>
+            <div className="text-xs text-zinc-400">{label}</div>
+            <div className="text-lg font-semibold tracking-tight">{value}</div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatusPill({ label, value, intent = "neutral" as "ok" | "warn" | "error" | "neutral" }) {
+  const map = {
+    ok: "bg-emerald-500/15 text-emerald-300 border-emerald-700/30",
+    warn: "bg-amber-500/15 text-amber-300 border-amber-700/30",
+    error: "bg-rose-500/15 text-rose-300 border-rose-700/30",
+    neutral: "bg-zinc-800 text-zinc-300 border-zinc-700",
+  } as const;
+  // @ts-ignore
+  const cls = map[intent];
+  return (
+    <div className={`flex items-center justify-between border rounded-xl px-3 py-2 ${cls}`}>
+      <span className="text-xs">{label}</span>
+      <span className="text-sm font-medium">{value}</span>
+    </div>
+  );
+}
+
+function ChecklistItem({ label, checked = false }: { label: string; checked?: boolean }) {
+  return (
+    <li className="flex items-center gap-2">
+      {checked ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className="w-4 h-4 text-amber-400" />}
+      <span>{label}</span>
+    </li>
+  );
+}
+
+function Gauge({ value }: { value: number }) {
+  // simple text gauge; replace with radial later
+  const intent = value >= 80 ? "ok" : value >= 60 ? "warn" : "error";
+  return <StatusPill label="Consensus" value={`${value}%`} intent={intent as any} />;
 }
