@@ -2,7 +2,7 @@
 // Generate demo data for dashboard testing
 
 import { NextResponse } from "next/server";
-import { addOrder, markPaid, clearOrders, startSession, updateCoalStatus, addFlavorToSession, setTableMapping } from "@/lib/orders";
+import { addOrder, markPaid, clearOrders, startSession, updateCoalStatus, addFlavorToSession, setTableMapping } from "../../../lib/orders";
 
 // Simulate orders over a 4-hour period (6 PM - 10 PM) to show historical data
 const startTime = new Date();

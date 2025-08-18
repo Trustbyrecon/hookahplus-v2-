@@ -1,6 +1,6 @@
 // app/api/sessions/route.ts
 import { NextResponse } from "next/server";
-import { getActiveSessions, updateCoalStatus, addFlavorToSession, startSession, handleRefill, getFlavorMixLibrary, getCustomerPreviousSessions } from "@/lib/orders";
+import { getActiveSessions, updateCoalStatus, addFlavorToSession, startSession, handleRefill, getFlavorMixLibrary, getCustomerPreviousSessions } from "../../../lib/orders";
 
 export async function GET() {
   try {
