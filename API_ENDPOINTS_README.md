@@ -1,28 +1,149 @@
-# API Endpoints Documentation 🚀
+# Hookah+ Admin Control Center API Documentation
 
 ## Overview
-This document describes all the API endpoints created for the Admin Control Center. All endpoints include mock data and are ready for backend integration.
+This document describes the API endpoints for the Hookah+ Admin Control Center, including the new MVP Agent Consensus System.
 
-## Base URL
+**Base URL**: `/api`
+**Authentication**: Currently mock/development - implement proper auth for production
+
+## Agent Consensus System
+
+### GET `/api/agent-consensus`
+**Purpose**: Get current agent consensus state and Reflex Score
+
+**Query Parameters**:
+- `action` (optional): Specific action to perform
+  - `trigger-order`: Simulate an order to test agent system
+  - `manual-pulse`: Send manual pulse to specific agent
+- `customerId` (optional): Customer ID for order simulation
+- `flavor` (optional): Flavor for order simulation  
+- `amount` (optional): Amount for order simulation
+- `agent` (optional): Agent ID for manual pulse
+- `status` (optional): Status for manual pulse (green/amber/red)
+- `message` (optional): Message for manual pulse
+
+**Example Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "agents": {
+      "aliethia": {
+        "agentId": "aliethia",
+        "status": "green",
+        "message": "Flavor memory logs active",
+        "timestamp": 1703123456789,
+        "metadata": {
+          "stabilityThreshold": "met",
+          "qrCycles": 5
+        }
+      },
+      "ep": {
+        "agentId": "ep", 
+        "status": "green",
+        "message": "Order processed",
+        "timestamp": 1703123456789,
+        "metadata": {
+          "orderConfirmed": true,
+          "customerId": "test_customer"
+        }
+      },
+      "navigator": {
+        "agentId": "navigator",
+        "status": "green", 
+        "message": "Dashboard updated",
+        "timestamp": 1703123456789,
+        "metadata": {
+          "seamlessAction": true,
+          "orderId": "order_1703123456789"
+        }
+      },
+      "sentinel": {
+        "agentId": "sentinel",
+        "status": "green",
+        "message": "Order trust-locked",
+        "timestamp": 1703123456789,
+        "metadata": {
+          "trustLockUptime": 95.5,
+          "sessionKey": "order_1703123456789"
+        }
+      }
+    },
+    "consensus": true,
+    "reflexScore": {
+      "score": 78,
+      "confirmedOrders": 5,
+      "returningCustomers": 2,
+      "anomalyFlags": 0,
+      "trustLockUptime": 95.5,
+      "lastUpdate": 1703123456789
+    },
+    "lastCycle": 1703123456789,
+    "cycleCount": 12
+  },
+  "timestamp": "2023-12-21T10:30:56.789Z"
+}
 ```
-http://localhost:3000/api
+
+### POST `/api/agent-consensus`
+**Purpose**: Trigger agent actions and send manual pulses
+
+**Request Body**:
+```json
+{
+  "action": "trigger-order|manual-pulse",
+  "agent": "aliethia|ep|navigator|sentinel",
+  "status": "green|amber|red",
+  "message": "Custom message",
+  "metadata": {
+    "customerId": "customer_123",
+    "flavor": "Mint Storm",
+    "amount": 32
+  }
+}
 ```
 
-## Authentication
-Currently, all endpoints are open. In production, implement proper authentication middleware.
+**Example Responses**:
 
----
+**Order Trigger**:
+```json
+{
+  "success": true,
+  "message": "Order triggered via POST",
+  "data": {
+    "customerId": "customer_123",
+    "flavor": "Mint Storm", 
+    "amount": 32
+  },
+  "timestamp": "2023-12-21T10:30:56.789Z"
+}
+```
 
-## 📊 Admin KPIs
+**Manual Pulse**:
+```json
+{
+  "success": true,
+  "message": "Manual pulse sent to sentinel",
+  "data": {
+    "agent": "sentinel",
+    "status": "green",
+    "message": "Test validation",
+    "metadata": { "test": true }
+  },
+  "timestamp": "2023-12-21T10:30:56.789Z"
+}
+```
+
+## Existing API Endpoints
 
 ### GET `/api/admin/kpis`
-Get key performance indicators for a specific lounge and time range.
+**Purpose**: Get Key Performance Indicators for lounge operations
 
-**Query Parameters:**
-- `lounge` (string): Lounge identifier (e.g., "Pilot #001")
-- `range` (string): Time range (e.g., "Last 7 days")
+**Query Parameters**:
+- `lounge`: Lounge identifier (e.g., "Pilot #001")
+- `range`: Time range (e.g., "Last 7 days")
 
-**Response:**
+**Example Response**:
 ```json
 {
   "success": true,
@@ -34,95 +155,22 @@ Get key performance indicators for a specific lounge and time range.
   },
   "lounge": "Pilot #001",
   "range": "Last 7 days",
-  "timestamp": "2024-01-15T10:30:00.000Z"
+  "timestamp": "2023-12-21T10:30:56.789Z"
 }
 ```
-
-**Mock Data:** Includes randomization for realistic testing.
-
----
-
-## 🔨 Development Commands
-
-### POST `/api/admin/dev`
-Trigger development environment startup.
-
-**Request Body:**
-```json
-{
-  "lounge": "Pilot #001",
-  "range": "Last 7 days"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Dev environment triggered successfully",
-  "data": {
-    "status": "running",
-    "lounge": "Pilot #001",
-    "range": "Last 7 days",
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "processId": "dev_1705312200000",
-    "estimatedCompletion": "2024-01-15T10:30:30.000Z"
-  }
-}
-```
-
-### POST `/api/admin/build`
-Trigger build process for production.
-
-**Request Body:**
-```json
-{
-  "lounge": "Pilot #001",
-  "range": "Last 7 days",
-  "environment": "staging"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Build process triggered successfully",
-  "data": {
-    "status": "building",
-    "lounge": "Pilot #001",
-    "range": "Last 7 days",
-    "environment": "staging",
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "buildId": "build_1705312200000",
-    "estimatedCompletion": "2024-01-15T10:32:00.000Z",
-    "steps": [
-      "Dependencies installed",
-      "TypeScript compilation",
-      "Bundle optimization",
-      "Asset generation",
-      "Deployment preparation"
-    ]
-  }
-}
-```
-
----
-
-## 📈 Orders & Profit Margins
 
 ### GET `/api/orders`
-Get order data with profit margin analysis.
+**Purpose**: Get order data for profit margin analysis
 
-**Query Parameters:**
-- `lounge` (string): Lounge identifier
-- `range` (string): Time range
+**Query Parameters**:
+- `lounge`: Lounge identifier
+- `range`: Time range
 
-**Response:**
+**Example Response**:
 ```json
 {
   "success": true,
-  "orders": [
+  "data": [
     {
       "id": "m1",
       "item": "Mint Storm",
@@ -133,65 +181,37 @@ Get order data with profit margin analysis.
   ],
   "lounge": "Pilot #001",
   "range": "Last 7 days",
-  "timestamp": "2024-01-15T10:30:00.000Z",
-  "summary": {
-    "totalItems": 8,
-    "totalSold": 309,
-    "totalRevenue": 9456,
-    "totalCost": 3120,
-    "avgMargin": 66.9
-  }
+  "timestamp": "2023-12-21T10:30:56.789Z"
 }
 ```
 
-**Mock Data:** Includes 8 flavor items with realistic pricing and sales data.
-
----
-
-## 🧠 Reflex Monitoring
-
 ### GET `/api/reflex-monitoring`
-Get trust pulse data for reflex monitoring.
+**Purpose**: Get Reflex monitoring data and trust pulses
 
-**Query Parameters:**
-- `lounge` (string): Lounge identifier
-- `range` (string): Time range
+**Query Parameters**:
+- `lounge`: Lounge identifier
+- `range`: Time range
 
-**Response:**
+**Example Response**:
 ```json
 {
   "success": true,
   "data": [
     {
       "t": "Mon",
-      "score": 78,
-      "timestamp": "2024-01-09T10:30:00.000Z",
-      "lounge": "Pilot #001",
-      "range": "Last 7 days"
+      "score": 78
     }
   ],
   "lounge": "Pilot #001",
   "range": "Last 7 days",
-  "timestamp": "2024-01-15T10:30:00.000Z",
-  "summary": {
-    "currentScore": 83,
-    "avgScore": 82.1,
-    "trend": "up",
-    "dataPoints": 8
-  }
+  "timestamp": "2023-12-21T10:30:56.789Z"
 }
 ```
 
-**Mock Data:** 7-day trust score history with real-time "Now" data point.
-
----
-
-## 🔍 Reflex Control
-
 ### POST `/api/reflex/scan`
-Trigger a reflex agent scan.
+**Purpose**: Trigger Reflex agent scan
 
-**Request Body:**
+**Request Body**:
 ```json
 {
   "lounge": "Pilot #001",
@@ -199,321 +219,192 @@ Trigger a reflex agent scan.
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Reflex scan completed successfully",
-  "data": {
-    "status": "completed",
-    "lounge": "Pilot #001",
-    "range": "Last 7 days",
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "scanId": "scan_1705312200000",
-    "results": {
-      "totalAgents": 4,
-      "agentsScanned": 4,
-      "consensusScore": 87,
-      "trustLevel": "high",
-      "anomalies": 1,
-      "recommendations": [
-        "Agent EP performing optimally",
-        "Agent Navigator showing slight drift",
-        "Agent Sentinel stable",
-        "Agent Aliethia calibrated"
-      ]
-    }
-  }
-}
-```
-
 ### POST `/api/reflex/calibration/start`
-Start reflex agent calibration.
+**Purpose**: Start Reflex calibration process
 
-**Request Body:**
+**Request Body**:
 ```json
 {
   "lounge": "Pilot #001"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Reflex calibration started successfully",
-  "data": {
-    "status": "calibrating",
-    "lounge": "Pilot #001",
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "calibrationId": "cal_1705312200000",
-    "estimatedDuration": "5-10 minutes",
-    "agents": [
-      {
-        "name": "EP",
-        "status": "calibrating",
-        "progress": 0
-      }
-    ],
-    "targetConsensus": 0.85,
-    "currentConsensus": 0.78
-  }
 }
 ```
 
 ### POST `/api/reflex/calibration/stop`
-Stop reflex agent calibration.
+**Purpose**: Stop Reflex calibration process
 
-**Request Body:**
+**Request Body**:
 ```json
 {
   "lounge": "Pilot #001"
 }
 ```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Reflex calibration stopped successfully",
-  "data": {
-    "status": "stopped",
-    "lounge": "Pilot #001",
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "finalResults": {
-      "consensusAchieved": 0.82,
-      "targetConsensus": 0.85,
-      "agentsCalibrated": 4,
-      "totalDuration": "3 minutes 45 seconds",
-      "finalAgentScores": {
-        "EP": 0.89,
-        "Navigator": 0.84,
-        "Sentinel": 0.87,
-        "Aliethia": 0.81
-      }
-    }
-  }
-}
-```
-
----
-
-## 🚀 MVP Control
 
 ### GET `/api/mvp/status`
-Check MVP deployment readiness.
+**Purpose**: Get MVP readiness consensus score
 
-**Query Parameters:**
-- `env` (string): Environment (dev|staging|prod)
+**Query Parameters**:
+- `env`: Environment (dev|staging|prod)
 
-**Response:**
+**Example Response**:
 ```json
 {
   "success": true,
-  "data": {
-    "environment": "staging",
-    "readinessScore": 78,
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "status": "almost",
-    "checks": {
-      "Reflex Monitoring": true,
-      "Profit Margins": true,
-      "Admin Controls": true,
-      "API Endpoints": false,
-      "Security": false,
-      "Performance": true
-    },
-    "recommendations": [
-      "Complete reflex agent calibration",
-      "Verify all API endpoints",
-      "Run security audit",
-      "Performance testing needed"
-    ]
-  }
+  "data": 78,
+  "env": "staging",
+  "timestamp": "2023-12-21T10:30:56.789Z"
 }
 ```
-
-**Scoring Logic:**
-- **Dev**: 95 ± 5 (high readiness)
-- **Staging**: 78 ± 15 (moderate readiness)
-- **Prod**: 65 ± 20 (needs work)
-
----
-
-## 🚀 Deployment Control
 
 ### POST `/api/deploy`
-Trigger deployment to specified environment.
+**Purpose**: Trigger deployment to specified environment
 
-**Request Body:**
+**Request Body**:
 ```json
 {
-  "env": "staging",
-  "version": "0.0.1",
-  "lounge": "Pilot #001"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Deployment initiated successfully",
-  "data": {
-    "status": "deploying",
-    "environment": "staging",
-    "version": "0.0.1",
-    "lounge": "Pilot #001",
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "deploymentId": "deploy_1705312200000",
-    "estimatedCompletion": "2024-01-15T10:33:00.000Z",
-    "steps": [
-      {
-        "name": "Pre-flight checks",
-        "status": "completed",
-        "duration": "15s"
-      }
-    ],
-    "progress": 25,
-    "logs": [
-      "✅ Pre-flight checks completed",
-      "🔨 Build compilation started"
-    ]
-  }
+  "env": "staging"
 }
 ```
 
 ### POST `/api/deploy/rollback`
-Rollback to previous version.
+**Purpose**: Trigger rollback for specified environment
 
-**Request Body:**
+**Request Body**:
 ```json
 {
-  "env": "staging",
-  "version": "0.0.1",
-  "lounge": "Pilot #001"
+  "env": "staging"
 }
 ```
 
-**Response:**
+### POST `/api/admin/dev`
+**Purpose**: Start development environment
+
+**Example Response**:
 ```json
 {
   "success": true,
-  "message": "Rollback initiated successfully",
-  "data": {
-    "status": "rolling-back",
-    "environment": "staging",
-    "fromVersion": "0.0.1",
-    "toVersion": "0.0.0",
-    "lounge": "Pilot #001",
-    "timestamp": "2024-01-15T10:30:00.000Z",
-    "rollbackId": "rollback_1705312200000",
-    "estimatedCompletion": "2024-01-15T10:31:30.000Z",
-    "steps": [
-      {
-        "name": "Health assessment",
-        "status": "completed",
-        "duration": "10s"
-      }
-    ],
-    "progress": 40,
-    "logs": [
-      "✅ Health assessment completed",
-      "✅ Backup verification completed"
-    ],
-    "reason": "Performance degradation detected",
-    "initiatedBy": "admin"
-  }
+  "message": "Development environment started",
+  "timestamp": "2023-12-21T10:30:56.789Z"
 }
 ```
 
----
+### POST `/api/admin/build`
+**Purpose**: Build project for production
 
-## 🎯 Command Launcher Integration
-
-### Server-Side Commands
-The `lib/commandLauncher.ts` file provides server-side command execution:
-
-```typescript
-import { executeCommand } from '@/lib/commandLauncher';
-
-// Execute commands
-await executeCommand('admin.dev');
-await executeCommand('admin.build');
-await executeCommand('admin.reflex.scan', { lounge: 'Pilot #001' });
-await executeCommand('admin.deploy', { env: 'staging' });
+**Example Response**:
+```json
+{
+  "success": true,
+  "message": "Build completed successfully",
+  "timestamp": "2023-12-21T10:30:56.789Z"
+}
 ```
 
-### Available Commands
-- `admin.dev` - Start development environment
-- `admin.build` - Build application
-- `admin.reflex.scan` - Trigger reflex scan
-- `admin.reflex.calibrate.start` - Start calibration
-- `admin.reflex.calibrate.stop` - Stop calibration
-- `admin.deploy` - Deploy to environment
-- `admin.rollback` - Rollback deployment
-- `admin.mvp.status` - Check MVP status
-- `admin.status` - Get system status
-- `admin.health` - Run health checks
+## Command Launcher Integration
 
----
+The Command Launcher provides server-side automation for all API endpoints:
 
-## 🔧 Error Handling
+### Agent Consensus Commands
+```bash
+# Get agent status
+cmd.execute("admin.agents.status")
 
-All endpoints include comprehensive error handling:
+# Trigger test order
+cmd.execute("admin.agents.trigger-order", {
+  customerId: "test_customer",
+  flavor: "Mint Storm", 
+  amount: 32
+})
+
+# Send manual pulse
+cmd.execute("admin.agents.pulse", {
+  agent: "sentinel",
+  status: "green",
+  message: "Test validation"
+})
+
+# Check consensus
+cmd.execute("admin.agents.consensus")
+```
+
+### Standard Admin Commands
+```bash
+# Development
+cmd.execute("admin.dev")
+cmd.execute("admin.build")
+
+# Reflex System
+cmd.execute("admin.reflex.scan", { lounge: "Pilot #001" })
+cmd.execute("admin.reflex.calibrate.start", { lounge: "Pilot #001" })
+
+# Deployment
+cmd.execute("admin.deploy", { env: "staging" })
+cmd.execute("admin.rollback", { env: "staging" })
+
+# Monitoring
+cmd.execute("admin.mvp.status", { env: "staging" })
+cmd.execute("admin.health")
+```
+
+## Error Handling
+
+All endpoints return consistent error responses:
 
 ```json
 {
   "success": false,
   "error": "Error description",
-  "fallback": "Fallback data if available"
+  "timestamp": "2023-12-21T10:30:56.789Z"
 }
 ```
 
-**HTTP Status Codes:**
-- `200` - Success
-- `400` - Bad Request
-- `500` - Internal Server Error
+**Common HTTP Status Codes**:
+- `200`: Success
+- `400`: Bad Request (missing parameters)
+- `500`: Internal Server Error
 
----
-
-## 📝 Implementation Notes
+## Implementation Notes
 
 ### Mock Data
-- All endpoints include realistic mock data
-- Data includes randomization for testing
-- Timestamps are current and realistic
+- All endpoints currently return mock data for development
+- Mock data includes randomization for realistic testing
+- Replace mock implementations with actual database queries
 
-### Performance
-- Simulated processing delays for realistic UX
-- Async/await patterns for scalability
-- Proper error boundaries and fallbacks
+### Real-time Updates
+- Agent Consensus system uses 5-second operational cycles
+- Reflex Score updates automatically based on agent activities
+- Consensus triggers when ≥3 agents issue green pulses
 
-### Security
-- Input validation on all endpoints
-- Query parameter sanitization
-- CORS headers for cross-origin requests
+### Agent System Architecture
+- **Aliethia**: Memory & Flavor Log Agent (dormant until stability threshold)
+- **EP**: Economic Pathways Agent (payments & order processing)
+- **Navigator**: Experience & Flow Agent (dashboard & UX)
+- **Sentinel**: Security & Trust Agent (trust validation & anomaly detection)
 
----
+## Related Files
 
-## 🚀 Next Steps
+- `lib/agentConsensus.ts` - Agent consensus system implementation
+- `components/AgentConsensusDashboard.tsx` - Real-time dashboard component
+- `lib/commandLauncher.ts` - Server-side command automation
+- `app/admin/page.tsx` - Admin Control Center main page
 
-1. **Replace Mock Data**: Connect to actual database/storage
-2. **Add Authentication**: Implement proper auth middleware
-3. **Add Validation**: Input validation and sanitization
-4. **Add Logging**: Comprehensive request/response logging
-5. **Add Monitoring**: Health checks and metrics
-6. **Add Rate Limiting**: Prevent abuse and ensure stability
+## Development Status
 
----
+✅ **Completed**:
+- Agent Consensus System
+- Real-time Reflex Score tracking
+- 5-second operational cycles
+- Manual agent pulse controls
+- Test order simulation
+- Command Launcher integration
+- API endpoint stubs
 
-## 📚 Related Files
+🔄 **In Progress**:
+- Production database integration
+- Authentication & authorization
+- WebSocket real-time updates
 
-- `app/admin/page.tsx` - Admin Control Center UI
-- `lib/commandLauncher.ts` - Server-side command execution
-- `ADMIN_CONTROL_CENTER.md` - Admin Center documentation
-- `components/AdminNavHeader.tsx` - Navigation component
-
----
-
-*Built with Next.js 14, TypeScript, and comprehensive error handling.*
+📋 **Planned**:
+- Advanced anomaly detection
+- Machine learning integration
+- Multi-lounge scaling
+- Audit logging system
