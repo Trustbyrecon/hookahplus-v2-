@@ -1,13 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import {
   Download,
   Play,
@@ -25,6 +18,7 @@ import {
   AlertTriangle,
   ListChecks,
   Server,
+  Users,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -37,6 +31,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import AgentConsensusDashboard from "@/components/AgentConsensusDashboard";
 
 // -----------------------------------------------------------------------------
 // Admin Control Center — Hookah+ (Agent-Ready v0.3)
@@ -140,6 +135,7 @@ export default function AdminControlCenter() {
   const [range, setRange] = useState<string>("Last 7 days");
   const [autoMonitor, setAutoMonitor] = useState<boolean>(true);
   const [env, setEnv] = useState<DeployState["env"]>("staging");
+  const [activeTab, setActiveTab] = useState<'overview' | 'reflex' | 'analytics' | 'mvp' | 'agents'>('overview');
 
   const [kpis, setKpis] = useState<KPIs>(MOCK_KPIS);
   const [margins, setMargins] = useState<MarginRow[]>(MOCK_MARGINS);
@@ -269,239 +265,316 @@ export default function AdminControlCenter() {
         <KPI icon={<ShieldCheck className="w-5 h-5" />} label="Trust Score" value={`${kpis.trustScore}`} />
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="bg-zinc-900">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="reflex">Reflex Monitoring</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics & Insights</TabsTrigger>
-          <TabsTrigger value="mvp">MVP Control</TabsTrigger>
-        </TabsList>
+      {/* Tab Navigation */}
+      <div className="flex space-x-2 mb-8 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'overview' 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('reflex')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'reflex' 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          }`}
+        >
+          Reflex Monitoring
+        </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'analytics' 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          }`}
+        >
+          Analytics & Insights
+        </button>
+        <button
+          onClick={() => setActiveTab('mvp')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'mvp' 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          }`}
+        >
+          MVP Control
+        </button>
+        <button
+          onClick={() => setActiveTab('agents')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+            activeTab === 'agents' 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          }`}
+        >
+          <Users className="w-4 h-4 mr-2 inline" />
+          Agent Consensus
+        </button>
+      </div>
 
-        {/* OVERVIEW */}
-        <TabsContent value="overview" className="space-y-4">
+      {/* OVERVIEW */}
+      {activeTab === 'overview' && (
+        <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="bg-zinc-900/60 border-zinc-800 lg:col-span-2">
-              <CardContent className="p-6">
-                <h2 className="text-lg font-medium mb-3">System Status</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StatusPill label="API" value="Healthy" intent="ok" />
-                  <StatusPill label="DB" value="Operational" intent="ok" />
-                  <StatusPill label="Reflex Loop" value={autoMonitor ? "Auto" : "Manual"} intent={autoMonitor ? "ok" : "warn"} />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-zinc-900/60 border-zinc-800">
-              <CardContent className="p-6">
-                <h2 className="text-lg font-medium mb-3">Recent Activity</h2>
-                <ul className="space-y-2 text-sm text-zinc-300">
-                  <li>✔️ Reflex scan queued for {lounge}</li>
-                  <li>✔️ Profit CSV exported</li>
-                  <li>✔️ Deploy prepared for {env}</li>
-                </ul>
-              </CardContent>
-            </Card>
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6 lg:col-span-2">
+              <h2 className="text-lg font-medium mb-3">System Status</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatusPill label="API" value="Healthy" intent="ok" />
+                <StatusPill label="DB" value="Operational" intent="ok" />
+                <StatusPill label="Reflex Loop" value={autoMonitor ? "Auto" : "Manual"} intent={autoMonitor ? "ok" : "warn"} />
+              </div>
+            </div>
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6">
+              <h2 className="text-lg font-medium mb-3">Recent Activity</h2>
+              <ul className="space-y-2 text-sm text-zinc-300">
+                <li>✔️ Reflex scan queued for {lounge}</li>
+                <li>✔️ Profit CSV exported</li>
+                <li>✔️ Deploy prepared for {env}</li>
+              </ul>
+            </div>
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* REFLEX MONITORING */}
-        <TabsContent value="reflex" className="space-y-4">
-          <Card className="bg-zinc-900/60 border-zinc-800">
-            <CardContent className="p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h2 className="text-lg font-medium">Reflex Monitoring</h2>
-                  <p className="text-sm text-zinc-400">Live trust pulses, calibration, and scans</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="auto-monitor" className="text-sm">Auto-Monitor</Label>
-                    <Switch id="auto-monitor" checked={autoMonitor} onCheckedChange={setAutoMonitor} />
-                  </div>
-                  <Button onClick={runReflexScan} className="gap-2">
-                    <Play className="w-4 h-4" /> Run Scan
-                  </Button>
-                </div>
+      {/* REFLEX MONITORING */}
+      {activeTab === 'reflex' && (
+        <div className="space-y-4">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-lg font-medium">Reflex Monitoring</h2>
+                <p className="text-sm text-zinc-400">Live trust pulses, calibration, and scans</p>
               </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
-                  <h3 className="text-sm font-medium mb-3">Trust Pulses</h3>
-                  <div className="h-52">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={trustSeries} margin={{ left: 12, right: 12 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                        <XAxis dataKey="t" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-                        <YAxis domain={[60, 100]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-                        <Tooltip contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
-                        <Line type="monotone" dataKey="score" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-3">
-                  <h3 className="text-sm font-medium">Controls</h3>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button variant="secondary" className="gap-2" onClick={startCalibration}><Zap className="w-4 h-4" /> Start Calibration</Button>
-                    <Button variant="outline" className="gap-2" onClick={stopCalibration}><Pause className="w-4 h-4" /> Stop Calibration</Button>
-                    <Button variant="secondary" className="gap-2"><RefreshCcw className="w-4 h-4" /> Replay Trust Echo</Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-zinc-400">{trustLockEngaged ? "Trust Lock engaged. Payloads bound to verified state." : "Trust Lock inactive."}</p>
-                    <div className={`px-3 py-1 rounded-full text-xs ${trustLockEngaged ? "bg-emerald-500/15 text-emerald-300" : "bg-zinc-700 text-zinc-100"}`}>{trustLockEngaged ? "ENGAGED" : "INACTIVE"}</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ANALYTICS & INSIGHTS */}
-        <TabsContent value="analytics" className="space-y-4">
-          <Card className="bg-zinc-900/60 border-zinc-800">
-            <CardContent className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h2 className="text-lg font-medium">Profit Margins & Transparency</h2>
-                  <p className="text-sm text-zinc-400">Price vs. cost analytics, drift detection, and export</p>
-                </div>
+              <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={exportCSV} className="gap-2"><Download className="w-4 h-4" /> Export CSV</Button>
+                  <label htmlFor="auto-monitor" className="text-sm">Auto-Monitor</label>
+                  <input
+                    type="checkbox"
+                    id="auto-monitor"
+                    checked={autoMonitor}
+                    onChange={(e) => setAutoMonitor(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 bg-zinc-800 border-zinc-700 rounded focus:ring-purple-500 focus:ring-2"
+                  />
+                </div>
+                <button onClick={runReflexScan} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center">
+                  <Play className="w-4 h-4" /> Run Scan
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                <h3 className="text-sm font-medium mb-3">Trust Pulses</h3>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trustSeries} margin={{ left: 12, right: 12 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="t" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <YAxis domain={[60, 100]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <Tooltip contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
+                      <Line type="monotone" dataKey="score" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
-                  <h3 className="text-sm font-medium mb-3">Margin % by Item</h3>
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={rows} margin={{ left: 12, right: 12 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                        <XAxis dataKey="item" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-                        <YAxis tickFormatter={(v) => `${v}%`} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
-                        <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
-                        <Bar dataKey="marginPct" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-3">
+                <h3 className="text-sm font-medium">Controls</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={startCalibration}>
+                    <Zap className="w-4 h-4" /> Start Calibration
+                  </button>
+                  <button className="border border-zinc-600 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={stopCalibration}>
+                    <Pause className="w-4 h-4" /> Stop Calibration
+                  </button>
+                  <button className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg gap-2 flex items-center">
+                    <RefreshCcw className="w-4 h-4" /> Replay Trust Echo
+                  </button>
                 </div>
-                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-2">
-                  <h3 className="text-sm font-medium">Summary</h3>
-                  <p className="text-sm text-zinc-400">Total sold: <span className="text-zinc-200 font-medium">{totals.sold}</span></p>
-                  <p className="text-sm text-zinc-400">Gross: <span className="text-zinc-200 font-medium">{usd(totals.gross)}</span></p>
-                  <p className="text-sm text-zinc-400">Profit: <span className="text-zinc-200 font-medium">{usd(totals.profit)}</span></p>
-                  <div className="pt-2 text-xs text-zinc-400">Transparency: base price, add-ons, and lounge margin should be injected into Stripe metadata for auditability.</div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-zinc-400">{trustLockEngaged ? "Trust Lock engaged. Payloads bound to verified state." : "Trust Lock inactive."}</p>
+                  <div className={`px-3 py-1 rounded-full text-xs ${trustLockEngaged ? "bg-emerald-500/15 text-emerald-300" : "bg-zinc-700 text-zinc-100"}`}>{trustLockEngaged ? "ENGAGED" : "INACTIVE"}</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-zinc-900 text-zinc-300">
-                    <tr>
-                      <th className="text-left px-4 py-2 font-medium">Item</th>
-                      <th className="text-right px-4 py-2 font-medium">Sold</th>
-                      <th className="text-right px-4 py-2 font-medium">Price</th>
-                      <th className="text-right px-4 py-2 font-medium">Cost</th>
-                      <th className="text-right px-4 py-2 font-medium">Margin</th>
-                      <th className="text-right px-4 py-2 font-medium">Margin %</th>
-                      <th className="text-right px-4 py-2 font-medium">Gross</th>
-                      <th className="text-right px-4 py-2 font-medium">Profit</th>
+      {/* ANALYTICS & INSIGHTS */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-4">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-lg font-medium">Profit Margins & Transparency</h2>
+                <p className="text-sm text-zinc-400">Price vs. cost analytics, drift detection, and export</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="border border-zinc-600 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={exportCSV}>
+                  <Download className="w-4 h-4" /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                <h3 className="text-sm font-medium mb-3">Margin % by Item</h3>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={rows} margin={{ left: 12, right: 12 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="item" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <YAxis tickFormatter={(v) => `${v}%`} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                      <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} contentStyle={{ background: "#09090b", border: "1px solid #27272a" }} />
+                      <Bar dataKey="marginPct" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-2">
+                <h3 className="text-sm font-medium">Summary</h3>
+                <p className="text-sm text-zinc-400">Total sold: <span className="text-zinc-200 font-medium">{totals.sold}</span></p>
+                <p className="text-sm text-zinc-400">Gross: <span className="text-zinc-200 font-medium">{usd(totals.gross)}</span></p>
+                <p className="text-sm text-zinc-400">Profit: <span className="text-zinc-200 font-medium">{usd(totals.profit)}</span></p>
+                <div className="pt-2 text-xs text-zinc-400">Transparency: base price, add-ons, and lounge margin should be injected into Stripe metadata for auditability.</div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-zinc-900 text-zinc-300">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-medium">Item</th>
+                    <th className="text-right px-4 py-2 font-medium">Sold</th>
+                    <th className="text-right px-4 py-2 font-medium">Price</th>
+                    <th className="text-right px-4 py-2 font-medium">Cost</th>
+                    <th className="text-right px-4 py-2 font-medium">Margin</th>
+                    <th className="text-right px-4 py-2 font-medium">Margin %</th>
+                    <th className="text-right px-4 py-2 font-medium">Gross</th>
+                    <th className="text-right px-4 py-2 font-medium">Profit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.id} className="border-t border-zinc-800 hover:bg-zinc-900/40">
+                      <td className="px-4 py-2">{r.item}</td>
+                      <td className="px-4 py-2 text-right">{r.sold}</td>
+                      <td className="px-4 py-2 text-right">{usd(r.price)}</td>
+                      <td className="px-4 py-2 text-right">{usd(r.cost)}</td>
+                      <td className="px-4 py-2 text-right">{usd(r.margin)}</td>
+                      <td className="px-4 py-2 text-right">{r.marginPct.toFixed(1)}%</td>
+                      <td className="px-4 py-2 text-right">{usd(r.gross)}</td>
+                      <td className="px-4 py-2 text-right">{usd(r.profit)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r) => (
-                      <tr key={r.id} className="border-t border-zinc-800 hover:bg-zinc-900/40">
-                        <td className="px-4 py-2">{r.item}</td>
-                        <td className="px-4 py-2 text-right">{r.sold}</td>
-                        <td className="px-4 py-2 text-right">{usd(r.price)}</td>
-                        <td className="px-4 py-2 text-right">{usd(r.cost)}</td>
-                        <td className="px-4 py-2 text-right">{usd(r.margin)}</td>
-                        <td className="px-4 py-2 text-right">{r.marginPct.toFixed(1)}%</td>
-                        <td className="px-4 py-2 text-right">{usd(r.gross)}</td>
-                        <td className="px-4 py-2 text-right">{usd(r.profit)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
-        {/* MVP CONTROL */}
-        <TabsContent value="mvp" className="space-y-4">
-          <Card className="bg-zinc-900/60 border-zinc-800">
-            <CardContent className="p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h2 className="text-lg font-medium">MVP Control</h2>
-                  <p className="text-sm text-zinc-400">Deployment, readiness consensus, and environment controls</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Select value={env} onValueChange={(v: DeployState["env"]) => setEnv(v)}>
-                    <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dev">Dev</SelectItem>
-                      <SelectItem value="staging">Staging</SelectItem>
-                      <SelectItem value="prod">Prod</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button className="gap-2" onClick={triggerDeploy}><Rocket className="w-4 h-4" /> Deploy</Button>
-                  <Button variant="outline" className="gap-2" onClick={triggerRollback}><CornerDownLeft className="w-4 h-4" /> Rollback</Button>
-                </div>
+      {/* MVP CONTROL */}
+      {activeTab === 'mvp' && (
+        <div className="space-y-4">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-lg font-medium">MVP Control</h2>
+                <p className="text-sm text-zinc-400">Deployment, readiness consensus, and environment controls</p>
               </div>
+              <div className="flex items-center gap-3">
+                <select 
+                  value={env} 
+                  onChange={(e) => setEnv(e.target.value as DeployState["env"])}
+                  className="bg-zinc-800 border border-zinc-700 text-white px-3 py-2 rounded-lg"
+                >
+                  <option value="dev">Dev</option>
+                  <option value="staging">Staging</option>
+                  <option value="prod">Prod</option>
+                </select>
+                <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={triggerDeploy}>
+                  <Rocket className="w-4 h-4" /> Deploy
+                </button>
+                <button className="border border-zinc-600 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={triggerRollback}>
+                  <CornerDownLeft className="w-4 h-4" /> Rollback
+                </button>
+              </div>
+            </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
-                  <h3 className="text-sm font-medium mb-2">Readiness Consensus</h3>
-                  <Gauge value={consensus} />
-                </div>
-                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-2">
-                  <h3 className="text-sm font-medium mb-2">Build Status</h3>
-                  <StatusPill label="Env" value={env.toUpperCase()} intent="ok" />
-                  <StatusPill label="Pipeline" value={deploy.buildStatus} intent={deploy.buildStatus === "failed" ? "error" : deploy.buildStatus === "success" ? "ok" : "warn"} />
-                  <StatusPill label="Version" value={deploy.version ?? "-"} intent="neutral" />
-                </div>
-                <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
-                  <h3 className="text-sm font-medium mb-2">Feature Checklist</h3>
-                  <ul className="space-y-2 text-sm">
-                    <ChecklistItem label="Reflex Monitoring moved" checked />
-                    <ChecklistItem label="Profit Margin Analysis moved" checked />
-                    <ChecklistItem label="AdminNavHeader injected" checked />
-                    <ChecklistItem label="Command Launcher wired" />
-                    <ChecklistItem label="Stripe metadata transparency" />
-                  </ul>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                <h3 className="text-sm font-medium mb-2">Readiness Consensus</h3>
+                <Gauge value={consensus} />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4 space-y-2">
+                <h3 className="text-sm font-medium mb-2">Build Status</h3>
+                <StatusPill label="Env" value={env.toUpperCase()} intent="ok" />
+                <StatusPill label="Pipeline" value={deploy.buildStatus} intent={deploy.buildStatus === "failed" ? "error" : deploy.buildStatus === "success" ? "ok" : "warn"} />
+                <StatusPill label="Version" value={deploy.version ?? "-"} intent="neutral" />
+              </div>
+              <div className="rounded-2xl bg-zinc-950/40 border border-zinc-800 p-4">
+                <h3 className="text-sm font-medium mb-2">Feature Checklist</h3>
+                <ul className="space-y-2 text-sm">
+                  <ChecklistItem label="Reflex Monitoring moved" checked />
+                  <ChecklistItem label="Profit Margin Analysis moved" checked />
+                  <ChecklistItem label="AdminNavHeader injected" checked />
+                  <ChecklistItem label="Command Launcher wired" />
+                  <ChecklistItem label="Stripe metadata transparency" />
+                  <ChecklistItem label="Agent Consensus System" checked />
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AGENT CONSENSUS */}
+      {activeTab === 'agents' && (
+        <div className="space-y-4">
+          <AgentConsensusDashboard />
+        </div>
+      )}
 
       {/* Footer quick actions */}
       <div className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-3">
-          <Select value={lounge} onValueChange={setLounge}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Select lounge" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Pilot #001">Pilot #001</SelectItem>
-              <SelectItem value="Pilot #002">Pilot #002</SelectItem>
-              <SelectItem value="Pilot #003">Pilot #003</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={range} onValueChange={setRange}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Time range" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Last 7 days">Last 7 days</SelectItem>
-              <SelectItem value="Last 30 days">Last 30 days</SelectItem>
-              <SelectItem value="This quarter">This quarter</SelectItem>
-              <SelectItem value="Year to date">Year to date</SelectItem>
-            </SelectContent>
-          </Select>
+          <select 
+            value={lounge} 
+            onChange={(e) => setLounge(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 text-white px-3 py-2 rounded-lg"
+          >
+            <option value="Pilot #001">Pilot #001</option>
+            <option value="Pilot #002">Pilot #002</option>
+            <option value="Pilot #003">Pilot #003</option>
+          </select>
+          <select 
+            value={range} 
+            onChange={(e) => setRange(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 text-white px-3 py-2 rounded-lg"
+          >
+            <option value="Last 7 days">Last 7 days</option>
+            <option value="Last 30 days">Last 30 days</option>
+            <option value="This quarter">This quarter</option>
+            <option value="Year to date">Year to date</option>
+          </select>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" className="gap-2" onClick={() => fetch("/api/admin/build", { method: "POST" })}>Build</Button>
-          <Button className="gap-2" onClick={() => fetch("/api/admin/dev", { method: "POST" })}>Dev Run</Button>
+          <button className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={() => fetch("/api/admin/build", { method: "POST" })}>
+            Build
+          </button>
+          <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center" onClick={() => fetch("/api/admin/dev", { method: "POST" })}>
+            Dev Run
+          </button>
         </div>
       </div>
 
@@ -527,19 +600,32 @@ function AdminNavHeader({ env, onEnvChange }: { env: DeployState["env"]; onEnvCh
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => (window.location.href = "/dashboard")}> <ArrowLeft className="w-4 h-4" /> Dashboard</Button>
-        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2"><Settings className="w-5 h-5" /> Admin Control Center</h1>
+        <button 
+          className="border border-zinc-600 hover:bg-zinc-700 text-white px-3 py-2 rounded-lg gap-2 flex items-center text-sm" 
+          onClick={() => (window.location.href = "/dashboard")}
+        >
+          <ArrowLeft className="w-4 h-4" /> Dashboard
+        </button>
+        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <Settings className="w-5 h-5" /> Admin Control Center
+        </h1>
       </div>
       <div className="flex items-center gap-3">
-        <Select value={env} onValueChange={(v: DeployState["env"]) => onEnvChange(v)}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="dev">Dev</SelectItem>
-            <SelectItem value="staging">Staging</SelectItem>
-            <SelectItem value="prod">Prod</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="secondary" size="sm" className="gap-2" onClick={() => (window.location.href = "/admin")}>⚙️ Admin</Button>
+        <select 
+          value={env} 
+          onChange={(e) => onEnvChange(e.target.value as DeployState["env"])}
+          className="bg-zinc-800 border border-zinc-700 text-white px-3 py-2 rounded-lg text-sm"
+        >
+          <option value="dev">Dev</option>
+          <option value="staging">Staging</option>
+          <option value="prod">Prod</option>
+        </select>
+        <button 
+          className="bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded-lg gap-2 flex items-center text-sm" 
+          onClick={() => (window.location.href = "/admin")}
+        >
+          ⚙️ Admin
+        </button>
       </div>
     </div>
   );
@@ -547,17 +633,15 @@ function AdminNavHeader({ env, onEnvChange }: { env: DeployState["env"]; onEnvCh
 
 function KPI({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <Card className="bg-zinc-900/60 border-zinc-800">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-zinc-950 p-2 border border-zinc-800">{icon}</div>
-          <div>
-            <div className="text-xs text-zinc-400">{label}</div>
-            <div className="text-lg font-semibold tracking-tight">{value}</div>
-          </div>
+    <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4">
+      <div className="flex items-center gap-3">
+        <div className="rounded-2xl bg-zinc-950 p-2 border border-zinc-800">{icon}</div>
+        <div>
+          <div className="text-xs text-zinc-400">{label}</div>
+          <div className="text-lg font-semibold tracking-tight">{value}</div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
