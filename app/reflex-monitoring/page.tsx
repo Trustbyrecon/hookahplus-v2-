@@ -1,7 +1,7 @@
 // app/reflex-monitoring/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { reflexOrchestrator } from "@/lib/reflex-orchestrator";
+import { reflexOrchestrator } from "../../lib/reflex-orchestrator";
 
 interface AgentScore {
   name: string;
