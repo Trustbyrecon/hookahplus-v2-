@@ -1,4 +1,4 @@
-import { PosAdapter, HpItem, HpOrder, ExternalTender, AttachResult } from "./types";
+import type { PosAdapter, HpItem, HpOrder, ExternalTender, AttachResult } from "./types";
 
 /** ENV:
  * TOAST_BASE_URL=https://api.toasttab.com

@@ -1,4 +1,4 @@
-import { PosAdapter } from "./types";
+import type { PosAdapter } from "./types";
 import { SquareAdapter } from "./square";
 import { ToastAdapter } from "./toast";
 import { CloverAdapter } from "./clover";

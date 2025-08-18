@@ -1,4 +1,4 @@
-import { PosAdapter, HpItem, HpOrder, ExternalTender, AttachResult } from "./types";
+import type { PosAdapter, HpItem, HpOrder, ExternalTender, AttachResult } from "./types";
 
 /** ENV:
  * CLOVER_BASE_URL=https://api.clover.com

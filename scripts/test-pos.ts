@@ -49,7 +49,7 @@ async function main() {
         notes: "Hot, no sugar"
       }
     ],
-    service_charge: { amount: 400, currency: "USD" },
+    service_charge: { amount: 400, currency: "USD" as const },
     discounts: [
       { name: "First Time Customer", amount: 500 }
     ],

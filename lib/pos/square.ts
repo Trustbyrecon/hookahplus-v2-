@@ -1,4 +1,4 @@
-import { PosAdapter, HpItem, HpOrder, ExternalTender, AttachResult } from "./types";
+import type { PosAdapter, HpItem, HpOrder, ExternalTender, AttachResult } from "./types";
 
 /** ENV:
  * SQUARE_ACCESS_TOKEN=<secret>
