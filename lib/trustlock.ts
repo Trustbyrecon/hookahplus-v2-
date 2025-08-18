@@ -1,13 +1,20 @@
 // lib/trustlock.ts
 import crypto from "crypto";
 
-const SECRET = process.env.TRUSTLOCK_SECRET || "dev-secret";
+const SECRET = process.env.TRUSTLOCK_SECRET!;
 
-export function signTrust(payload: string) {
-  return crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+if (!SECRET) {
+  throw new Error("TRUSTLOCK_SECRET environment variable is required");
 }
 
-export function verifyTrust(payload: string, signature: string) {
-  const expected = signTrust(payload);
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+export function signTrust(orderId: string): string {
+  return crypto.createHmac("sha256", SECRET).update(orderId).digest("hex");
+}
+
+export function verifyTrust(orderId: string, sig: string): boolean {
+  return signTrust(orderId) === sig;
+}
+
+export function createTrustLock(orderId: string): { sig: string } {
+  return { sig: signTrust(orderId) };
 }
