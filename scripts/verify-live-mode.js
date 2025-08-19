@@ -8,6 +8,9 @@
  * ⚠️  Only run this after deploying to production
  */
 
+// Load environment variables
+require('dotenv').config({ path: '.env.production' });
+
 const https = require('https');
 const http = require('http');
 
