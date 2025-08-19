@@ -40,9 +40,9 @@ const GlobalNavigation: React.FC = () => {
       color: 'bg-blue-600 hover:bg-blue-700'
     },
     {
-      label: 'Sessions',
+      label: 'Prep Room',
       href: '/sessions',
-      icon: '📊',
+      icon: '🏗️',
       color: 'bg-pink-600 hover:bg-pink-700'
     },
     {
@@ -61,7 +61,7 @@ const GlobalNavigation: React.FC = () => {
           <div className="flex items-center space-x-3">
             <div className="text-green-500 text-2xl">🍃</div>
             <div className="text-teal-400 font-bold text-xl">HOOKAH+</div>
-            <div className="text-gray-400 text-sm">SESSION TRACKER</div>
+            <div className="text-gray-400 text-sm">PREP ROOM</div>
           </div>
 
           {/* Navigation Items */}

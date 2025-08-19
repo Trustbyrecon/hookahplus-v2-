@@ -47,6 +47,7 @@ export default function SessionsDashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [refillTimers, setRefillTimers] = useState<Record<string, number>>({});
+  const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'success' | 'error', timestamp: number}>>([]);
 
   // Function to add table positions to sessions
   function addTablePositions(sessions: Session[]): Session[] {
@@ -256,14 +257,33 @@ export default function SessionsDashboard() {
   async function handleCoalAction(sessionId: string, currentStatus?: string) {
     try {
       let newStatus: "active" | "needs_refill" | "burnt_out";
+      let refillTimerStart: number | undefined;
       
       if (currentStatus === 'needs_refill') {
         newStatus = 'active'; // Complete refill
+        refillTimerStart = undefined;
       } else if (currentStatus === 'burnt_out') {
         newStatus = 'active'; // Resume session
+        refillTimerStart = undefined;
       } else {
         newStatus = 'needs_refill'; // Request refill
+        refillTimerStart = Date.now();
       }
+
+      // Update local state immediately for better UX
+      setSessions(prev => prev.map(s => 
+        s.id === sessionId 
+          ? { 
+              ...s, 
+              coalStatus: newStatus,
+              refillTimerStart,
+              sessionPauseTime: newStatus === 'burnt_out' ? Date.now() : undefined,
+              totalPausedTime: newStatus === 'burnt_out' ? 
+                (s.totalPausedTime || 0) + (s.sessionPauseTime ? Date.now() - s.sessionPauseTime : 0) : 
+                s.totalPausedTime || 0
+            }
+          : s
+      ));
 
       const res = await fetch('/api/sessions', {
         method: 'POST',
@@ -271,21 +291,60 @@ export default function SessionsDashboard() {
         body: JSON.stringify({
           action: 'update_coal_status',
           sessionId,
-          data: { status: newStatus }
+          data: { 
+            status: newStatus,
+            refillTimerStart,
+            sessionPauseTime: newStatus === 'burnt_out' ? Date.now() : undefined
+          }
         })
       });
 
       if (res.ok) {
-        await fetchSessions(); // Refresh data
+        const actionText = newStatus === 'needs_refill' ? 'Refill requested' : 
+                          newStatus === 'active' ? 'Session resumed' : 'Refill completed';
+        showNotification(`${actionText} for ${sessions.find(s => s.id === sessionId)?.tableId || 'table'}`, 'success');
+        
+        // Small delay to show the state change before refreshing
+        setTimeout(() => {
+          fetchSessions();
+        }, 500);
       }
     } catch (error) {
       console.error('Error updating coal status:', error);
+      // Revert local state on error
+      await fetchSessions();
     }
+  }
+
+  // Function to show notifications
+  function showNotification(message: string, type: 'success' | 'error' = 'success') {
+    const id = Math.random().toString(36).substr(2, 9);
+    const notification = { id, message, type, timestamp: Date.now() };
+    setNotifications(prev => [...prev, notification]);
+    
+    // Auto-remove notification after 3 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  }
+
+  // Function to generate demo data
+  function generateDemoData() {
+    const newDemoSessions = generateDemoSessions();
+    setSessions(newDemoSessions);
+    showNotification('Demo data generated successfully!', 'success');
   }
 
   // Function to end session
   async function endSession(sessionId: string) {
     try {
+      // Update local state immediately for better UX
+      setSessions(prev => prev.map(s => 
+        s.id === sessionId 
+          ? { ...s, status: 'ended', coalStatus: 'burnt_out' as const }
+          : s
+      ));
+
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -296,10 +355,14 @@ export default function SessionsDashboard() {
       });
 
       if (res.ok) {
+        showNotification(`Session ended for ${sessions.find(s => s.id === sessionId)?.tableId || 'table'}`, 'success');
         await fetchSessions(); // Refresh data
       }
     } catch (error) {
       console.error('Error ending session:', error);
+      showNotification('Failed to end session', 'error');
+      // Revert local state on error
+      await fetchSessions();
     }
   }
 
@@ -333,19 +396,20 @@ export default function SessionsDashboard() {
       <div className="p-8">
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="text-4xl">🌿</div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-teal-400">HOOKAH+</h1>
-                <h2 className="text-xl text-zinc-300">SESSION TRACKER</h2>
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-teal-600 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="text-4xl">🌿</div>
+                <div>
+                                  <h1 className="text-3xl md:text-4xl font-bold text-teal-400 drop-shadow-lg">HOOKAH+</h1>
+                <h2 className="text-xl text-zinc-300 drop-shadow-md">PREP ROOM DASHBOARD</h2>
+                </div>
               </div>
-            </div>
             <div className="flex items-center gap-4">
               <button
                 onClick={fetchSessions}
                 disabled={isLoading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-blue-800 disabled:to-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:scale-100"
               >
                 {isLoading ? '🔄' : '🔄'} Refresh
               </button>
@@ -358,10 +422,36 @@ export default function SessionsDashboard() {
             </div>
           </div>
 
+          {/* Notifications */}
+          {notifications.length > 0 && (
+            <div className="fixed top-20 right-4 z-50 space-y-2">
+              {notifications.map(notification => (
+                <div
+                  key={notification.id}
+                  className={`px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-300 ${
+                    notification.type === 'success' 
+                      ? 'bg-green-600 border border-green-500' 
+                      : 'bg-red-600 border border-red-500'
+                  }`}
+                >
+                  {notification.message}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Session Summary */}
           {sessions.length > 0 && (
-            <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-teal-300 mb-4">Session Summary & MOAT Metrics</h3>
+            <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-teal-600 rounded-xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-teal-300 drop-shadow-md">Session Summary</h3>
+                <button
+                  onClick={generateDemoData}
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-purple-500/25 hover:scale-105"
+                >
+                  🎲 Generate Demo Data
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-400">
@@ -392,13 +482,23 @@ export default function SessionsDashboard() {
           )}
 
           {/* Sessions Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-yellow-600 rounded-xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-yellow-300 mb-4 drop-shadow-md">Active Sessions</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sessions.map((session) => (
-              <div 
-                key={session.id} 
-                id={`session-${session.id}`}
-                className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 space-y-4 transition-all duration-200"
-              >
+                          <div 
+              key={session.id} 
+              id={`session-${session.id}`}
+              className={`bg-zinc-900 border-2 rounded-xl p-6 space-y-4 transition-all duration-200 ${
+                session.status === 'ended' 
+                  ? 'border-red-600 bg-zinc-800/50' 
+                  : session.coalStatus === 'needs_refill'
+                  ? 'border-yellow-500 bg-zinc-900'
+                  : session.coalStatus === 'burnt_out'
+                  ? 'border-orange-500 bg-zinc-900'
+                  : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+              }`}
+            >
                 {/* Table Header */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -416,6 +516,11 @@ export default function SessionsDashboard() {
                     <div className="text-xs text-teal-400 font-medium">
                       {session.customerName || 'Staff Customer'}
                     </div>
+                    {session.status === 'ended' && (
+                      <div className="text-xs text-red-400 font-medium mt-1">
+                        SESSION ENDED
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -433,24 +538,31 @@ export default function SessionsDashboard() {
                   <div className="text-sm text-zinc-400">
                     {session.coalStatus === 'burnt_out' ? 'Session Paused' : 'Session Timer'}
                   </div>
+                  {session.status === 'ended' && (
+                    <div className="mt-2">
+                      <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+                        ENDED
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Flavor */}
-                <div className="bg-zinc-800 rounded-lg p-3">
-                  <div className="text-sm text-zinc-400 mb-1">Current Flavor</div>
-                  <div className="text-white font-medium">
+                <div className="bg-gradient-to-r from-purple-900 to-purple-800 border border-purple-600 rounded-lg p-3">
+                  <div className="text-sm text-purple-300 mb-1">Current Flavor</div>
+                  <div className="text-white font-medium text-lg">
                     {session.flavor || 'Choose flavors'}
                   </div>
                   {session.addOnFlavors && session.addOnFlavors.length > 0 && (
-                    <div className="mt-2 text-sm text-white">
+                    <div className="mt-2 text-sm text-purple-200">
                       + {session.addOnFlavors.join(', ')}
                     </div>
                   )}
                 </div>
 
                               {/* Coal Status */}
-              <div className="bg-zinc-800 rounded-lg p-3">
-                <div className="text-sm text-zinc-400 mb-2">Status</div>
+              <div className="bg-gradient-to-r from-blue-900 to-blue-800 border border-blue-600 rounded-lg p-3">
+                <div className="text-sm text-blue-300 mb-2">Status</div>
                 <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${getCoalStatusColor(session.coalStatus)}`}>
                   {getCoalStatusText(session.coalStatus || 'unknown')}
                 </div>
@@ -463,6 +575,17 @@ export default function SessionsDashboard() {
                     }`}>
                       {refillTimers[session.id]}s
                     </div>
+                    <div className="mt-1">
+                      <div className="w-full bg-zinc-700 rounded-full h-1">
+                        <div 
+                          className={`h-1 rounded-full transition-all duration-1000 ${
+                            refillTimers[session.id] <= 3 ? 'bg-red-500' : 
+                            refillTimers[session.id] <= 6 ? 'bg-yellow-500' : 'bg-orange-500'
+                          }`}
+                          style={{ width: `${(refillTimers[session.id] / 10) * 100}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -471,33 +594,39 @@ export default function SessionsDashboard() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleCoalAction(session.id, session.coalStatus)}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  disabled={session.status === 'ended'}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     session.coalStatus === 'needs_refill'
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-green-500/25'
                       : session.coalStatus === 'burnt_out'
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-orange-600 hover:bg-orange-700 text-white'
-                  }`}
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-blue-500/25'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-orange-500/25'
+                  } ${session.status === 'ended' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
                 >
                   {session.coalStatus === 'needs_refill' 
-                    ? 'Complete Refill' 
+                    ? '✅ Complete Refill' 
                     : session.coalStatus === 'burnt_out'
-                    ? 'Resume Session'
-                    : 'Request Refill'
+                    ? '▶️ Resume Session'
+                    : '🔥 Request Refill'
                   }
                 </button>
                 <button
                   onClick={() => endSession(session.id)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  disabled={session.status === 'ended'}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    session.status === 'ended' 
+                      ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
+                      : 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-500/25 hover:scale-105'
+                  }`}
                 >
-                  End Session
+                  {session.status === 'ended' ? 'Session Ended' : '⏹️ End Session'}
                 </button>
               </div>
 
               {/* Delivery Status */}
               {session.deliveryStatus && (
-                <div className="bg-zinc-800 rounded-lg p-3">
-                  <div className="text-sm text-zinc-400 mb-2">Delivery Status</div>
+                <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 border border-indigo-600 rounded-lg p-3">
+                  <div className="text-sm text-indigo-300 mb-2">Delivery Status</div>
                   <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${
                     session.deliveryStatus === 'preparing' ? 'bg-blue-600 text-white' :
                     session.deliveryStatus === 'ready' ? 'bg-green-600 text-white' :
@@ -520,21 +649,21 @@ export default function SessionsDashboard() {
               )}
 
                 {/* Amount */}
-                <div className="bg-zinc-800 rounded-lg p-3">
-                  <div className="text-sm text-zinc-400 mb-1">Current Amount</div>
-                  <div className="text-white font-bold text-lg">
+                <div className="bg-gradient-to-r from-green-900 to-green-800 border border-green-600 rounded-lg p-3">
+                  <div className="text-sm text-green-300 mb-1">Current Amount</div>
+                  <div className="text-white font-bold text-2xl">
                     ${((session.totalRevenue || session.amount) / 100).toFixed(2)}
                   </div>
                 </div>
 
                 {/* ScreenCoder Integration Info */}
                 {session.tablePosition && (
-                  <div className="bg-zinc-800 rounded-lg p-3">
-                    <div className="text-sm text-zinc-400 mb-1">ScreenCoder Position</div>
-                    <div className="text-xs text-zinc-300">
+                  <div className="bg-gradient-to-r from-cyan-900 to-cyan-800 border border-cyan-600 rounded-lg p-3">
+                    <div className="text-sm text-cyan-300 mb-1">ScreenCoder Position</div>
+                    <div className="text-xs text-cyan-200">
                       X: {session.tablePosition.x}, Y: {session.tablePosition.y}
                     </div>
-                    <div className="text-xs text-blue-400 mt-1">
+                    <div className="text-xs text-cyan-400 mt-1 font-medium">
                       Click to view lounge layout
                     </div>
                   </div>
@@ -544,25 +673,33 @@ export default function SessionsDashboard() {
           </div>
 
           {/* Hookah Room Dashboard */}
-          <HookahRoomDashboard />
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-purple-600 rounded-xl shadow-lg">
+            <HookahRoomDashboard />
+          </div>
 
           {/* Lounge Layout */}
-          <LoungeLayout 
-            sessions={sessions} 
-            onTableClick={(session) => {
-              // Scroll to session card
-              const sessionElement = document.getElementById(`session-${session.id}`);
-              if (sessionElement) {
-                sessionElement.scrollIntoView({ behavior: 'smooth' });
-              }
-            }} 
-          />
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-blue-600 rounded-xl shadow-lg">
+            <LoungeLayout 
+              sessions={sessions} 
+              onTableClick={(session) => {
+                // Scroll to session card
+                const sessionElement = document.getElementById(`session-${session.id}`);
+                if (sessionElement) {
+                  sessionElement.scrollIntoView({ behavior: 'smooth' });
+                }
+              }} 
+            />
+          </div>
 
           {/* Customer Profile Manager */}
-          <CustomerProfileManager />
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-green-600 rounded-xl shadow-lg">
+            <CustomerProfileManager />
+          </div>
 
           {/* Connector Partnership Manager */}
-          <ConnectorPartnershipManager />
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-orange-600 rounded-xl shadow-lg">
+            <ConnectorPartnershipManager />
+          </div>
         </div>
       </div>
     </main>
