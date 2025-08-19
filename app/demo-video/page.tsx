@@ -1,16 +1,21 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function DemoVideoPage() {
   const [currentScene, setCurrentScene] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoTime, setVideoTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const scenes = [
     {
       id: 0,
       title: "Opening Hook",
-      duration: 5,
+      startTime: 0,
+      endTime: 5,
       description: "Hookah+ - Future of Lounge Sessions with AI-Powered Personalization",
       visual: "🌿",
       overlay: "HOOKAH+"
@@ -18,7 +23,8 @@ export default function DemoVideoPage() {
     {
       id: 1,
       title: "QR Code Scan",
-      duration: 8,
+      startTime: 5,
+      endTime: 13,
       description: "Customer scans QR code at table to start session",
       visual: "📱",
       overlay: "SCAN TO START"
@@ -26,7 +32,8 @@ export default function DemoVideoPage() {
     {
       id: 2,
       title: "Flavor Personalization",
-      duration: 12,
+      startTime: 13,
+      endTime: 25,
       description: "AI-powered flavor recommendations based on preferences",
       visual: "🍃",
       overlay: "AI RECOMMENDATIONS"
@@ -34,7 +41,8 @@ export default function DemoVideoPage() {
     {
       id: 3,
       title: "Stripe Checkout",
-      duration: 15,
+      startTime: 25,
+      endTime: 40,
       description: "Seamless payment processing with real-time confirmation",
       visual: "💳",
       overlay: "SECURE PAYMENT"
@@ -42,7 +50,8 @@ export default function DemoVideoPage() {
     {
       id: 4,
       title: "Confirmation Ping",
-      duration: 8,
+      startTime: 40,
+      endTime: 48,
       description: "Instant confirmation and lounge staff notification",
       visual: "✅",
       overlay: "PAYMENT CONFIRMED"
@@ -50,7 +59,8 @@ export default function DemoVideoPage() {
     {
       id: 5,
       title: "Lounge Dashboard",
-      duration: 15,
+      startTime: 48,
+      endTime: 63,
       description: "Real-time session monitoring and customer insights",
       visual: "📊",
       overlay: "LIVE DASHBOARD"
@@ -58,57 +68,106 @@ export default function DemoVideoPage() {
     {
       id: 6,
       title: "Call to Action",
-      duration: 7,
+      startTime: 63,
+      endTime: 70,
       description: "Start transforming your lounge today",
       visual: "🚀",
       overlay: "GET STARTED"
     }
   ];
 
-  const totalDuration = scenes.reduce((sum, scene) => sum + scene.duration, 0);
-
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setVideoTime(prev => {
-          const newTime = prev + 0.1;
-          if (newTime >= totalDuration) {
-            setIsPlaying(false);
-            setVideoTime(0);
-            setCurrentScene(0);
-            return 0;
-          }
-          
-          // Update current scene based on time
-          let accumulatedTime = 0;
-          for (let i = 0; i < scenes.length; i++) {
-            accumulatedTime += scenes[i].duration;
-            if (newTime < accumulatedTime) {
-              if (currentScene !== i) {
-                setCurrentScene(i);
-              }
-              break;
-            }
-          }
-          
-          return newTime;
-        });
-      }, 100);
-    }
+    const video = videoRef.current;
+    if (!video) return;
 
-    return () => clearInterval(interval);
-  }, [isPlaying, currentScene, totalDuration]);
+    const handleTimeUpdate = () => {
+      const currentTime = video.currentTime;
+      setVideoTime(currentTime);
+      
+      // Update current scene based on video time
+      const currentSceneIndex = scenes.findIndex(scene => 
+        currentTime >= scene.startTime && currentTime < scene.endTime
+      );
+      
+      if (currentSceneIndex !== -1 && currentSceneIndex !== currentScene) {
+        setCurrentScene(currentSceneIndex);
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration);
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setVideoTime(0);
+      setCurrentScene(0);
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, [currentScene, scenes]);
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play();
+    }
   };
 
-  const handleReset = () => {
-    setIsPlaying(false);
-    setVideoTime(0);
-    setCurrentScene(0);
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const seekTime = parseFloat(e.target.value);
+    video.currentTime = seekTime;
+    setVideoTime(seekTime);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    
+    const video = videoRef.current;
+    if (video) {
+      video.volume = newVolume;
+    }
+  };
+
+  const handleMuteToggle = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    video.muted = newMuted;
+  };
+
+  const handleSceneClick = (sceneIndex: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const scene = scenes[sceneIndex];
+    video.currentTime = scene.startTime;
+    setCurrentScene(sceneIndex);
+    setVideoTime(scene.startTime);
   };
 
   const formatTime = (time: number) => {
@@ -118,7 +177,7 @@ export default function DemoVideoPage() {
   };
 
   const getProgressPercentage = () => {
-    return (videoTime / totalDuration) * 100;
+    return duration > 0 ? (videoTime / duration) * 100 : 0;
   };
 
   const currentSceneData = scenes[currentScene];
@@ -129,7 +188,7 @@ export default function DemoVideoPage() {
       <div className="bg-zinc-900 border-b border-zinc-700 p-6">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl font-bold text-teal-400 mb-2">Demo Video</h1>
-          <p className="text-zinc-400 text-xl">90-second customer journey demonstration</p>
+          <p className="text-zinc-400 text-xl">Experience the future of Hookah+ lounge management</p>
         </div>
       </div>
 
@@ -137,30 +196,52 @@ export default function DemoVideoPage() {
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="bg-zinc-800 rounded-xl p-8 border border-zinc-700">
           {/* Video Display */}
-          <div className="relative bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-xl p-12 mb-8 min-h-[400px] flex items-center justify-center">
-            {/* Scene Visual */}
-            <div className="text-center">
-              <div className="text-9xl mb-6 animate-pulse">{currentSceneData.visual}</div>
-              <div className="text-4xl font-bold text-white mb-4">{currentSceneData.overlay}</div>
-              <div className="text-xl text-zinc-300 max-w-2xl mx-auto">{currentSceneData.description}</div>
+          <div className="relative bg-black rounded-xl overflow-hidden mb-8">
+            <video
+              ref={videoRef}
+              className="w-full h-auto max-h-[600px]"
+              controls={false}
+              preload="metadata"
+            >
+              {/* Place your MP4 file in public/assets/videos/ */}
+              <source src="/assets/videos/demo-video.mp4" type="video/mp4" />
+              <source src="/assets/videos/demo-video.webm" type="video/webm" />
+              Your browser does not support the video tag.
+            </video>
+
+            {/* Custom Video Controls Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={handlePlayPause}
+                    className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors"
+                  >
+                    {isPlaying ? '⏸️' : '▶️'}
+                  </button>
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration || 100}
+                      value={videoTime}
+                      onChange={handleSeek}
+                      className="w-full h-2 bg-white/30 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                  <div className="text-white text-sm">
+                    {formatTime(videoTime)} / {formatTime(duration)}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Scene Progress Indicator */}
-            <div className="absolute top-4 right-4 bg-black/50 rounded-lg px-3 py-2">
+            {/* Scene Indicator */}
+            <div className="absolute top-4 right-4 bg-black/70 rounded-lg px-3 py-2">
               <div className="text-sm text-white">
                 Scene {currentScene + 1} of {scenes.length}
               </div>
             </div>
-
-            {/* Play/Pause Overlay */}
-            {!isPlaying && (
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">▶️</div>
-                  <div className="text-xl text-white">Click Play to Start Demo</div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Video Controls */}
@@ -173,25 +254,39 @@ export default function DemoVideoPage() {
               />
             </div>
 
-            {/* Time and Controls */}
+            {/* Controls Row */}
             <div className="flex items-center justify-between">
-              <div className="text-zinc-400">
-                {formatTime(videoTime)} / {formatTime(totalDuration)}
-              </div>
-              
               <div className="flex items-center gap-4">
-                <button
-                  onClick={handleReset}
-                  className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  🔄 Reset
-                </button>
                 <button
                   onClick={handlePlayPause}
                   className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   {isPlaying ? '⏸️ Pause' : '▶️ Play'}
                 </button>
+                
+                <button
+                  onClick={handleMuteToggle}
+                  className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-3 rounded-lg transition-colors"
+                >
+                  {isMuted ? '🔇' : '🔊'}
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-400 text-sm">Volume:</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={volume}
+                    onChange={handleVolumeChange}
+                    className="w-20 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+              </div>
+              
+              <div className="text-zinc-400">
+                {formatTime(videoTime)} / {formatTime(duration)}
               </div>
             </div>
           </div>
@@ -209,14 +304,13 @@ export default function DemoVideoPage() {
                     ? 'border-teal-500 bg-teal-500/20'
                     : 'border-zinc-700 bg-zinc-800 hover:border-zinc-600'
                 }`}
-                onClick={() => {
-                  setCurrentScene(index);
-                  setVideoTime(scenes.slice(0, index).reduce((sum, s) => sum + s.duration, 0));
-                }}
+                onClick={() => handleSceneClick(index)}
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="text-2xl">{scene.visual}</div>
-                  <div className="text-sm text-zinc-400">{scene.duration}s</div>
+                  <div className="text-sm text-zinc-400">
+                    {formatTime(scene.startTime)} - {formatTime(scene.endTime)}
+                  </div>
                 </div>
                 <h3 className="font-semibold text-white mb-1">{scene.title}</h3>
                 <p className="text-sm text-zinc-400">{scene.description}</p>
@@ -237,7 +331,9 @@ export default function DemoVideoPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-white">{scene.title}</h3>
-                    <span className="text-sm text-zinc-400">({scene.duration}s)</span>
+                    <span className="text-sm text-zinc-400">
+                      ({formatTime(scene.startTime)} - {formatTime(scene.endTime)})
+                    </span>
                   </div>
                   <p className="text-zinc-300 mb-2">{scene.description}</p>
                   <div className="text-sm text-zinc-400">
@@ -271,6 +367,26 @@ export default function DemoVideoPage() {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #14b8a6;
+          cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #14b8a6;
+          cursor: pointer;
+          border: none;
+        }
+      `}</style>
     </main>
   );
 }
