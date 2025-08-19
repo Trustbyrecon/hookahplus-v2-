@@ -270,6 +270,8 @@ export default function SessionsDashboard() {
         refillTimerStart = Date.now();
       }
 
+
+
       // Update local state immediately for better UX
       setSessions(prev => prev.map(s => 
         s.id === sessionId 
@@ -277,10 +279,8 @@ export default function SessionsDashboard() {
               ...s, 
               coalStatus: newStatus,
               refillTimerStart,
-              sessionPauseTime: newStatus === 'burnt_out' ? Date.now() : undefined,
-              totalPausedTime: newStatus === 'burnt_out' ? 
-                (s.totalPausedTime || 0) + (s.sessionPauseTime ? Date.now() - s.sessionPauseTime : 0) : 
-                s.totalPausedTime || 0
+              sessionPauseTime: undefined,
+              totalPausedTime: s.totalPausedTime || 0
             }
           : s
       ));
@@ -294,7 +294,7 @@ export default function SessionsDashboard() {
           data: { 
             status: newStatus,
             refillTimerStart,
-            sessionPauseTime: newStatus === 'burnt_out' ? Date.now() : undefined
+            sessionPauseTime: undefined
           }
         })
       });
@@ -333,6 +333,34 @@ export default function SessionsDashboard() {
     const newDemoSessions = generateDemoSessions();
     setSessions(newDemoSessions);
     showNotification('Demo data generated successfully!', 'success');
+  }
+
+  // Function to simulate mobile QR workflow order
+  function generateMobileOrder() {
+    const mobileOrder: Session = {
+      id: `mobile-${Date.now()}`,
+      tableId: `T-${Math.floor(Math.random() * 12) + 1}`,
+      flavor: 'Double Apple + Mint',
+      amount: 3200,
+      status: 'active',
+      createdAt: Date.now(),
+      sessionStartTime: Date.now(),
+      sessionDuration: 0,
+      coalStatus: 'active',
+      customerName: `Mobile Customer ${Math.floor(Math.random() * 100) + 1}`,
+      customerId: `cust_${Math.random().toString(36).substr(2, 9)}`,
+      tableType: 'table',
+      tablePosition: { x: 50 + Math.floor(Math.random() * 500), y: 100 + Math.floor(Math.random() * 200) },
+      deliveryStatus: 'delivered',
+      deliveryStartTime: Date.now() - 300000, // 5 minutes ago
+      actualDeliveryTime: Date.now() - 240000, // 4 minutes ago
+      hookahRoomStaff: 'John D.',
+      deliveryConfirmedBy: 'Sarah M.',
+      deliveryConfirmedAt: Date.now() - 240000
+    };
+
+    setSessions(prev => [mobileOrder, ...prev]);
+    showNotification(`Mobile order created for ${mobileOrder.tableId}! Customer completed QR workflow.`, 'success');
   }
 
   // Function to end session
@@ -401,23 +429,24 @@ export default function SessionsDashboard() {
               <div className="flex items-center gap-4">
                 <div className="text-4xl">🌿</div>
                 <div>
-                                  <h1 className="text-3xl md:text-4xl font-bold text-teal-400 drop-shadow-lg">HOOKAH+</h1>
-                <h2 className="text-xl text-zinc-300 drop-shadow-md">PREP ROOM DASHBOARD</h2>
+                  <h1 className="text-3xl md:text-4xl font-bold text-teal-400 drop-shadow-lg">HOOKAH+</h1>
+                  <h2 className="text-xl text-zinc-300 drop-shadow-md">PREP ROOM DASHBOARD</h2>
                 </div>
               </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={fetchSessions}
-                disabled={isLoading}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-blue-800 disabled:to-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:scale-100"
-              >
-                {isLoading ? '🔄' : '🔄'} Refresh
-              </button>
-              <div className="text-sm text-zinc-400">
-                {sessions.length} Active Sessions
-              </div>
-              <div className="text-sm text-purple-400 font-medium">
-                🌐 {sessions.filter(s => s.customerId).length} Network Customers
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={fetchSessions}
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-blue-800 disabled:to-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25 hover:scale-105 disabled:scale-100"
+                >
+                  {isLoading ? '🔄' : '🔄'} Refresh
+                </button>
+                <div className="text-sm text-zinc-400">
+                  {sessions.length} Active Sessions
+                </div>
+                <div className="text-sm text-purple-400 font-medium">
+                  🌐 {sessions.filter(s => s.customerId).length} Network Customers
+                </div>
               </div>
             </div>
           </div>
@@ -445,12 +474,20 @@ export default function SessionsDashboard() {
             <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-teal-600 rounded-xl p-6 shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-teal-300 drop-shadow-md">Session Summary</h3>
-                <button
-                  onClick={generateDemoData}
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-purple-500/25 hover:scale-105"
-                >
-                  🎲 Generate Demo Data
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={generateDemoData}
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-purple-500/25 hover:scale-105"
+                  >
+                    🎲 Generate Demo Data
+                  </button>
+                  <button
+                    onClick={generateMobileOrder}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
+                  >
+                    📱 Simulate Mobile Order
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
@@ -481,195 +518,381 @@ export default function SessionsDashboard() {
             </div>
           )}
 
+          {/* Mobile QR Workflow */}
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-emerald-600 rounded-xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-emerald-300 mb-4 drop-shadow-md">📱 Mobile QR Workflow - Customer Journey</h3>
+            <p className="text-zinc-400 mb-6 text-center">Staff can see the complete customer experience from QR scan to confirmation</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+              {/* Step 1: QR Scan */}
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-emerald-600/30">
+                <div className="text-3xl mb-2">📱</div>
+                <div className="text-sm font-semibold text-emerald-300">1. QR Scan</div>
+                <div className="text-xs text-zinc-400 mt-1">Customer scans table QR</div>
+              </div>
+              
+              {/* Step 2: Flavor Selection */}
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-emerald-600/30">
+                <div className="text-3xl mb-2">🍃</div>
+                <div className="text-sm font-semibold text-emerald-300">2. Flavor Pick</div>
+                <div className="text-xs text-zinc-400 mt-1">AI recommendations</div>
+              </div>
+              
+              {/* Step 3: Checkout */}
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-emerald-600/30">
+                <div className="text-3xl mb-2">💳</div>
+                <div className="text-sm font-semibold text-emerald-300">3. Stripe Pay</div>
+                <div className="text-xs text-zinc-400 mt-1">Secure payment</div>
+              </div>
+              
+              {/* Step 4: Confirmation */}
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-emerald-600/30">
+                <div className="text-3xl mb-2">✅</div>
+                <div className="text-sm font-semibold text-emerald-300">4. Confirm</div>
+                <div className="text-xs text-zinc-400 mt-1">Instant notification</div>
+              </div>
+              
+              {/* Step 5: Dashboard */}
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-emerald-600/30">
+                <div className="text-3xl mb-2">📊</div>
+                <div className="text-sm font-semibold text-emerald-300">5. Monitor</div>
+                <div className="text-xs text-zinc-400 mt-1">Real-time tracking</div>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <a
+                href="/demo-flow"
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-emerald-500/25 hover:scale-105"
+              >
+                🎯 Experience Full Customer Journey
+              </a>
+            </div>
+          </div>
+
+          {/* Mobile Order Status */}
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-pink-600 rounded-xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-pink-300 mb-4 drop-shadow-md">📱 Mobile Order Status</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-pink-600/30">
+                <div className="text-2xl font-bold text-pink-400">
+                  {sessions.filter(s => s.status === 'active' && s.coalStatus === 'active').length}
+                </div>
+                <div className="text-sm text-zinc-400">Active Orders</div>
+                <div className="text-xs text-pink-300 mt-1">Mobile + Staff</div>
+              </div>
+              
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-pink-600/30">
+                <div className="text-2xl font-bold text-blue-400">
+                  {sessions.filter(s => s.customerId).length}
+                </div>
+                <div className="text-sm text-zinc-400">Mobile Orders</div>
+                <div className="text-xs text-blue-300 mt-1">QR Code Customers</div>
+              </div>
+              
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-pink-600/30">
+                <div className="text-2xl font-bold text-green-400">
+                  {sessions.filter(s => s.deliveryStatus === 'delivered').length}
+                </div>
+                <div className="text-sm text-zinc-400">Delivered</div>
+                <div className="text-xs text-green-300 mt-1">Ready to Start</div>
+              </div>
+              
+              <div className="bg-zinc-800 rounded-lg p-4 text-center border border-pink-600/30">
+                <div className="text-2xl font-bold text-purple-400">
+                  ${(sessions.reduce((sum, s) => sum + (s.totalRevenue || s.amount), 0) / 100).toFixed(2)}
+                </div>
+                <div className="text-sm text-zinc-400">Mobile Revenue</div>
+                <div className="text-xs text-purple-300 mt-1">Today's Total</div>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-center">
+              <div className="text-sm text-zinc-400">
+                💡 <strong>Pro Tip:</strong> Mobile orders appear automatically when customers complete QR workflow
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Workflow Simulation */}
+          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-cyan-600 rounded-xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-cyan-300 mb-4 drop-shadow-md">🎬 Live Mobile Workflow Simulation</h3>
+            <p className="text-zinc-400 mb-6 text-center">Watch a customer go through the complete QR workflow in real-time</p>
+            
+            <div className="bg-zinc-800 rounded-lg p-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {/* Step 1: QR Scan */}
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📱</div>
+                  <div className="text-sm font-semibold text-cyan-300">QR Scan</div>
+                  <div className="text-xs text-zinc-400 mt-1">Customer scans table</div>
+                  <div className="mt-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mx-auto"></div>
+                  </div>
+                </div>
+                
+                {/* Step 2: Flavor Selection */}
+                <div className="text-center">
+                  <div className="text-4xl mb-2">🍃</div>
+                  <div className="text-sm font-semibold text-cyan-300">Flavor Pick</div>
+                  <div className="text-xs text-zinc-400 mt-1">AI recommendations</div>
+                  <div className="mt-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mx-auto"></div>
+                  </div>
+                </div>
+                
+                {/* Step 3: Checkout */}
+                <div className="text-center">
+                  <div className="text-4xl mb-2">💳</div>
+                  <div className="text-sm font-semibold text-cyan-300">Stripe Pay</div>
+                  <div className="text-xs text-zinc-400 mt-1">Secure payment</div>
+                  <div className="mt-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mx-auto"></div>
+                  </div>
+                </div>
+                
+                {/* Step 4: Confirmation */}
+                <div className="text-center">
+                  <div className="text-4xl mb-2">✅</div>
+                  <div className="text-sm font-semibold text-cyan-300">Confirm</div>
+                  <div className="text-xs text-zinc-400 mt-1">Instant notification</div>
+                  <div className="mt-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mx-auto"></div>
+                  </div>
+                </div>
+                
+                {/* Step 5: Dashboard */}
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📊</div>
+                  <div className="text-sm font-semibold text-cyan-300">Monitor</div>
+                  <div className="text-xs text-zinc-400 mt-1">Real-time tracking</div>
+                  <div className="mt-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mx-auto"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 text-center">
+                <div className="text-sm text-green-400 mb-2">
+                  ✅ <strong>Workflow Complete!</strong> Customer order appears in sessions above
+                </div>
+                <div className="text-xs text-zinc-400">
+                  This simulates the complete customer journey from QR scan to order confirmation
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Sessions Grid */}
           <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-yellow-600 rounded-xl p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-yellow-300 mb-4 drop-shadow-md">Active Sessions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sessions.map((session) => (
-                          <div 
-              key={session.id} 
-              id={`session-${session.id}`}
-              className={`bg-zinc-900 border-2 rounded-xl p-6 space-y-4 transition-all duration-200 ${
-                session.status === 'ended' 
-                  ? 'border-red-600 bg-zinc-800/50' 
-                  : session.coalStatus === 'needs_refill'
-                  ? 'border-yellow-500 bg-zinc-900'
-                  : session.coalStatus === 'burnt_out'
-                  ? 'border-orange-500 bg-zinc-900'
-                  : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
-              }`}
-            >
-                {/* Table Header */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-white">
-                      {session.tableId || 'Unknown Table'}
-                    </h3>
-                    <div className={`text-sm font-medium ${getTableTypeColor(session.tableType)}`}>
-                      {getTableTypeDisplay(session.tableType)}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-zinc-400">
-                      #{session.id.slice(-6)}
-                    </div>
-                    <div className="text-xs text-teal-400 font-medium">
-                      {session.customerName || 'Staff Customer'}
-                    </div>
-                    {session.status === 'ended' && (
-                      <div className="text-xs text-red-400 font-medium mt-1">
-                        SESSION ENDED
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Timer */}
-                <div className="text-center">
-                  <div className="text-3xl font-mono font-bold text-teal-400">
-                    {getSessionTimer(
-                      session.sessionStartTime || 0, 
-                      session.sessionDuration || 0,
-                      session.coalStatus,
-                      session.refillTimerStart,
-                      session.totalPausedTime
-                    )}
-                  </div>
-                  <div className="text-sm text-zinc-400">
-                    {session.coalStatus === 'burnt_out' ? 'Session Paused' : 'Session Timer'}
-                  </div>
-                  {session.status === 'ended' && (
-                    <div className="mt-2">
-                      <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
-                        ENDED
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Flavor */}
-                <div className="bg-gradient-to-r from-purple-900 to-purple-800 border border-purple-600 rounded-lg p-3">
-                  <div className="text-sm text-purple-300 mb-1">Current Flavor</div>
-                  <div className="text-white font-medium text-lg">
-                    {session.flavor || 'Choose flavors'}
-                  </div>
-                  {session.addOnFlavors && session.addOnFlavors.length > 0 && (
-                    <div className="mt-2 text-sm text-purple-200">
-                      + {session.addOnFlavors.join(', ')}
-                    </div>
-                  )}
-                </div>
-
-                              {/* Coal Status */}
-              <div className="bg-gradient-to-r from-blue-900 to-blue-800 border border-blue-600 rounded-lg p-3">
-                <div className="text-sm text-blue-300 mb-2">Status</div>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${getCoalStatusColor(session.coalStatus)}`}>
-                  {getCoalStatusText(session.coalStatus || 'unknown')}
-                </div>
-                {session.coalStatus === 'needs_refill' && refillTimers[session.id] !== undefined && (
-                  <div className="mt-2 text-center">
-                    <div className="text-xs text-zinc-400 mb-1">Auto-burnout in:</div>
-                    <div className={`text-lg font-mono font-bold ${
-                      refillTimers[session.id] <= 3 ? 'text-red-400' : 
-                      refillTimers[session.id] <= 6 ? 'text-yellow-400' : 'text-orange-400'
-                    }`}>
-                      {refillTimers[session.id]}s
-                    </div>
-                    <div className="mt-1">
-                      <div className="w-full bg-zinc-700 rounded-full h-1">
-                        <div 
-                          className={`h-1 rounded-full transition-all duration-1000 ${
-                            refillTimers[session.id] <= 3 ? 'bg-red-500' : 
-                            refillTimers[session.id] <= 6 ? 'bg-yellow-500' : 'bg-orange-500'
-                          }`}
-                          style={{ width: `${(refillTimers[session.id] / 10) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleCoalAction(session.id, session.coalStatus)}
-                  disabled={session.status === 'ended'}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    session.coalStatus === 'needs_refill'
-                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-green-500/25'
-                      : session.coalStatus === 'burnt_out'
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-blue-500/25'
-                      : 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-orange-500/25'
-                  } ${session.status === 'ended' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
-                >
-                  {session.coalStatus === 'needs_refill' 
-                    ? '✅ Complete Refill' 
-                    : session.coalStatus === 'burnt_out'
-                    ? '▶️ Resume Session'
-                    : '🔥 Request Refill'
-                  }
-                </button>
-                <button
-                  onClick={() => endSession(session.id)}
-                  disabled={session.status === 'ended'}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {sessions.map((session) => (
+                <div 
+                  key={session.id} 
+                  id={`session-${session.id}`}
+                  className={`bg-zinc-900 border-2 rounded-xl p-6 space-y-4 transition-all duration-200 ${
                     session.status === 'ended' 
-                      ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
-                      : 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-500/25 hover:scale-105'
+                      ? 'border-red-600 bg-zinc-800/50' 
+                      : session.coalStatus === 'needs_refill'
+                      ? 'border-yellow-500 bg-zinc-900'
+                      : session.coalStatus === 'burnt_out'
+                      ? 'border-orange-500 bg-zinc-900'
+                      : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
                   }`}
                 >
-                  {session.status === 'ended' ? 'Session Ended' : '⏹️ End Session'}
-                </button>
-              </div>
-
-              {/* Delivery Status */}
-              {session.deliveryStatus && (
-                <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 border border-indigo-600 rounded-lg p-3">
-                  <div className="text-sm text-indigo-300 mb-2">Delivery Status</div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${
-                    session.deliveryStatus === 'preparing' ? 'bg-blue-600 text-white' :
-                    session.deliveryStatus === 'ready' ? 'bg-green-600 text-white' :
-                    session.deliveryStatus === 'delivered' ? 'bg-purple-600 text-white' :
-                    'bg-gray-600 text-white'
-                  }`}>
-                    {session.deliveryStatus.toUpperCase()}
+                  {/* Table Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold text-white">
+                        {session.tableId || 'Unknown Table'}
+                      </h3>
+                      <div className={`text-sm font-medium ${getTableTypeColor(session.tableType)}`}>
+                        {getTableTypeDisplay(session.tableType)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-zinc-400">
+                        #{session.id.slice(-6)}
+                      </div>
+                      <div className="text-xs text-teal-400 font-medium">
+                        {session.customerName || 'Staff Customer'}
+                      </div>
+                      {session.customerId && (
+                        <div className="text-xs text-blue-400 font-medium mt-1 flex items-center gap-1">
+                          📱 Mobile Order
+                        </div>
+                      )}
+                      {session.status === 'ended' && (
+                        <div className="text-xs text-red-400 font-medium mt-1">
+                          SESSION ENDED
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {session.deliveryStatus === 'ready' && (
-                    <div className="mt-2 text-center">
-                      <button
-                        onClick={() => confirmDelivery(session.id)}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        Confirm Delivery
-                      </button>
+
+                  {/* Timer */}
+                  <div className="text-center">
+                    <div className="text-3xl font-mono font-bold text-teal-400">
+                      {getSessionTimer(
+                        session.sessionStartTime || 0, 
+                        session.sessionDuration || 0,
+                        session.coalStatus,
+                        session.refillTimerStart,
+                        session.totalPausedTime
+                      )}
+                    </div>
+                    <div className="text-sm text-zinc-400">
+                      {session.coalStatus === 'burnt_out' ? 'Session Paused' : 'Session Timer'}
+                    </div>
+                    {session.status === 'ended' && (
+                      <div className="mt-2">
+                        <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+                          ENDED
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Mobile Workflow Progress */}
+                    {session.customerId && (
+                      <div className="mt-3">
+                        <div className="text-xs text-blue-400 mb-1">Mobile Workflow Progress</div>
+                        <div className="flex items-center justify-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        </div>
+                        <div className="text-xs text-green-400 mt-1">Complete ✓</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Flavor */}
+                  <div className="bg-gradient-to-r from-purple-900 to-purple-800 border border-purple-600 rounded-lg p-3">
+                    <div className="text-sm text-purple-300 mb-1">Current Flavor</div>
+                    <div className="text-white font-medium text-lg">
+                      {session.flavor || 'Choose flavors'}
+                    </div>
+                    {session.addOnFlavors && session.addOnFlavors.length > 0 && (
+                      <div className="mt-2 text-sm text-purple-200">
+                        + {session.addOnFlavors.join(', ')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Coal Status */}
+                  <div className="bg-gradient-to-r from-blue-900 to-blue-800 border border-blue-600 rounded-lg p-3">
+                    <div className="text-sm text-blue-300 mb-2">Status</div>
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${getCoalStatusColor(session.coalStatus)}`}>
+                      {getCoalStatusText(session.coalStatus || 'unknown')}
+                    </div>
+                    {session.coalStatus === 'needs_refill' && refillTimers[session.id] !== undefined && (
+                      <div className="mt-2 text-center">
+                        <div className="text-xs text-zinc-400 mb-1">Auto-burnout in:</div>
+                        <div className={`text-lg font-mono font-bold ${
+                          refillTimers[session.id] <= 3 ? 'text-red-400' : 
+                          refillTimers[session.id] <= 6 ? 'text-yellow-400' : 'text-orange-400'
+                        }`}>
+                          {refillTimers[session.id]}s
+                        </div>
+                        <div className="mt-1">
+                          <div className="w-full bg-zinc-700 rounded-full h-1">
+                            <div 
+                              className={`h-1 rounded-full transition-all duration-1000 ${
+                                refillTimers[session.id] <= 3 ? 'bg-red-500' : 
+                                refillTimers[session.id] <= 6 ? 'bg-yellow-500' : 'bg-orange-500'
+                              }`}
+                              style={{ width: `${(refillTimers[session.id] / 10) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleCoalAction(session.id, session.coalStatus)}
+                      disabled={session.status === 'ended'}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        session.coalStatus === 'needs_refill'
+                          ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-green-500/25'
+                          : session.coalStatus === 'burnt_out'
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-blue-500/25'
+                          : 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-orange-500/25'
+                      } ${session.status === 'ended' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                    >
+                      {session.coalStatus === 'needs_refill' 
+                        ? '✅ Complete Refill' 
+                        : session.coalStatus === 'burnt_out'
+                        ? '▶️ Resume Session'
+                        : '🔥 Request Refill'
+                      }
+                    </button>
+                    <button
+                      onClick={() => endSession(session.id)}
+                      disabled={session.status === 'ended'}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        session.status === 'ended' 
+                          ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
+                          : 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-500/25 hover:scale-105'
+                      }`}
+                    >
+                      {session.status === 'ended' ? 'Session Ended' : '⏹️ End Session'}
+                    </button>
+                  </div>
+
+                  {/* Delivery Status */}
+                  {session.deliveryStatus && (
+                    <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 border border-indigo-600 rounded-lg p-3">
+                      <div className="text-sm text-indigo-300 mb-2">Delivery Status</div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${
+                        session.deliveryStatus === 'preparing' ? 'bg-blue-600 text-white' :
+                        session.deliveryStatus === 'ready' ? 'bg-green-600 text-white' :
+                        session.deliveryStatus === 'delivered' ? 'bg-purple-600 text-white' :
+                        'bg-gray-600 text-white'
+                      }`}>
+                        {session.deliveryStatus.toUpperCase()}
+                      </div>
+                      {session.deliveryStatus === 'ready' && (
+                        <div className="mt-2 text-center">
+                          <button
+                            onClick={() => confirmDelivery(session.id)}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Confirm Delivery
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Amount */}
+                  <div className="bg-gradient-to-r from-green-900 to-green-800 border border-green-600 rounded-lg p-3">
+                    <div className="text-sm text-green-300 mb-1">Current Amount</div>
+                    <div className="text-white font-bold text-2xl">
+                      ${((session.totalRevenue || session.amount) / 100).toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* ScreenCoder Integration Info */}
+                  {session.tablePosition && (
+                    <div className="bg-gradient-to-r from-cyan-900 to-cyan-800 border border-cyan-600 rounded-lg p-3">
+                      <div className="text-sm text-cyan-300 mb-1">ScreenCoder Position</div>
+                      <div className="text-xs text-cyan-200">
+                        X: {session.tablePosition.x}, Y: {session.tablePosition.y}
+                      </div>
+                      <div className="text-xs text-cyan-400 mt-1 font-medium">
+                        Click to view lounge layout
+                      </div>
                     </div>
                   )}
                 </div>
-              )}
-
-                {/* Amount */}
-                <div className="bg-gradient-to-r from-green-900 to-green-800 border border-green-600 rounded-lg p-3">
-                  <div className="text-sm text-green-300 mb-1">Current Amount</div>
-                  <div className="text-white font-bold text-2xl">
-                    ${((session.totalRevenue || session.amount) / 100).toFixed(2)}
-                  </div>
-                </div>
-
-                {/* ScreenCoder Integration Info */}
-                {session.tablePosition && (
-                  <div className="bg-gradient-to-r from-cyan-900 to-cyan-800 border border-cyan-600 rounded-lg p-3">
-                    <div className="text-sm text-cyan-300 mb-1">ScreenCoder Position</div>
-                    <div className="text-xs text-cyan-200">
-                      X: {session.tablePosition.x}, Y: {session.tablePosition.y}
-                    </div>
-                    <div className="text-xs text-cyan-400 mt-1 font-medium">
-                      Click to view lounge layout
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Hookah Room Dashboard */}
