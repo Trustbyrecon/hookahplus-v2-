@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import CustomerProfileManager from "../../components/CustomerProfileManager";
 import LoungeLayout from "../../components/LoungeLayout";
 import ConnectorPartnershipManager from "../../components/ConnectorPartnershipManager";
+import HookahRoomDashboard from "../../components/HookahRoomDashboard";
 import GlobalNavigation from "../../components/GlobalNavigation";
 
 type Session = {
@@ -33,6 +34,13 @@ type Session = {
   refillTimerStart?: number;
   sessionPauseTime?: number;
   totalPausedTime?: number;
+  // Delivery workflow fields
+  deliveryStatus?: "preparing" | "ready" | "delivered";
+  deliveryStartTime?: number;
+  actualDeliveryTime?: number;
+  hookahRoomStaff?: string;
+  deliveryConfirmedBy?: string;
+  deliveryConfirmedAt?: number;
 };
 
 export default function SessionsDashboard() {
@@ -86,7 +94,13 @@ export default function SessionsDashboard() {
         coalStatus: 'active',
         customerName: 'Demo Customer 1',
         tableType: 'table',
-        tablePosition: { x: 50, y: 200 }
+        tablePosition: { x: 50, y: 200 },
+        deliveryStatus: 'delivered',
+        deliveryStartTime: Date.now() - 2000000, // 33 minutes ago
+        actualDeliveryTime: Date.now() - 1980000, // 33 minutes ago
+        hookahRoomStaff: 'John D.',
+        deliveryConfirmedBy: 'Sarah M.',
+        deliveryConfirmedAt: Date.now() - 1980000
       },
       {
         id: 'demo-2',
@@ -100,7 +114,10 @@ export default function SessionsDashboard() {
         coalStatus: 'needs_refill',
         customerName: 'Demo Customer 2',
         tableType: 'high_boy',
-        tablePosition: { x: 250, y: 300 }
+        tablePosition: { x: 250, y: 300 },
+        deliveryStatus: 'ready',
+        deliveryStartTime: Date.now() - 1200000, // 20 minutes ago
+        hookahRoomStaff: 'Mike R.'
       },
       {
         id: 'demo-3',
@@ -114,7 +131,10 @@ export default function SessionsDashboard() {
         coalStatus: 'burnt_out',
         customerName: 'Demo Customer 3',
         tableType: 'table',
-        tablePosition: { x: 550, y: 200 }
+        tablePosition: { x: 550, y: 200 },
+        deliveryStatus: 'preparing',
+        deliveryStartTime: Date.now() - 3500000, // 58 minutes ago
+        hookahRoomStaff: 'Lisa K.'
       }
     ];
 
@@ -230,6 +250,81 @@ export default function SessionsDashboard() {
     const seconds = Math.floor((adjustedElapsed % 60000) / 1000);
     
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Function to handle coal actions (refill, resume, etc.)
+  async function handleCoalAction(sessionId: string, currentStatus?: string) {
+    try {
+      let newStatus: "active" | "needs_refill" | "burnt_out";
+      
+      if (currentStatus === 'needs_refill') {
+        newStatus = 'active'; // Complete refill
+      } else if (currentStatus === 'burnt_out') {
+        newStatus = 'active'; // Resume session
+      } else {
+        newStatus = 'needs_refill'; // Request refill
+      }
+
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_coal_status',
+          sessionId,
+          data: { status: newStatus }
+        })
+      });
+
+      if (res.ok) {
+        await fetchSessions(); // Refresh data
+      }
+    } catch (error) {
+      console.error('Error updating coal status:', error);
+    }
+  }
+
+  // Function to end session
+  async function endSession(sessionId: string) {
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'end_session',
+          sessionId
+        })
+      });
+
+      if (res.ok) {
+        await fetchSessions(); // Refresh data
+      }
+    } catch (error) {
+      console.error('Error ending session:', error);
+    }
+  }
+
+  // Function to confirm delivery
+  async function confirmDelivery(sessionId: string) {
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'confirm_delivery',
+          sessionId,
+          data: { 
+            confirmedBy: 'Staff Member',
+            confirmedAt: Date.now()
+          }
+        })
+      });
+
+      if (res.ok) {
+        await fetchSessions(); // Refresh data
+      }
+    } catch (error) {
+      console.error('Error confirming delivery:', error);
+    }
   }
 
   return (
@@ -353,24 +448,76 @@ export default function SessionsDashboard() {
                   )}
                 </div>
 
-                {/* Coal Status */}
-                <div className="bg-zinc-800 rounded-lg p-3">
-                  <div className="text-sm text-zinc-400 mb-2">Status</div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${getCoalStatusColor(session.coalStatus)}`}>
-                    {getCoalStatusText(session.coalStatus || 'unknown')}
+                              {/* Coal Status */}
+              <div className="bg-zinc-800 rounded-lg p-3">
+                <div className="text-sm text-zinc-400 mb-2">Status</div>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${getCoalStatusColor(session.coalStatus)}`}>
+                  {getCoalStatusText(session.coalStatus || 'unknown')}
+                </div>
+                {session.coalStatus === 'needs_refill' && refillTimers[session.id] !== undefined && (
+                  <div className="mt-2 text-center">
+                    <div className="text-xs text-zinc-400 mb-1">Auto-burnout in:</div>
+                    <div className={`text-lg font-mono font-bold ${
+                      refillTimers[session.id] <= 3 ? 'text-red-400' : 
+                      refillTimers[session.id] <= 6 ? 'text-yellow-400' : 'text-orange-400'
+                    }`}>
+                      {refillTimers[session.id]}s
+                    </div>
                   </div>
-                  {session.coalStatus === 'needs_refill' && refillTimers[session.id] !== undefined && (
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleCoalAction(session.id, session.coalStatus)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    session.coalStatus === 'needs_refill'
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : session.coalStatus === 'burnt_out'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white'
+                  }`}
+                >
+                  {session.coalStatus === 'needs_refill' 
+                    ? 'Complete Refill' 
+                    : session.coalStatus === 'burnt_out'
+                    ? 'Resume Session'
+                    : 'Request Refill'
+                  }
+                </button>
+                <button
+                  onClick={() => endSession(session.id)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  End Session
+                </button>
+              </div>
+
+              {/* Delivery Status */}
+              {session.deliveryStatus && (
+                <div className="bg-zinc-800 rounded-lg p-3">
+                  <div className="text-sm text-zinc-400 mb-2">Delivery Status</div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold text-center ${
+                    session.deliveryStatus === 'preparing' ? 'bg-blue-600 text-white' :
+                    session.deliveryStatus === 'ready' ? 'bg-green-600 text-white' :
+                    session.deliveryStatus === 'delivered' ? 'bg-purple-600 text-white' :
+                    'bg-gray-600 text-white'
+                  }`}>
+                    {session.deliveryStatus.toUpperCase()}
+                  </div>
+                  {session.deliveryStatus === 'ready' && (
                     <div className="mt-2 text-center">
-                      <div className="text-xs text-zinc-400 mb-1">Auto-burnout in:</div>
-                      <div className={`text-lg font-mono font-bold ${
-                        refillTimers[session.id] <= 3 ? 'text-red-400' : 
-                        refillTimers[session.id] <= 6 ? 'text-yellow-400' : 'text-orange-400'
-                      }`}>
-                        {refillTimers[session.id]}s
-                      </div>
+                      <button
+                        onClick={() => confirmDelivery(session.id)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Confirm Delivery
+                      </button>
                     </div>
                   )}
                 </div>
+              )}
 
                 {/* Amount */}
                 <div className="bg-zinc-800 rounded-lg p-3">
@@ -395,6 +542,9 @@ export default function SessionsDashboard() {
               </div>
             ))}
           </div>
+
+          {/* Hookah Room Dashboard */}
+          <HookahRoomDashboard />
 
           {/* Lounge Layout */}
           <LoungeLayout 
