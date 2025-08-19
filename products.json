@@ -1,0 +1,31 @@
+[
+  {
+    "name": "Hookah Session",
+    "description": "Standard hookah session with 1 flavor included.",
+    "type": "service",
+    "default_price_data": {
+      "currency": "usd",
+      "unit_amount": 1500,
+      "recurring": null
+    }
+  },
+  {
+    "name": "Flavor Add-On",
+    "description": "Additional flavor shot for your hookah session.",
+    "type": "service",
+    "default_price_data": {
+      "currency": "usd",
+      "unit_amount": 200
+    }
+  },
+  {
+    "name": "VIP Monthly",
+    "description": "Unlimited premium lounge access with perks.",
+    "type": "service",
+    "default_price_data": {
+      "currency": "usd",
+      "unit_amount": 5000,
+      "recurring": { "interval": "month" }
+    }
+  }
+]

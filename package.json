@@ -10,7 +10,8 @@
     "lint": "next lint",
     "codex:start": "openai-codex start",
     "codex:review": "openai-codex review",
-    "test:pos": "ts-node scripts/test-pos.ts"
+    "test:pos": "ts-node scripts/test-pos.ts",
+    "seed:stripe": "node scripts/seed-stripe-products.js"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.19.2",
