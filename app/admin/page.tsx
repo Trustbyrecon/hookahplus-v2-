@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import GlobalNavigation from "@/components/GlobalNavigation";
 import {
   Download,
   Play,
@@ -280,6 +281,7 @@ export default function AdminControlCenter() {
 
   return (
     <div className="min-h-screen w-full bg-black text-zinc-100 p-6 space-y-6">
+      <GlobalNavigation />
       <AdminNavHeader env={env} onEnvChange={setEnv} />
 
       {/* KPI strip */}
@@ -348,6 +350,31 @@ export default function AdminControlCenter() {
       {/* OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-4">
+          {/* EP Agent & MOAT Analytics Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6">
+              <h2 className="text-lg font-medium mb-3">EP Agent Launch</h2>
+              <p className="text-sm text-zinc-400 mb-4">Launch and manage EP agents</p>
+              <button 
+                onClick={() => window.location.href = '/ep-agent-launch'} 
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center w-full justify-center"
+              >
+                <Rocket className="w-4 h-4" /> Launch EP Agent
+              </button>
+            </div>
+            
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6">
+              <h2 className="text-lg font-medium mb-3">MOAT Analytics</h2>
+              <p className="text-sm text-zinc-400 mb-4">Advanced analytics and insights</p>
+              <button 
+                onClick={() => window.location.href = '/moat-analytics'} 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg gap-2 flex items-center w-full justify-center"
+              >
+                <TrendingUp className="w-4 h-4" /> View Analytics
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-6 lg:col-span-2">
               <h2 className="text-lg font-medium mb-3">System Status</h2>

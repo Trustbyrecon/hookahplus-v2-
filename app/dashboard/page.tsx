@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getTopFlavors, getReturningCustomers, listOrders, getTotalRevenue, getPaidOrderCount, getPendingOrderCount } from "../../lib/orders";
 import AdminNavHeader from "../../components/AdminNavHeader";
+import GlobalNavigation from "../../components/GlobalNavigation";
 
 type Order = {
   id: string;
@@ -228,6 +229,7 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
+      <GlobalNavigation />
       <AdminNavHeader />
       <div className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
