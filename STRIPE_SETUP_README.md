@@ -17,8 +17,8 @@ Create a `.env.local` file in your project root with your Stripe test keys:
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 # Stripe Configuration
-NEXT_PUBLIC_STRIPE_PUBLIC_KEY=pk_test_51RZ0cZDuKNq0KFAAPZPxVRdQdyLUbsWwZZEdxTuObIOB9msGFgSKwdRQFEz0ecEnvLp9mfTda3JMSBYukhmMUQSl00RzwEJHfK
-STRIPE_SECRET_KEY=sk_test_51RZ0cZDuKNq0KFAAPZPxVRdQdyLUbsWwZZEdxTuObIOB9msGFgSKwdRQFEz0ecEnvLp9mfTda3JMSBYukhmMUQSl00RzwEJHfK
+NEXT_PUBLIC_STRIPE_PUBLIC_KEY=pk_test_your_stripe_public_key_here
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 
 # Trust-Lock Security
