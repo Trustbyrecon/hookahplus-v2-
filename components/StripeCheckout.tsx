@@ -31,13 +31,13 @@ export default function StripeCheckout({
   const defaultProducts: Product[] = [
     {
       name: "Hookah Session",
-      priceId: "price_placeholder", // Replace with actual price ID after seeding
+      priceId: "price_1RyCtSDuKNq0KFAAihtnSInq", // Real Stripe Price ID
       amount: 15.00,
       currency: "usd"
     },
     {
       name: "Flavor Add-On",
-      priceId: "price_placeholder", // Replace with actual price ID after seeding
+      priceId: "price_1RyCtTDuKNq0KFAAP6sAbA2z", // Real Stripe Price ID
       amount: 2.00,
       currency: "usd"
     }

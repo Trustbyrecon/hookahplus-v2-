@@ -5,7 +5,7 @@ import { signTrust } from "../../../lib/trustlock";
 import { addOrder } from "../../../lib/orders";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2024-06-20",
 });
 
 export async function POST(req: Request) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     (global as any).rateLimitRequests = recentRequests;
 
     const body = await req.json().catch(() => ({}));
-    const { tableId = "T-001", flavor = "Blue Mist + Mint", amount = 3000 } = body;
+    const { tableId = "T-001", flavor = "Blue Mist + Mint", addons = 0 } = body;
 
     // Create a local order id for trust binding
     const orderId = `ord_${Math.random().toString(36).slice(2, 10)}`;
@@ -45,32 +45,48 @@ export async function POST(req: Request) {
       id: orderId,
       tableId,
       flavor,
-      amount,
+      amount: 3000 + (addons * 150), // $30 base + $1.50 per addon
       currency: "usd",
       status: "created",
       createdAt: Date.now(),
     });
     
     // Audit log (MVP)
-    console.log(`audit.order.created: ${new Date().toISOString()} | orderId: ${orderId} | tableId: ${tableId} | trustSig: ${trustSig}`);
+    console.log(`audit.order.created: ${new Date().toISOString()} | orderId: ${orderId} | tableId: ${tableId} | trustSig: ${trustSig} | addons: ${addons}`);
+
+    // Build line items using the new product structure
+    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      { 
+        price: process.env.PRICE_SESSION_30!, 
+        quantity: 1 
+      }
+    ];
+    
+    // Add flavor add-ons if requested
+    if (addons > 0) {
+      line_items.push({ 
+        price: process.env.PRICE_FLAVOR_150!, 
+        quantity: addons 
+      });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout?success=1&order=${orderId}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout?canceled=1&order=${orderId}`,
-      line_items: [
-        { price_data: { currency: "usd", product_data: { name: `Hookah Session — ${flavor}` }, unit_amount: amount }, quantity: 1 },
-      ],
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?sid={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/cancel`,
+      line_items,
       metadata: {
         orderId,
         trustSig,
         tableId,
         flavor,
+        addons: addons.toString(),
       },
     });
 
-    return NextResponse.json({ id: session.id, orderId });
+    return NextResponse.json({ url: session.url, orderId });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? "failed" }, { status: 500 });
+    console.error('Checkout session creation error:', e);
+    return NextResponse.json({ error: e.message ?? "Failed to create checkout session" }, { status: 500 });
   }
 }
