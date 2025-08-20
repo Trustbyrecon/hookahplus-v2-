@@ -31,10 +31,17 @@ export default function StripeTestPage() {
                 <p className="text-gray-600 mb-2">
                   Create a <code className="bg-gray-100 px-1 rounded">.env.local</code> file in your project root:
                 </p>
+<<<<<<< HEAD
                                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
 {`NEXT_PUBLIC_STRIPE_PUBLIC_KEY=pk_test_your_stripe_public_key_here
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here`}
                  </pre>
+=======
+                <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+{`NEXT_PUBLIC_STRIPE_PUBLIC_KEY=pk_test_your_stripe_public_key_here
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here`}
+                </pre>
+>>>>>>> stripe-integration-clean
               </div>
 
               <div>
