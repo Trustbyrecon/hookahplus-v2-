@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import GlobalNavigation from "../../components/GlobalNavigation";
 import { 
   getAllSessions, 
   getLiveSessions, 
