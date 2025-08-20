@@ -18,10 +18,17 @@ export type WorkflowButton =
   | 'redo_remix'         // flavor or equipment error requires remake
   | 'swap_charcoal'      // mid-session service handoff
   | 'cancel'             // order dropped before delivery
-  | 'return_to_prep';    // hookah sent back after delivery issue
+  | 'return_to_prep'     // hookah sent back after delivery issue
+  
+  // 🔥 New Refill & Coal Management Buttons
+  | 'refill_requested'   // customer requests refill
+  | 'refill_delivered'   // staff delivers refill
+  | 'coals_burned_out'   // coals need replacement
+  | 'coals_delivered'    // staff delivers new coals
+  | 'session_complete';  // session finished
 
-export type StaffRole = 'prep' | 'front' | 'customer';
-export type SessionStatus = 'prep' | 'delivery' | 'service' | 'recovery' | 'completed' | 'cancelled';
+export type StaffRole = 'prep' | 'front' | 'customer' | 'hookah_room';
+export type SessionStatus = 'prep' | 'delivery' | 'service' | 'refill' | 'coals_needed' | 'recovery' | 'completed' | 'cancelled';
 
 // 🔄 Cursor / Agent Event Interface
 export interface WorkflowEvent {
@@ -42,12 +49,15 @@ export interface SessionState {
   prepStage: PrepStage;
   deliveryStage: DeliveryStage;
   serviceStage: ServiceStage;
+  refillStage: RefillStage;
+  coalStage: CoalStage;
   recoveryStage?: RecoveryStage;
   createdAt: Date;
   updatedAt: Date;
   staffAssigned: {
     prep?: string;
     front?: string;
+    hookah_room?: string;
   };
   flavorMix: string;
   tableId: string;
@@ -55,7 +65,15 @@ export interface SessionState {
     armedAt?: Date;
     startedAt?: Date;
     duration?: number; // in minutes
+    currentCycle?: number;
+    lastRefillAt?: Date;
+    lastCoalSwapAt?: Date;
   };
+  // Demo timing controls
+  demoMode: boolean;
+  cycleTimer?: NodeJS.Timeout;
+  refillTimer?: NodeJS.Timeout;
+  coalTimer?: NodeJS.Timeout;
 }
 
 export interface PrepStage {
@@ -84,6 +102,26 @@ export interface ServiceStage {
   duration: number; // in minutes
   charcoalSwaps: number;
   lastCharcoalSwap?: Date;
+  refillCount: number;
+  coalBurnoutCount: number;
+}
+
+export interface RefillStage {
+  isRequested: boolean;
+  isDelivered: boolean;
+  requestedAt?: Date;
+  deliveredAt?: Date;
+  deliveredBy?: string;
+  refillType: 'flavor' | 'water' | 'both';
+}
+
+export interface CoalStage {
+  needsReplacement: boolean;
+  isDelivered: boolean;
+  requestedAt?: Date;
+  deliveredAt?: Date;
+  deliveredBy?: string;
+  coalType: 'quick_light' | 'natural' | 'coconut';
 }
 
 export interface RecoveryStage {
@@ -97,6 +135,7 @@ export interface RecoveryStage {
 export class FireSessionWorkflow extends EventEmitter {
   private sessions: Map<string, SessionState> = new Map();
   private eventHistory: WorkflowEvent[] = [];
+  private demoTimers: Map<string, { cycle: NodeJS.Timeout; refill: NodeJS.Timeout; coal: NodeJS.Timeout }> = new Map();
 
   constructor() {
     super();
@@ -113,7 +152,7 @@ export class FireSessionWorkflow extends EventEmitter {
   }
 
   // 🚀 Create New Fire Session
-  createSession(sessionId: string, tableId: string, flavorMix: string, prepStaffId: string): SessionState {
+  createSession(sessionId: string, tableId: string, flavorMix: string, prepStaffId: string, demoMode: boolean = true): SessionState {
     const session: SessionState = {
       sessionId,
       currentStatus: 'prep',
@@ -131,13 +170,26 @@ export class FireSessionWorkflow extends EventEmitter {
       serviceStage: {
         isActive: false,
         duration: 0,
-        charcoalSwaps: 0
+        charcoalSwaps: 0,
+        refillCount: 0,
+        coalBurnoutCount: 0
+      },
+      refillStage: {
+        isRequested: false,
+        isDelivered: false,
+        refillType: 'both'
+      },
+      coalStage: {
+        needsReplacement: false,
+        isDelivered: false,
+        coalType: 'quick_light'
       },
       createdAt: new Date(),
       updatedAt: new Date(),
       staffAssigned: { prep: prepStaffId },
       flavorMix,
-      tableId
+      tableId,
+      demoMode
     };
 
     this.sessions.set(sessionId, session);
@@ -198,7 +250,8 @@ export class FireSessionWorkflow extends EventEmitter {
         session.prepStage.timerArmedAt = timestamp;
         session.sessionTimer = {
           armedAt: timestamp,
-          duration: metadata?.duration || 60 // default 60 minutes
+          duration: metadata?.duration || 60,
+          currentCycle: 0
         };
         break;
 
@@ -207,6 +260,8 @@ export class FireSessionWorkflow extends EventEmitter {
         session.prepStage.isReadyForDelivery = true;
         session.prepStage.readyForDeliveryAt = timestamp;
         session.currentStatus = 'delivery';
+        // Emit special event for dashboard visibility
+        this.emit('readyForDelivery', { sessionId: session.sessionId, tableId: session.tableId });
         break;
 
       // 🚚 Front Staff Buttons
@@ -227,12 +282,80 @@ export class FireSessionWorkflow extends EventEmitter {
         if (session.sessionTimer?.armedAt) {
           session.sessionTimer.startedAt = timestamp;
         }
+        
+        // Start demo cycle if enabled
+        if (session.demoMode) {
+          this.startDemoCycle(session.sessionId);
+        }
         break;
 
       case 'customer_confirmed':
         if (staffRole !== 'customer') return null;
         session.deliveryStage.isCustomerConfirmed = true;
         session.deliveryStage.customerConfirmedAt = timestamp;
+        break;
+
+      // 🔥 New Refill & Coal Management Buttons
+      case 'refill_requested':
+        if (staffRole !== 'customer') return null;
+        session.refillStage.isRequested = true;
+        session.refillStage.requestedAt = timestamp;
+        session.currentStatus = 'refill';
+        session.serviceStage.refillCount++;
+        // Emit event for hookah room dashboard
+        this.emit('refillRequested', { 
+          sessionId: session.sessionId, 
+          tableId: session.tableId,
+          refillType: metadata?.refillType || 'both'
+        });
+        break;
+
+      case 'refill_delivered':
+        if (staffRole !== 'front') return null;
+        session.refillStage.isDelivered = true;
+        session.refillStage.deliveredAt = timestamp;
+        session.refillStage.deliveredBy = staffId;
+        session.currentStatus = 'service';
+        // Resume demo cycle
+        if (session.demoMode) {
+          this.resumeDemoCycle(session.sessionId);
+        }
+        break;
+
+      case 'coals_burned_out':
+        if (staffRole !== 'customer') return null;
+        session.coalStage.needsReplacement = true;
+        session.coalStage.requestedAt = timestamp;
+        session.currentStatus = 'coals_needed';
+        session.serviceStage.coalBurnoutCount++;
+        // Emit event for hookah room dashboard
+        this.emit('coalsNeeded', { 
+          sessionId: session.sessionId, 
+          tableId: session.tableId,
+          coalType: metadata?.coalType || 'quick_light'
+        });
+        break;
+
+      case 'coals_delivered':
+        if (staffRole !== 'hookah_room') return null;
+        session.coalStage.isDelivered = true;
+        session.coalStage.deliveredAt = timestamp;
+        session.coalStage.deliveredBy = staffId;
+        session.currentStatus = 'service';
+        // Resume demo cycle
+        if (session.demoMode) {
+          this.resumeDemoCycle(session.sessionId);
+        }
+        break;
+
+      case 'session_complete':
+        if (staffRole !== 'front') return null;
+        session.currentStatus = 'completed';
+        session.serviceStage.isActive = false;
+        // Stop demo timers
+        if (session.demoMode) {
+          this.stopDemoTimers(session.sessionId);
+        }
         break;
 
       // ⚠️ Edge Case Buttons
@@ -270,6 +393,9 @@ export class FireSessionWorkflow extends EventEmitter {
 
       case 'cancel':
         session.currentStatus = 'cancelled';
+        if (session.demoMode) {
+          this.stopDemoTimers(session.sessionId);
+        }
         break;
 
       case 'return_to_prep':
@@ -307,6 +433,102 @@ export class FireSessionWorkflow extends EventEmitter {
     return event;
   }
 
+  // 🔥 Demo Cycle Management
+  private startDemoCycle(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (!session || !session.demoMode) return;
+
+    // Clear any existing timers
+    this.stopDemoTimers(sessionId);
+
+    // 30-second service cycle
+    const cycleTimer = setTimeout(() => {
+      this.triggerRefillRequest(sessionId);
+    }, 30000); // 30 seconds
+
+    // Store timer reference
+    this.demoTimers.set(sessionId, {
+      cycle: cycleTimer,
+      refill: null as any,
+      coal: null as any
+    });
+  }
+
+  private triggerRefillRequest(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    // Auto-trigger refill request
+    this.pressButton(sessionId, 'refill_requested', 'customer', 'demo_customer', {
+      refillType: 'both'
+    });
+
+    // 15-second refill period
+    const refillTimer = setTimeout(() => {
+      this.triggerCoalBurnout(sessionId);
+    }, 15000); // 15 seconds
+
+    // Update timer reference
+    const timers = this.demoTimers.get(sessionId);
+    if (timers) {
+      timers.refill = refillTimer;
+    }
+  }
+
+  private triggerCoalBurnout(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    // Auto-trigger coal burnout
+    this.pressButton(sessionId, 'coals_burned_out', 'customer', 'demo_customer', {
+      coalType: 'quick_light'
+    });
+
+    // 10-second coal replacement period
+    const coalTimer = setTimeout(() => {
+      this.autoResolveCoals(sessionId);
+    }, 10000); // 10 seconds
+
+    // Update timer reference
+    const timers = this.demoTimers.get(sessionId);
+    if (timers) {
+      timers.coal = coalTimer;
+    }
+  }
+
+  private autoResolveCoals(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    // Auto-resolve coal delivery (for demo purposes)
+    this.pressButton(sessionId, 'coals_delivered', 'hookah_room', 'demo_staff', {
+      coalType: 'quick_light'
+    });
+
+    // Restart cycle
+    setTimeout(() => {
+      this.startDemoCycle(sessionId);
+    }, 5000); // 5 second delay before restart
+  }
+
+  private resumeDemoCycle(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (!session || !session.demoMode) return;
+
+    // Restart the cycle
+    this.startDemoCycle(sessionId);
+  }
+
+  private stopDemoTimers(sessionId: string) {
+    const timers = this.demoTimers.get(sessionId);
+    if (timers) {
+      if (timers.cycle) clearTimeout(timers.cycle);
+      if (timers.refill) clearTimeout(timers.refill);
+      if (timers.coal) clearTimeout(timers.coal);
+      this.demoTimers.delete(sessionId);
+    }
+  }
+
   // 📊 Query Methods for Agents/Dashboards
   getSession(sessionId: string): SessionState | undefined {
     return this.sessions.get(sessionId);
@@ -318,7 +540,28 @@ export class FireSessionWorkflow extends EventEmitter {
 
   getSessionsByStaff(staffId: string): SessionState[] {
     return Array.from(this.sessions.values()).filter(s => 
-      s.staffAssigned.prep === staffId || s.staffAssigned.front === staffId
+      s.staffAssigned.prep === staffId || 
+      s.staffAssigned.front === staffId || 
+      s.staffAssigned.hookah_room === staffId
+    );
+  }
+
+  // Special queries for dashboard integration
+  getReadyForDeliverySessions(): SessionState[] {
+    return Array.from(this.sessions.values()).filter(s => 
+      s.prepStage.isReadyForDelivery && s.currentStatus === 'delivery'
+    );
+  }
+
+  getRefillRequests(): SessionState[] {
+    return Array.from(this.sessions.values()).filter(s => 
+      s.currentStatus === 'refill' && s.refillStage.isRequested
+    );
+  }
+
+  getCoalRequests(): SessionState[] {
+    return Array.from(this.sessions.values()).filter(s => 
+      s.currentStatus === 'coals_needed' && s.coalStage.needsReplacement
     );
   }
 
@@ -340,6 +583,22 @@ export class FireSessionWorkflow extends EventEmitter {
     return () => this.off('agentEvent', callback);
   }
 
+  // Special event subscriptions for dashboard integration
+  subscribeToReadyForDelivery(callback: (data: { sessionId: string; tableId: string }) => void): () => void {
+    this.on('readyForDelivery', callback);
+    return () => this.off('readyForDelivery', callback);
+  }
+
+  subscribeToRefillRequests(callback: (data: { sessionId: string; tableId: string; refillType: string }) => void): () => void {
+    this.on('refillRequested', callback);
+    return () => this.off('refillRequested', callback);
+  }
+
+  subscribeToCoalRequests(callback: (data: { sessionId: string; tableId: string; coalType: string }) => void): () => void {
+    this.on('coalsNeeded', callback);
+    return () => this.off('coalsNeeded', callback);
+  }
+
   // 📈 Analytics and Pattern Analysis
   getSessionMetrics(): {
     totalSessions: number;
@@ -347,6 +606,8 @@ export class FireSessionWorkflow extends EventEmitter {
     averagePrepTime: number;
     averageDeliveryTime: number;
     recoveryRate: number;
+    refillRate: number;
+    coalBurnoutRate: number;
     frequentIssues: Array<{ issue: string; count: number }>;
   } {
     const sessions = Array.from(this.sessions.values());
@@ -380,9 +641,18 @@ export class FireSessionWorkflow extends EventEmitter {
       ? (sessionsByStatus.recovery || 0) / totalSessions 
       : 0;
 
+    // Calculate refill and coal rates
+    const refillRate = totalSessions > 0 
+      ? sessions.filter(s => s.serviceStage.refillCount > 0).length / totalSessions 
+      : 0;
+
+    const coalBurnoutRate = totalSessions > 0 
+      ? sessions.filter(s => s.serviceStage.coalBurnoutCount > 0).length / totalSessions 
+      : 0;
+
     // Find frequent issues
     const issueCounts = this.eventHistory
-      .filter(e => ['redo_remix', 'return_to_prep', 'hold'].includes(e.buttonPressed))
+      .filter(e => ['redo_remix', 'return_to_prep', 'hold', 'refill_requested', 'coals_burned_out'].includes(e.buttonPressed))
       .reduce((acc, e) => {
         acc[e.buttonPressed] = (acc[e.buttonPressed] || 0) + 1;
         return acc;
@@ -399,8 +669,19 @@ export class FireSessionWorkflow extends EventEmitter {
       averagePrepTime,
       averageDeliveryTime,
       recoveryRate,
+      refillRate,
+      coalBurnoutRate,
       frequentIssues
     };
+  }
+
+  // Cleanup on destroy
+  destroy() {
+    // Clear all demo timers
+    for (const [sessionId] of this.demoTimers) {
+      this.stopDemoTimers(sessionId);
+    }
+    this.demoTimers.clear();
   }
 }
 

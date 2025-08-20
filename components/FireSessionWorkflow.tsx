@@ -97,6 +97,8 @@ export default function FireSessionWorkflow({
               session.currentStatus === 'prep' ? 'bg-blue-100 text-blue-800' :
               session.currentStatus === 'delivery' ? 'bg-yellow-100 text-yellow-800' :
               session.currentStatus === 'service' ? 'bg-green-100 text-green-800' :
+              session.currentStatus === 'refill' ? 'bg-purple-100 text-purple-800' :
+              session.currentStatus === 'coals_needed' ? 'bg-orange-100 text-orange-800' :
               session.currentStatus === 'recovery' ? 'bg-red-100 text-red-800' :
               'bg-gray-100 text-gray-800'
             }`}>
@@ -120,9 +122,22 @@ export default function FireSessionWorkflow({
               <span className="font-medium">Front Staff:</span> {session.staffAssigned.front}
             </div>
           )}
+          {session.staffAssigned.hookah_room && (
+            <div>
+              <span className="font-medium">Hookah Room:</span> {session.staffAssigned.hookah_room}
+            </div>
+          )}
           {session.sessionTimer?.startedAt && (
             <div>
               <span className="font-medium">Session Started:</span> {session.sessionTimer.startedAt.toLocaleTimeString()}
+            </div>
+          )}
+          {session.demoMode && (
+            <div className="col-span-2">
+              <span className="font-medium text-blue-600">🔥 Demo Mode Active</span>
+              <span className="text-xs text-gray-500 ml-2">
+                (30s cycles → 15s refills → 10s coal burnout)
+              </span>
             </div>
           )}
         </div>
@@ -203,6 +218,76 @@ export default function FireSessionWorkflow({
                 onClick={() => handleButtonPress('delivered')}
                 variant="success"
               />
+
+              <WorkflowButton
+                button="refill_delivered"
+                label="Refill Delivered"
+                description="Customer refill completed"
+                disabled={session.currentStatus !== 'refill' || isLoading}
+                onClick={() => handleButtonPress('refill_delivered')}
+                variant="success"
+              />
+
+              <WorkflowButton
+                button="session_complete"
+                label="Session Complete"
+                description="End session"
+                disabled={session.currentStatus === 'completed' || isLoading}
+                onClick={() => handleButtonPress('session_complete')}
+                variant="info"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 🔥 Hookah Room Staff Buttons */}
+        {staffRole === 'hookah_room' && (
+          <div className="bg-purple-50 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-purple-900 mb-3">Hookah Room Controls</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <WorkflowButton
+                button="coals_delivered"
+                label="Coals Delivered"
+                description="New coals delivered to table"
+                disabled={session.currentStatus !== 'coals_needed' || isLoading}
+                onClick={() => handleButtonPress('coals_delivered', { coalType: 'quick_light' })}
+                variant="success"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 👤 Customer Buttons */}
+        {staffRole === 'customer' && (
+          <div className="bg-green-50 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-green-900 mb-3">Customer Controls</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <WorkflowButton
+                button="customer_confirmed"
+                label="Order Confirmed"
+                description="Verify order received"
+                disabled={!session.deliveryStage.isDelivered || session.deliveryStage.isCustomerConfirmed || isLoading}
+                onClick={() => handleButtonPress('customer_confirmed')}
+                variant="success"
+              />
+
+              <WorkflowButton
+                button="refill_requested"
+                label="Request Refill"
+                description="Need flavor or water refill"
+                disabled={session.currentStatus !== 'service' || isLoading}
+                onClick={() => handleButtonPress('refill_requested', { refillType: 'both' })}
+                variant="warning"
+              />
+
+              <WorkflowButton
+                button="coals_burned_out"
+                label="Coals Burned Out"
+                description="Need new coals"
+                disabled={session.currentStatus !== 'service' || isLoading}
+                onClick={() => handleButtonPress('coals_burned_out', { coalType: 'quick_light' })}
+                variant="warning"
+              />
             </div>
           </div>
         )}
@@ -257,21 +342,6 @@ export default function FireSessionWorkflow({
             />
           </div>
         </div>
-
-        {/* 👤 Customer Confirmation */}
-        {staffRole === 'customer' && (
-          <div className="bg-green-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-green-900 mb-3">Customer Confirmation</h3>
-            <WorkflowButton
-              button="customer_confirmed"
-              label="Order Confirmed"
-              description="Verify order received"
-              disabled={!session.deliveryStage.isDelivered || session.deliveryStage.isCustomerConfirmed || isLoading}
-              onClick={() => handleButtonPress('customer_confirmed')}
-              variant="success"
-            />
-          </div>
-        )}
       </div>
 
       {/* Session Progress */}
@@ -297,6 +367,7 @@ export default function FireSessionWorkflow({
             label="Ready for Delivery"
             completed={session.prepStage.isReadyForDelivery}
             timestamp={session.prepStage.readyForDeliveryAt}
+            highlight={session.prepStage.isReadyForDelivery}
           />
           <ProgressStep
             label="Picked Up"
@@ -313,8 +384,74 @@ export default function FireSessionWorkflow({
             completed={session.deliveryStage.isCustomerConfirmed}
             timestamp={session.deliveryStage.customerConfirmedAt}
           />
+          
+          {/* New Refill & Coal Progress */}
+          <div className="border-t pt-2 mt-2">
+            <div className="text-xs font-medium text-gray-600 mb-2">Service Management</div>
+            <ProgressStep
+              label="Refill Requested"
+              completed={session.refillStage.isRequested}
+              timestamp={session.refillStage.requestedAt}
+              highlight={session.currentStatus === 'refill'}
+            />
+            <ProgressStep
+              label="Refill Delivered"
+              completed={session.refillStage.isDelivered}
+              timestamp={session.refillStage.deliveredAt}
+            />
+            <ProgressStep
+              label="Coals Needed"
+              completed={session.coalStage.needsReplacement}
+              timestamp={session.coalStage.requestedAt}
+              highlight={session.currentStatus === 'coals_needed'}
+            />
+            <ProgressStep
+              label="Coals Delivered"
+              completed={session.coalStage.isDelivered}
+              timestamp={session.coalStage.deliveredAt}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Service Statistics */}
+      {session.serviceStage.isActive && (
+        <div className="bg-blue-50 rounded-lg p-4">
+          <h3 className="text-lg font-medium text-blue-900 mb-3">Service Statistics</h3>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-blue-700">Refills:</span>
+              <div className="text-blue-900 font-semibold">{session.serviceStage.refillCount}</div>
+            </div>
+            <div>
+              <span className="font-medium text-blue-700">Coal Swaps:</span>
+              <div className="text-blue-900 font-semibold">{session.serviceStage.charcoalSwaps}</div>
+            </div>
+            <div>
+              <span className="font-medium text-blue-700">Coal Burnouts:</span>
+              <div className="text-blue-900 font-semibold">{session.serviceStage.coalBurnoutCount}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Demo Mode Status */}
+      {session.demoMode && (
+        <div className="bg-yellow-50 rounded-lg p-4">
+          <h3 className="text-lg font-medium text-yellow-900 mb-3">🔥 Demo Mode Status</h3>
+          <div className="text-sm text-yellow-800">
+            <p><strong>Current Cycle:</strong> {session.sessionTimer?.currentCycle || 0}</p>
+            <p><strong>Status:</strong> 
+              {session.currentStatus === 'service' && '🔄 Running 30s cycle'}
+              {session.currentStatus === 'refill' && '⏳ 15s refill period'}
+              {session.currentStatus === 'coals_needed' && '⏳ 10s coal replacement'}
+            </p>
+            <p className="text-xs mt-2">
+              Demo automatically cycles through: Service → Refill → Coals → Service
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -369,14 +506,17 @@ interface ProgressStepProps {
   label: string;
   completed: boolean;
   timestamp?: Date;
+  highlight?: boolean;
 }
 
-function ProgressStep({ label, completed, timestamp }: ProgressStepProps) {
+function ProgressStep({ label, completed, timestamp, highlight }: ProgressStepProps) {
   return (
     <div className="flex items-center space-x-3">
       <div className={`w-4 h-4 rounded-full border-2 ${
         completed 
           ? 'bg-green-500 border-green-500' 
+          : highlight
+          ? 'bg-yellow-500 border-yellow-500 animate-pulse'
           : 'border-gray-300'
       }`}>
         {completed && (
@@ -386,7 +526,13 @@ function ProgressStep({ label, completed, timestamp }: ProgressStepProps) {
         )}
       </div>
       <div className="flex-1">
-        <span className={`text-sm ${completed ? 'text-green-700' : 'text-gray-500'}`}>
+        <span className={`text-sm ${
+          completed 
+            ? 'text-green-700' 
+            : highlight 
+            ? 'text-yellow-700 font-medium' 
+            : 'text-gray-500'
+        }`}>
           {label}
         </span>
         {timestamp && (

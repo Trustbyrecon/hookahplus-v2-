@@ -8,26 +8,18 @@ import {
   WorkflowEvent 
 } from '../lib/fire-session-workflow';
 
-interface FireSessionDashboardProps {
-  staffRole: 'prep' | 'front';
-  staffId: string;
-}
-
-export default function FireSessionDashboard({ 
-  staffRole, 
-  staffId 
-}: FireSessionDashboardProps) {
+export default function FireSessionDashboard() {
   const [sessions, setSessions] = useState<SessionState[]>([]);
-  const [filterStatus, setFilterStatus] = useState<SessionStatus | 'all'>('all');
-  const [metrics, setMetrics] = useState<any>(null);
   const [recentEvents, setRecentEvents] = useState<WorkflowEvent[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [statusFilter, setStatusFilter] = useState<SessionStatus | 'all'>('all');
 
   // 🔄 Subscribe to workflow events
   useEffect(() => {
     const unsubscribe = fireSessionWorkflow.subscribeToAgentEvents((event) => {
       // Update sessions list
-      const updatedSessions = Array.from(fireSessionWorkflow.getSessionsByStaff(staffId));
-      setSessions(updatedSessions);
+      const allSessions = Array.from(fireSessionWorkflow.getAllSessions().values());
+      setSessions(allSessions);
 
       // Update recent events
       const events = fireSessionWorkflow.getEventHistory();
@@ -38,107 +30,108 @@ export default function FireSessionDashboard({
     });
 
     // Load initial data
-    const initialSessions = fireSessionWorkflow.getSessionsByStaff(staffId);
-    setSessions(initialSessions);
+    const allSessions = Array.from(fireSessionWorkflow.getAllSessions().values());
+    setSessions(allSessions);
+    setRecentEvents(fireSessionWorkflow.getEventHistory().slice(-10).reverse());
     setMetrics(fireSessionWorkflow.getSessionMetrics());
 
     return unsubscribe;
-  }, [staffId]);
+  }, []);
 
   // Filter sessions by status
-  const filteredSessions = filterStatus === 'all' 
+  const filteredSessions = statusFilter === 'all' 
     ? sessions 
-    : sessions.filter(s => s.currentStatus === filterStatus);
+    : sessions.filter(session => session.currentStatus === statusFilter);
 
-  const statusOptions: { value: SessionStatus | 'all'; label: string; color: string }[] = [
-    { value: 'all', label: 'All Sessions', color: 'bg-gray-500' },
-    { value: 'prep', label: 'Prep', color: 'bg-blue-500' },
-    { value: 'delivery', label: 'Delivery', color: 'bg-yellow-500' },
-    { value: 'service', label: 'Service', color: 'bg-green-500' },
-    { value: 'recovery', label: 'Recovery', color: 'bg-red-500' },
-    { value: 'completed', label: 'Completed', color: 'bg-purple-500' },
-    { value: 'cancelled', label: 'Cancelled', color: 'bg-gray-400' }
-  ];
+  // Get status color
+  const getStatusColor = (status: SessionStatus) => {
+    switch (status) {
+      case 'prep': return 'bg-blue-100 text-blue-800';
+      case 'delivery': return 'bg-yellow-100 text-yellow-800';
+      case 'service': return 'bg-green-100 text-green-800';
+      case 'refill': return 'bg-purple-100 text-purple-800';
+      case 'coals_needed': return 'bg-orange-100 text-orange-800';
+      case 'recovery': return 'bg-red-100 text-red-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get status icon
+  const getStatusIcon = (status: SessionStatus) => {
+    switch (status) {
+      case 'prep': return '🔧';
+      case 'delivery': return '🚚';
+      case 'service': return '✅';
+      case 'refill': return '🥤';
+      case 'coals_needed': return '🔥';
+      case 'recovery': return '⚠️';
+      case 'completed': return '🎉';
+      case 'cancelled': return '❌';
+      default: return '❓';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Dashboard Header */}
-      <div className="bg-white rounded-lg shadow p-6">
+      {/* Quick Stats */}
+      {metrics && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-blue-600">{metrics.totalSessions}</div>
+            <div className="text-sm text-blue-700">Total Sessions</div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-green-600">{metrics.activeSessions}</div>
+            <div className="text-sm text-green-700">Active Sessions</div>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-purple-600">
+              {Math.round(metrics.refillRate * 100)}%
+            </div>
+            <div className="text-sm text-purple-700">Refill Rate</div>
+          </div>
+          <div className="bg-orange-50 rounded-lg p-4">
+            <div className="text-2xl font-bold text-orange-600">
+              {Math.round(metrics.coalBurnoutRate * 100)}%
+            </div>
+            <div className="text-sm text-orange-700">Coal Burnout Rate</div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Filter */}
+      <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {staffRole === 'prep' ? 'Prep Room' : 'Front Staff'} Dashboard
-          </h1>
-          <div className="text-sm text-gray-500">
-            Staff ID: {staffId}
-          </div>
-        </div>
-
-        {/* Status Filter */}
-        <div className="flex space-x-2 mb-4">
-          {statusOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setFilterStatus(option.value)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                filterStatus === option.value
-                  ? `${option.color} text-white`
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Quick Stats */}
-        {metrics && (
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-blue-600">{metrics.totalSessions}</div>
-              <div className="text-sm text-blue-700">Total Sessions</div>
-            </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-green-600">
-                {Math.round(metrics.averagePrepTime / 1000 / 60)}m
-              </div>
-              <div className="text-sm text-green-700">Avg Prep Time</div>
-            </div>
-            <div className="bg-yellow-50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-yellow-600">
-                {Math.round(metrics.averageDeliveryTime / 1000 / 60)}m
-              </div>
-              <div className="text-sm text-yellow-700">Avg Delivery Time</div>
-            </div>
-            <div className="bg-red-50 rounded-lg p-4">
-              <div className="text-2xl font-bold text-red-600">
-                {Math.round(metrics.recoveryRate * 100)}%
-              </div>
-              <div className="text-sm text-red-700">Recovery Rate</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Active Sessions */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            Active Sessions ({filteredSessions.length})
+            📊 Active Sessions ({filteredSessions.length})
           </h2>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as SessionStatus | 'all')}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Statuses</option>
+            <option value="prep">Prep</option>
+            <option value="delivery">Delivery</option>
+            <option value="service">Service</option>
+            <option value="refill">Refill</option>
+            <option value="coals_needed">Coals Needed</option>
+            <option value="recovery">Recovery</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
-        
-        <div className="divide-y divide-gray-200">
+
+        <div className="space-y-3">
           {filteredSessions.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              No sessions found with the selected filter.
+            <div className="text-center text-gray-500 py-8">
+              No sessions found with the selected status.
             </div>
           ) : (
             filteredSessions.map((session) => (
-              <SessionCard 
-                key={session.sessionId} 
-                session={session} 
-                staffRole={staffRole}
-              />
+              <SessionCard key={session.sessionId} session={session} />
             ))
           )}
         </div>
@@ -164,93 +157,90 @@ export default function FireSessionDashboard({
       </div>
 
       {/* Frequent Issues */}
-      {metrics?.frequentIssues && metrics.frequentIssues.length > 0 && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Frequent Issues</h2>
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Frequent Issues</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h3 className="font-medium text-red-900 mb-2">⚠️ Recovery Sessions</h3>
+            <div className="text-2xl font-bold text-red-600">
+              {sessions.filter(s => s.currentStatus === 'recovery').length}
+            </div>
+            <p className="text-sm text-red-700">Sessions requiring attention</p>
           </div>
           
-          <div className="p-6">
-            <div className="space-y-3">
-              {metrics.frequentIssues.map((issue: any, index: number) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 capitalize">
-                    {issue.issue.replace('_', ' ')}
-                  </span>
-                  <span className="text-sm font-medium text-red-600">
-                    {issue.count} times
-                  </span>
-                </div>
-              ))}
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h3 className="font-medium text-yellow-900 mb-2">⏰ Overdue Deliveries</h3>
+            <div className="text-2xl font-bold text-yellow-600">
+              {sessions.filter(s => {
+                if (s.currentStatus === 'delivery' && s.sessionTimer?.armedAt) {
+                  const elapsed = Date.now() - s.sessionTimer.armedAt.getTime();
+                  return elapsed > 5 * 60 * 1000; // 5 minutes
+                }
+                return false;
+              }).length}
             </div>
+            <p className="text-sm text-yellow-700">Deliveries taking too long</p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-// 🃏 Session Card Component
-interface SessionCardProps {
-  session: SessionState;
-  staffRole: 'prep' | 'front';
-}
-
-function SessionCard({ session, staffRole }: SessionCardProps) {
+// Session Card Component
+function SessionCard({ session }: { session: SessionState }) {
   const getStatusColor = (status: SessionStatus) => {
     switch (status) {
       case 'prep': return 'bg-blue-100 text-blue-800';
       case 'delivery': return 'bg-yellow-100 text-yellow-800';
       case 'service': return 'bg-green-100 text-green-800';
+      case 'refill': return 'bg-purple-100 text-purple-800';
+      case 'coals_needed': return 'bg-orange-100 text-orange-800';
       case 'recovery': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-purple-100 text-purple-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getNextAction = () => {
-    if (staffRole === 'prep') {
-      if (!session.prepStage.isStarted) return 'Start Prep';
-      if (!session.prepStage.isFlavorLocked) return 'Lock Flavor';
-      if (!session.prepStage.isTimerArmed) return 'Arm Timer';
-      if (!session.prepStage.isReadyForDelivery) return 'Ready for Delivery';
-      return 'Waiting for Pickup';
-    } else {
-      if (session.prepStage.isReadyForDelivery && !session.deliveryStage.isPickedUp) {
-        return 'Pick Up Hookah';
-      }
-      if (session.deliveryStage.isPickedUp && !session.deliveryStage.isDelivered) {
-        return 'Deliver to Table';
-      }
-      return 'Monitor Service';
+  const getStatusIcon = (status: SessionStatus) => {
+    switch (status) {
+      case 'prep': return '🔧';
+      case 'delivery': return '🚚';
+      case 'service': return '✅';
+      case 'refill': return '🥤';
+      case 'coals_needed': return '🔥';
+      case 'recovery': return '⚠️';
+      case 'completed': return '🎉';
+      case 'cancelled': return '❌';
+      default: return '❓';
     }
   };
 
   return (
-    <div className="p-6 hover:bg-gray-50 transition-colors">
+    <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-3">
-          <h3 className="text-lg font-medium text-gray-900">
-            Session {session.sessionId}
-          </h3>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.currentStatus)}`}>
-            {session.currentStatus.toUpperCase()}
-          </span>
+          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+            <span className="text-lg">{getStatusIcon(session.currentStatus)}</span>
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900">
+              Session {session.sessionId}
+            </h3>
+            <p className="text-sm text-gray-500">Table {session.tableId}</p>
+          </div>
         </div>
-        <div className="text-sm text-gray-500">
-          Table {session.tableId}
-        </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.currentStatus)}`}>
+          {session.currentStatus.replace('_', ' ').toUpperCase()}
+        </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-3">
         <div>
           <span className="text-sm font-medium text-gray-700">Flavor Mix:</span>
           <div className="text-sm text-gray-900">{session.flavorMix}</div>
-        </div>
-        <div>
-          <span className="text-sm font-medium text-gray-700">Next Action:</span>
-          <div className="text-sm text-blue-600 font-medium">{getNextAction()}</div>
         </div>
         <div>
           <span className="text-sm font-medium text-gray-700">Prep Staff:</span>
@@ -262,60 +252,59 @@ function SessionCard({ session, staffRole }: SessionCardProps) {
             <div className="text-sm text-gray-900">{session.staffAssigned.front}</div>
           </div>
         )}
-      </div>
-
-      {/* Progress Indicators */}
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${session.prepStage.isStarted ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <span className="text-xs text-gray-600">Prep Started</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${session.prepStage.isFlavorLocked ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <span className="text-xs text-gray-600">Flavor Locked</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${session.prepStage.isTimerArmed ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <span className="text-xs text-gray-600">Timer Armed</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${session.prepStage.isReadyForDelivery ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <span className="text-xs text-gray-600">Ready for Delivery</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${session.deliveryStage.isPickedUp ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <span className="text-xs text-gray-600">Picked Up</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${session.deliveryStage.isDelivered ? 'bg-green-500' : 'bg-gray-300'}`} />
-          <span className="text-xs text-gray-600">Delivered</span>
-        </div>
-      </div>
-
-      {session.recoveryStage && (
-        <div className="mt-4 p-3 bg-red-50 rounded-lg">
-          <div className="text-sm font-medium text-red-800">Recovery Required</div>
-          <div className="text-sm text-red-700">{session.recoveryStage.reason}</div>
-          <div className="text-xs text-red-600 mt-1">
-            {session.recoveryStage.initiatedAt.toLocaleTimeString()}
+        {session.staffAssigned.hookah_room && (
+          <div>
+            <span className="text-sm font-medium text-gray-700">Hookah Room:</span>
+            <div className="text-sm text-gray-900">{session.staffAssigned.hookah_room}</div>
           </div>
+        )}
+      </div>
+
+      {/* Service Statistics */}
+      {session.serviceStage.isActive && (
+        <div className="bg-blue-50 p-3 rounded-lg mb-3">
+          <div className="text-sm text-blue-800">
+            <strong>Service Stats:</strong> {session.serviceStage.refillCount} refills, {session.serviceStage.charcoalSwaps} coal swaps, {session.serviceStage.coalBurnoutCount} coal burnouts
+          </div>
+        </div>
+      )}
+
+      {/* Demo Mode Status */}
+      {session.demoMode && (
+        <div className="bg-yellow-50 p-3 rounded-lg mb-3">
+          <div className="text-sm text-yellow-800">
+            <strong>Demo Mode:</strong> Cycle {session.sessionTimer?.currentCycle || 0} - {session.currentStatus === 'service' && '🔄 Running 30s cycle'}
+            {session.currentStatus === 'refill' && '⏳ 15s refill period'}
+            {session.currentStatus === 'coals_needed' && '⏳ 10s coal replacement'}
+          </div>
+        </div>
+      )}
+
+      {/* Session Timer Info */}
+      {session.sessionTimer && (
+        <div className="text-xs text-gray-500">
+          {session.sessionTimer.armedAt && (
+            <span>Armed: {session.sessionTimer.armedAt.toLocaleTimeString()} </span>
+          )}
+          {session.sessionTimer.startedAt && (
+            <span>Started: {session.sessionTimer.startedAt.toLocaleTimeString()} </span>
+          )}
+          {session.sessionTimer.duration && (
+            <span>Duration: {session.sessionTimer.duration}min </span>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// 📊 Event Card Component
-interface EventCardProps {
-  event: WorkflowEvent;
-}
-
-function EventCard({ event }: EventCardProps) {
+// Event Card Component
+function EventCard({ event }: { event: WorkflowEvent }) {
   const getButtonColor = (button: string) => {
     if (['prep_started', 'flavor_locked', 'session_timer_armed', 'ready_for_delivery'].includes(button)) {
       return 'bg-blue-100 text-blue-800';
     }
-    if (['picked_up', 'delivered', 'customer_confirmed'].includes(button)) {
+    if (['picked_up', 'delivered', 'customer_confirmed', 'refill_delivered', 'coals_delivered'].includes(button)) {
       return 'bg-green-100 text-green-800';
     }
     if (['hold', 'redo_remix', 'return_to_prep'].includes(button)) {
@@ -323,6 +312,12 @@ function EventCard({ event }: EventCardProps) {
     }
     if (['swap_charcoal'].includes(button)) {
       return 'bg-yellow-100 text-yellow-800';
+    }
+    if (['refill_requested'].includes(button)) {
+      return 'bg-purple-100 text-purple-800';
+    }
+    if (['coals_burned_out'].includes(button)) {
+      return 'bg-orange-100 text-orange-800';
     }
     return 'bg-gray-100 text-gray-800';
   };

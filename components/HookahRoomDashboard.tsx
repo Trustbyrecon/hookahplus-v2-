@@ -1,339 +1,451 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
+import { 
+  fireSessionWorkflow, 
+  SessionState, 
+  SessionStatus, 
+  WorkflowEvent 
+} from '../lib/fire-session-workflow';
 
-interface HookahOrder {
-  id: string;
-  tableId: string;
-  customerName: string;
-  flavor: string;
-  amount: number;
-  status: 'paid' | 'preparing' | 'ready' | 'delivered';
-  paidAt: number;
-  deliveryStartTime?: number;
-  estimatedDeliveryTime?: number;
-  actualDeliveryTime?: number;
-  hookahRoomStaff?: string;
-  deliveryConfirmedBy?: string;
-  deliveryConfirmedAt?: number;
-  notes?: string;
+interface HookahRoomDashboardProps {
+  staffId: string;
 }
 
-interface StaffMember {
-  id: string;
-  name: string;
-  role: 'preparer' | 'deliverer' | 'supervisor';
-  currentOrders: string[];
-  status: 'available' | 'busy' | 'offline';
-}
+export default function HookahRoomDashboard({ 
+  staffId 
+}: HookahRoomDashboardProps) {
+  const [readyForDelivery, setReadyForDelivery] = useState<SessionState[]>([]);
+  const [refillRequests, setRefillRequests] = useState<SessionState[]>([]);
+  const [coalRequests, setCoalRequests] = useState<SessionState[]>([]);
+  const [recentEvents, setRecentEvents] = useState<WorkflowEvent[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
 
-const HookahRoomDashboard: React.FC = () => {
-  const [orders, setOrders] = useState<HookahOrder[]>([]);
-  const [staff, setStaff] = useState<StaffMember[]>([
-    { id: '1', name: 'John D.', role: 'preparer', currentOrders: [], status: 'available' },
-    { id: '2', name: 'Sarah M.', role: 'deliverer', currentOrders: [], status: 'available' },
-    { id: '3', name: 'Mike R.', role: 'preparer', currentOrders: [], status: 'available' },
-    { id: '4', name: 'Lisa K.', role: 'deliverer', currentOrders: [], status: 'available' }
-  ]);
-  const [selectedStaff, setSelectedStaff] = useState<string>('');
-  const [deliveryBuffer, setDeliveryBuffer] = useState<number>(2); // minutes
-
-  // Mock orders data
+  // 🔄 Subscribe to workflow events
   useEffect(() => {
-    const mockOrders: HookahOrder[] = [
-      {
-        id: 'order-1',
-        tableId: 'T-7',
-        customerName: 'Demo Customer 1',
-        flavor: 'Blue Mist + Mint',
-        amount: 3200,
-        status: 'paid',
-        paidAt: Date.now() - 300000, // 5 minutes ago
-        notes: 'Extra mint, light on coal'
-      },
-      {
-        id: 'order-2',
-        tableId: 'Bar-3',
-        customerName: 'Demo Customer 2',
-        flavor: 'Double Apple',
-        amount: 2800,
-        status: 'preparing',
-        paidAt: Date.now() - 180000, // 3 minutes ago
-        deliveryStartTime: Date.now() - 120000, // 2 minutes ago
-        estimatedDeliveryTime: Date.now() + 60000, // 1 minute from now
-        hookahRoomStaff: 'John D.',
-        notes: 'Standard preparation'
-      },
-      {
-        id: 'order-3',
-        tableId: 'T-12',
-        customerName: 'Demo Customer 3',
-        flavor: 'Grape Burst',
-        amount: 3000,
-        status: 'ready',
-        paidAt: Date.now() - 600000, // 10 minutes ago
-        deliveryStartTime: Date.now() - 540000, // 9 minutes ago
-        estimatedDeliveryTime: Date.now() - 300000, // 5 minutes ago
-        hookahRoomStaff: 'Mike R.',
-        notes: 'Ready for pickup'
-      }
-    ];
-    setOrders(mockOrders);
+    const unsubscribeEvents = fireSessionWorkflow.subscribeToAgentEvents((event) => {
+      // Update recent events
+      const events = fireSessionWorkflow.getEventHistory();
+      setRecentEvents(events.slice(-10).reverse());
+
+      // Update metrics
+      setMetrics(fireSessionWorkflow.getSessionMetrics());
+    });
+
+    // Subscribe to special dashboard events
+    const unsubscribeReady = fireSessionWorkflow.subscribeToReadyForDelivery((data) => {
+      const sessions = fireSessionWorkflow.getReadyForDeliverySessions();
+      setReadyForDelivery(sessions);
+    });
+
+    const unsubscribeRefills = fireSessionWorkflow.subscribeToRefillRequests((data) => {
+      const sessions = fireSessionWorkflow.getRefillRequests();
+      setRefillRequests(sessions);
+    });
+
+    const unsubscribeCoals = fireSessionWorkflow.subscribeToCoalRequests((data) => {
+      const sessions = fireSessionWorkflow.getCoalRequests();
+      setCoalRequests(sessions);
+    });
+
+    // Load initial data
+    setReadyForDelivery(fireSessionWorkflow.getReadyForDeliverySessions());
+    setRefillRequests(fireSessionWorkflow.getRefillRequests());
+    setCoalRequests(fireSessionWorkflow.getCoalRequests());
+    setMetrics(fireSessionWorkflow.getSessionMetrics());
+
+    return () => {
+      unsubscribeEvents();
+      unsubscribeReady();
+      unsubscribeRefills();
+      unsubscribeCoals();
+    };
   }, []);
 
-  // Function to start preparing an order
-  const startPreparation = (orderId: string, staffId: string) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { 
-            ...order, 
-            status: 'preparing', 
-            deliveryStartTime: Date.now(),
-            estimatedDeliveryTime: Date.now() + (deliveryBuffer * 60000), // Add buffer time
-            hookahRoomStaff: staff.find(s => s.id === staffId)?.name
-          }
-        : order
-    ));
-    
-    setStaff(prev => prev.map(s => 
-      s.id === staffId 
-        ? { ...s, currentOrders: [...s.currentOrders, orderId], status: 'busy' }
-        : s
-    ));
-  };
+  // 🔑 Button press handler
+  const handleButtonPress = async (
+    sessionId: string,
+    button: string,
+    metadata?: Record<string, any>
+  ) => {
+    try {
+      const response = await fetch('/api/fire-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'press_button',
+          sessionId,
+          button,
+          staffRole: 'hookah_room',
+          staffId,
+          metadata
+        })
+      });
 
-  // Function to mark order as ready
-  const markReady = (orderId: string) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, status: 'ready' }
-        : order
-    ));
-  };
-
-  // Function to confirm delivery
-  const confirmDelivery = (orderId: string, staffId: string) => {
-    const now = Date.now();
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { 
-            ...order, 
-            status: 'delivered', 
-            actualDeliveryTime: now,
-            deliveryConfirmedBy: staff.find(s => s.id === staffId)?.name,
-            deliveryConfirmedAt: now
-          }
-        : order
-    ));
-    
-    setStaff(prev => prev.map(s => 
-      s.id === staffId 
-        ? { 
-            ...s, 
-            currentOrders: s.currentOrders.filter(id => id !== orderId),
-            status: s.currentOrders.length <= 1 ? 'available' : 'busy'
-          }
-        : s
-    ));
-  };
-
-  // Function to calculate delivery time
-  const getDeliveryTime = (order: HookahOrder) => {
-    if (!order.deliveryStartTime) return 'Not started';
-    
-    const now = Date.now();
-    const elapsed = Math.floor((now - order.deliveryStartTime) / 60000);
-    
-    if (order.status === 'delivered') {
-      return `Delivered in ${elapsed} min`;
-    }
-    
-    if (order.estimatedDeliveryTime) {
-      const remaining = Math.floor((order.estimatedDeliveryTime - now) / 60000);
-      if (remaining <= 0) {
-        return 'Overdue';
+      if (!response.ok) {
+        console.error('Failed to press button');
       }
-      return `${remaining} min remaining`;
-    }
-    
-    return `${elapsed} min elapsed`;
-  };
-
-  // Function to get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'bg-blue-600';
-      case 'preparing': return 'bg-yellow-600';
-      case 'ready': return 'bg-green-600';
-      case 'delivered': return 'bg-purple-600';
-      default: return 'bg-gray-600';
+    } catch (error) {
+      console.error('Button press error:', error);
     }
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-teal-300">Hookah Room Staff Dashboard</h3>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-zinc-400">Delivery Buffer:</label>
-            <select 
-              value={deliveryBuffer} 
-              onChange={(e) => setDeliveryBuffer(Number(e.target.value))}
-              className="bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white text-sm"
-            >
-              <option value={1}>1 min</option>
-              <option value={2}>2 min</option>
-              <option value={3}>3 min</option>
-              <option value={5}>5 min</option>
-            </select>
-          </div>
-          <div className="text-sm text-zinc-400">
-            {orders.filter(o => o.status === 'ready').length} Ready for Pickup
+    <div className="space-y-6">
+      {/* Dashboard Header */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold text-gray-900">
+            🔥 Hookah Room Staff Dashboard
+          </h1>
+          <div className="text-sm text-gray-500">
+            Staff ID: {staffId}
           </div>
         </div>
-      </div>
 
-      {/* Staff Status */}
-      <div className="mb-6">
-        <h4 className="text-lg font-medium text-white mb-3">Staff Status</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {staff.map(member => (
-            <div key={member.id} className="bg-zinc-800 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-white font-medium">{member.name}</span>
-                <span className={`px-2 py-1 rounded text-xs ${
-                  member.status === 'available' ? 'bg-green-600 text-white' :
-                  member.status === 'busy' ? 'bg-yellow-600 text-white' :
-                  'bg-red-600 text-white'
-                }`}>
-                  {member.status}
-                </span>
-              </div>
-              <div className="text-xs text-zinc-400 capitalize">{member.role}</div>
-              <div className="text-xs text-zinc-400">
-                {member.currentOrders.length} active orders
-              </div>
+        {/* Quick Stats */}
+        {metrics && (
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">{metrics.totalSessions}</div>
+              <div className="text-sm text-blue-700">Total Sessions</div>
             </div>
-          ))}
-        </div>
+            <div className="bg-purple-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {Math.round(metrics.refillRate * 100)}%
+              </div>
+              <div className="text-sm text-purple-700">Refill Rate</div>
+            </div>
+            <div className="bg-orange-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-orange-600">
+                {Math.round(metrics.coalBurnoutRate * 100)}%
+              </div>
+              <div className="text-sm text-orange-700">Coal Burnout Rate</div>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {refillRequests.length + coalRequests.length}
+              </div>
+              <div className="text-sm text-green-700">Active Requests</div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Orders Queue */}
-      <div className="space-y-4">
-        <h4 className="text-lg font-medium text-white">Orders Queue</h4>
+      {/* Ready for Delivery - High Priority */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            🚀 Ready for Delivery ({readyForDelivery.length})
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Sessions ready for front staff pickup
+          </p>
+        </div>
         
-        {orders.map(order => (
-          <div key={order.id} className="bg-zinc-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h5 className="text-white font-medium">Table {order.tableId}</h5>
-                <p className="text-zinc-400 text-sm">{order.customerName}</p>
-              </div>
-              <div className="text-right">
-                <div className={`px-3 py-1 rounded text-sm font-medium ${getStatusColor(order.status)}`}>
-                  {order.status.toUpperCase()}
-                </div>
-                <div className="text-xs text-zinc-400 mt-1">
-                  ${(order.amount / 100).toFixed(2)}
-                </div>
-              </div>
+        <div className="divide-y divide-gray-200">
+          {readyForDelivery.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              No sessions ready for delivery.
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-              <div>
-                <span className="text-sm text-zinc-400">Flavor:</span>
-                <p className="text-white">{order.flavor}</p>
-              </div>
-              <div>
-                <span className="text-sm text-zinc-400">Delivery Time:</span>
-                <p className="text-white">{getDeliveryTime(order)}</p>
-              </div>
-              <div>
-                <span className="text-sm text-zinc-400">Staff:</span>
-                <p className="text-white">{order.hookahRoomStaff || 'Unassigned'}</p>
-              </div>
-            </div>
-
-            {order.notes && (
-              <div className="mb-3">
-                <span className="text-sm text-zinc-400">Notes:</span>
-                <p className="text-white text-sm">{order.notes}</p>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              {order.status === 'paid' && (
-                <>
-                  <select 
-                    value={selectedStaff} 
-                    onChange={(e) => setSelectedStaff(e.target.value)}
-                    className="bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-white text-sm"
-                  >
-                    <option value="">Select Staff</option>
-                    {staff.filter(s => s.role === 'preparer' && s.status === 'available').map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => startPreparation(order.id, selectedStaff)}
-                    disabled={!selectedStaff}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-                  >
-                    Start Preparation
-                  </button>
-                </>
-              )}
-
-              {order.status === 'preparing' && (
-                <button
-                  onClick={() => markReady(order.id)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-                >
-                  Mark Ready
-                </button>
-              )}
-
-              {order.status === 'ready' && (
-                <>
-                  <select 
-                    value={selectedStaff} 
-                    onChange={(e) => setSelectedStaff(e.target.value)}
-                    className="bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-white text-sm"
-                  >
-                    <option value="">Select Deliverer</option>
-                    {staff.filter(s => s.role === 'deliverer' && s.status === 'available').map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => confirmDelivery(order.id, selectedStaff)}
-                    disabled={!selectedStaff}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-                  >
-                    Confirm Delivery
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
+          ) : (
+            readyForDelivery.map((session) => (
+              <ReadyForDeliveryCard key={session.sessionId} session={session} />
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Delivery Rules */}
-      <div className="mt-6 p-4 bg-zinc-800 rounded-lg">
-        <h4 className="text-lg font-medium text-white mb-2">Delivery Rules</h4>
-        <ul className="text-sm text-zinc-300 space-y-1">
-          <li>• Customer timer starts 2-3 minutes AFTER delivery confirmation</li>
-          <li>• Hookah room staff must confirm delivery before timer starts</li>
-          <li>• Delivery buffer: {deliveryBuffer} minutes from preparation start</li>
-          <li>• Staff roles: Preparer (hookah room) + Deliverer (front of house)</li>
-          <li>• Orders marked 'ready' signal front staff for pickup</li>
-        </ul>
+      {/* Refill Requests */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            🥤 Refill Requests ({refillRequests.length})
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Customers need flavor or water refills
+          </p>
+        </div>
+        
+        <div className="divide-y divide-gray-200">
+          {refillRequests.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              No refill requests pending.
+            </div>
+          ) : (
+            refillRequests.map((session) => (
+              <RefillRequestCard key={session.sessionId} session={session} />
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Coal Requests */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            🔥 Coal Requests ({coalRequests.length})
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Tables need new coals due to burnout
+          </p>
+        </div>
+        
+        <div className="divide-y divide-gray-200">
+          {coalRequests.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              No coal requests pending.
+            </div>
+          ) : (
+            coalRequests.map((session) => (
+              <CoalRequestCard 
+                key={session.sessionId} 
+                session={session} 
+                onCoalsDelivered={(sessionId) => handleButtonPress(sessionId, 'coals_delivered')}
+              />
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Recent Events */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Events</h2>
+        </div>
+        
+        <div className="divide-y divide-gray-200">
+          {recentEvents.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              No recent events.
+            </div>
+          ) : (
+            recentEvents.map((event, index) => (
+              <EventCard key={index} event={event} />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
-};
+}
 
-export default HookahRoomDashboard;
+// 🚀 Ready for Delivery Card
+function ReadyForDeliveryCard({ session }: { session: SessionState }) {
+  return (
+    <div className="p-6 hover:bg-blue-50 transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-sm">🚀</span>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900">
+            Session {session.sessionId}
+          </h3>
+          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+            READY
+          </span>
+        </div>
+        <div className="text-sm text-gray-500">
+          Table {session.tableId}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <span className="text-sm font-medium text-gray-700">Flavor Mix:</span>
+          <div className="text-sm text-gray-900">{session.flavorMix}</div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Prep Staff:</span>
+          <div className="text-sm text-gray-900">{session.staffAssigned.prep}</div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Ready Since:</span>
+          <div className="text-sm text-blue-600 font-medium">
+            {session.prepStage.readyForDeliveryAt?.toLocaleTimeString()}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 p-3 rounded-lg">
+        <div className="text-sm text-blue-800">
+          <strong>Action Required:</strong> Front staff should pick up this hookah for delivery
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 🥤 Refill Request Card
+function RefillRequestCard({ session }: { session: SessionState }) {
+  return (
+    <div className="p-6 hover:bg-purple-50 transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-sm">🥤</span>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900">
+            Session {session.sessionId}
+          </h3>
+          <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+            REFILL NEEDED
+          </span>
+        </div>
+        <div className="text-sm text-gray-500">
+          Table {session.tableId}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <span className="text-sm font-medium text-gray-700">Flavor Mix:</span>
+          <div className="text-sm text-gray-900">{session.flavorMix}</div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Refill Type:</span>
+          <div className="text-sm text-purple-600 font-medium capitalize">
+            {session.refillStage.refillType}
+          </div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Requested:</span>
+          <div className="text-sm text-gray-900">
+            {session.refillStage.requestedAt?.toLocaleTimeString()}
+          </div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Front Staff:</span>
+          <div className="text-sm text-gray-900">{session.staffAssigned.front}</div>
+        </div>
+      </div>
+
+      <div className="bg-purple-50 p-3 rounded-lg">
+        <div className="text-sm text-purple-800">
+          <strong>Action Required:</strong> Front staff should deliver refill to table
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 🔥 Coal Request Card
+function CoalRequestCard({ 
+  session, 
+  onCoalsDelivered 
+}: { 
+  session: SessionState;
+  onCoalsDelivered: (sessionId: string) => void;
+}) {
+  return (
+    <div className="p-6 hover:bg-orange-50 transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-sm">🔥</span>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900">
+            Session {session.sessionId}
+          </h3>
+          <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+            COALS NEEDED
+          </span>
+        </div>
+        <div className="text-sm text-gray-500">
+          Table {session.tableId}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <span className="text-sm font-medium text-gray-700">Flavor Mix:</span>
+          <div className="text-sm text-gray-900">{session.flavorMix}</div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Coal Type:</span>
+          <div className="text-sm text-orange-600 font-medium capitalize">
+            {session.coalStage.coalType.replace('_', ' ')}
+          </div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Requested:</span>
+          <div className="text-sm text-gray-900">
+            {session.coalStage.requestedAt?.toLocaleTimeString()}
+          </div>
+        </div>
+        <div>
+          <span className="text-sm font-medium text-gray-700">Front Staff:</span>
+          <div className="text-sm text-gray-900">{session.staffAssigned.front}</div>
+        </div>
+      </div>
+
+      <div className="bg-orange-50 p-3 rounded-lg mb-3">
+        <div className="text-sm text-orange-800">
+          <strong>Action Required:</strong> Deliver new coals to table
+        </div>
+      </div>
+
+      <button
+        onClick={() => onCoalsDelivered(session.sessionId)}
+        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-md transition-colors"
+      >
+        🔥 Mark Coals as Delivered
+      </button>
+    </div>
+  );
+}
+
+// 📊 Event Card Component
+function EventCard({ event }: { event: WorkflowEvent }) {
+  const getButtonColor = (button: string) => {
+    if (['prep_started', 'flavor_locked', 'session_timer_armed', 'ready_for_delivery'].includes(button)) {
+      return 'bg-blue-100 text-blue-800';
+    }
+    if (['picked_up', 'delivered', 'customer_confirmed', 'refill_delivered', 'coals_delivered'].includes(button)) {
+      return 'bg-green-100 text-green-800';
+    }
+    if (['hold', 'redo_remix', 'return_to_prep'].includes(button)) {
+      return 'bg-red-100 text-red-800';
+    }
+    if (['swap_charcoal'].includes(button)) {
+      return 'bg-yellow-100 text-yellow-800';
+    }
+    if (['refill_requested'].includes(button)) {
+      return 'bg-purple-100 text-purple-800';
+    }
+    if (['coals_burned_out'].includes(button)) {
+      return 'bg-orange-100 text-orange-800';
+    }
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  return (
+    <div className="p-4 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-3">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getButtonColor(event.buttonPressed)}`}>
+            {event.buttonPressed.replace('_', ' ').toUpperCase()}
+          </span>
+          <span className="text-sm font-medium text-gray-900">
+            Session {event.sessionId}
+          </span>
+        </div>
+        <div className="text-xs text-gray-500">
+          {event.timestamp.toLocaleTimeString()}
+        </div>
+      </div>
+      
+      <div className="text-sm text-gray-600">
+        <span className="font-medium">{event.staffRole}</span> staff member pressed{' '}
+        <span className="font-medium">{event.buttonPressed.replace('_', ' ')}</span>
+      </div>
+      
+      {event.metadata?.reason && (
+        <div className="mt-2 text-xs text-gray-500">
+          Reason: {event.metadata.reason}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,299 +1,283 @@
 'use client';
 
 import React, { useState } from 'react';
-import FireSessionWorkflow from '../../../components/FireSessionWorkflow';
-import FireSessionDashboard from '../../../components/FireSessionDashboard';
-import { fireSessionWorkflow } from '../../../lib/fire-session-workflow';
+import FireSessionWorkflow from '../../components/FireSessionWorkflow';
+import FireSessionDashboard from '../../components/FireSessionDashboard';
+import HookahRoomDashboard from '../../components/HookahRoomDashboard';
 
 export default function FireSessionDemoPage() {
-  const [selectedRole, setSelectedRole] = useState<'prep' | 'front'>('prep');
-  const [staffId, setStaffId] = useState('staff_001');
-  const [sessionId, setSessionId] = useState('session_001');
-  const [tableId, setTableId] = useState('T-001');
-  const [flavorMix, setFlavorMix] = useState('Blue Mist + Mint');
-  const [activeSessions, setActiveSessions] = useState<string[]>([]);
+  const [staffRole, setStaffRole] = useState<'prep' | 'front' | 'customer' | 'hookah_room'>('prep');
+  const [staffId, setStaffId] = useState('demo-staff-001');
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [showDashboard, setShowDashboard] = useState(true);
+  const [showHookahRoom, setShowHookahRoom] = useState(false);
 
-  // Create a new session
-  const createSession = async () => {
+  const handleCreateSession = async () => {
     try {
       const response = await fetch('/api/fire-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create',
-          sessionId,
-          tableId,
-          flavorMix,
-          prepStaffId: staffId
+          tableId: `T-${Math.floor(Math.random() * 20) + 1}`,
+          flavorMix: 'Blue Mist + Mint',
+          prepStaffId: staffId,
+          demoMode: true
         })
       });
 
       if (response.ok) {
-        setActiveSessions(prev => [...prev, sessionId]);
-        // Generate new session ID for next creation
-        setSessionId(`session_${Date.now()}`);
+        const data = await response.json();
+        setActiveSessionId(data.sessionId);
       }
     } catch (error) {
       console.error('Failed to create session:', error);
     }
   };
 
+  const getRoleDescription = (role: string) => {
+    switch (role) {
+      case 'prep':
+        return 'Hookah preparation and assembly';
+      case 'front':
+        return 'Front of house delivery and customer service';
+      case 'customer':
+        return 'Customer interaction and session management';
+      case 'hookah_room':
+        return 'Hookah room operations and coal management';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            🔥 Hookah+ Fire Session Workflow Demo
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Experience the seamless handoff between prep room and front staff with our 
-            agent-friendly workflow system. Each button press creates a cursor event 
-            that agents can subscribe to for real-time synchronization.
-          </p>
-        </div>
-
-        {/* Role Selection */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Select Your Role</h2>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Prep Room Role */}
-            <div className={`p-6 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
-              selectedRole === 'prep' 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-200 hover:border-blue-300'
-            }`} onClick={() => setSelectedRole('prep')}>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">🔧</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Prep Room Staff</h3>
-              </div>
-              <p className="text-gray-600 text-sm">
-                Manage hookah assembly, flavor mixing, and preparation workflow.
-                Control the prep → delivery handoff process.
-              </p>
-              <div className="mt-3 text-xs text-gray-500">
-                Buttons: Prep Started → Flavor Locked → Timer Armed → Ready for Delivery
-              </div>
-            </div>
-
-            {/* Front Staff Role */}
-            <div className={`p-6 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
-              selectedRole === 'front' 
-                ? 'border-yellow-500 bg-yellow-50' 
-                : 'border-gray-200 hover:border-yellow-300'
-            }`} onClick={() => setSelectedRole('front')}>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">🚚</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Front Staff</h3>
-              </div>
-              <p className="text-gray-600 text-sm">
-                Handle delivery, customer service, and session monitoring.
-                Manage the delivery → service transition.
-              </p>
-              <div className="mt-3 text-xs text-gray-500">
-                Buttons: Picked Up → Delivered → Monitor Service
-              </div>
-            </div>
-          </div>
-
-          {/* Staff Configuration */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Staff ID
-                </label>
-                <input
-                  type="text"
-                  value={staffId}
-                  onChange={(e) => setStaffId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter staff ID"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Role
-                </label>
-                <div className="px-3 py-2 bg-white border border-gray-300 rounded-md">
-                  <span className={`font-medium ${
-                    selectedRole === 'prep' ? 'text-blue-600' : 'text-yellow-600'
-                  }`}>
-                    {selectedRole === 'prep' ? '🔧 Prep Room' : '🚚 Front Staff'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Session Creation */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Create New Session</h2>
-          
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Table ID
-              </label>
-              <input
-                type="text"
-                value={tableId}
-                onChange={(e) => setTableId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., T-001"
-              />
+              <h1 className="text-2xl font-bold text-gray-900">
+                🔥 Fire Session Workflow Demo
+              </h1>
+              <p className="text-sm text-gray-600">
+                Interactive demonstration of the Hookah+ Fire Session system
+              </p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Flavor Mix
-              </label>
-              <input
-                type="text"
-                value={flavorMix}
-                onChange={(e) => setFlavorMix(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Blue Mist + Mint"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={createSession}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors"
-              >
-                Create Session
-              </button>
-            </div>
-          </div>
-
-          {activeSessions.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Active Sessions:</h3>
-              <div className="flex flex-wrap gap-2">
-                {activeSessions.map((session) => (
-                  <span
-                    key={session}
-                    className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full"
-                  >
-                    {session}
-                  </span>
-                ))}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                Demo Mode: <span className="font-medium text-green-600">Active</span>
               </div>
             </div>
-          )}
+          </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Workflow Controls */}
-          <div className="lg:col-span-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Controls */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Staff Configuration */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Workflow Controls</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                👤 Staff Configuration
+              </h2>
               
-              {activeSessions.length > 0 ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Session
-                    </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      {activeSessions.map((session) => (
-                        <option key={session} value={session}>{session}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="text-sm text-gray-600">
-                    <p>Selected: <span className="font-medium">{activeSessions[0] || 'None'}</span></p>
-                    <p>Role: <span className="font-medium capitalize">{selectedRole}</span></p>
-                    <p>Staff: <span className="font-medium">{staffId}</span></p>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Staff Role
+                  </label>
+                  <select
+                    value={staffRole}
+                    onChange={(e) => setStaffRole(e.target.value as any)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="prep">Prep Room Staff</option>
+                    <option value="front">Front Staff</option>
+                    <option value="customer">Customer</option>
+                    <option value="hookah_room">Hookah Room Staff</option>
+                  </select>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {getRoleDescription(staffRole)}
+                  </p>
                 </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  <div className="text-4xl mb-2">🔥</div>
-                  <p>Create a session to start the workflow</p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Staff ID
+                  </label>
+                  <input
+                    type="text"
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter staff ID"
+                  />
                 </div>
-              )}
+
+                <button
+                  onClick={handleCreateSession}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors"
+                >
+                  🚀 Create New Demo Session
+                </button>
+              </div>
+            </div>
+
+            {/* Demo Instructions */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                📋 Demo Instructions
+              </h2>
+              
+              <div className="space-y-3 text-sm text-gray-600">
+                <div className="flex items-start space-x-2">
+                  <span className="text-blue-500 font-bold">1.</span>
+                  <p>Select your staff role and enter a staff ID</p>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-blue-500 font-bold">2.</span>
+                  <p>Create a new demo session</p>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-blue-500 font-bold">3.</span>
+                  <p>Use the workflow buttons to progress through the session</p>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-blue-500 font-bold">4.</span>
+                  <p>Watch the dashboard update in real-time</p>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-blue-500 font-bold">5.</span>
+                  <p>Demo automatically cycles: 30s service → 15s refill → 10s coals</p>
+                </div>
+              </div>
+            </div>
+
+            {/* View Controls */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                📊 View Controls
+              </h2>
+              
+              <div className="space-y-3">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showDashboard}
+                    onChange={(e) => setShowDashboard(e.target.checked)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700">Show Main Dashboard</span>
+                </label>
+                
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={showHookahRoom}
+                    onChange={(e) => setShowHookahRoom(e.target.checked)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700">Show Hookah Room Dashboard</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* Workflow Interface */}
-          <div className="lg:col-span-2">
-            {activeSessions.length > 0 ? (
-              <FireSessionWorkflow
-                sessionId={activeSessions[0]}
-                staffRole={selectedRole}
-                staffId={staffId}
-                onEvent={(event) => {
-                  console.log('Workflow event:', event);
-                  // Agents can subscribe to these events
-                }}
-              />
+          {/* Center Column - Workflow */}
+          <div className="lg:col-span-1">
+            {activeSessionId ? (
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    🔥 Active Session: {activeSessionId}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Role: {staffRole} | Staff: {staffId}
+                  </p>
+                </div>
+                
+                <div className="p-6">
+                  <FireSessionWorkflow
+                    sessionId={activeSessionId}
+                    staffRole={staffRole}
+                    staffId={staffId}
+                  />
+                </div>
+              </div>
             ) : (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <div className="text-6xl mb-4">🚀</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Ready to Start
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Active Session
                 </h3>
-                <p className="text-gray-600">
-                  Create your first session to see the workflow in action
+                <p className="text-gray-500">
+                  Create a new demo session to get started
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Dashboards */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Main Dashboard */}
+            {showDashboard && (
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    📊 Main Dashboard
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Real-time session overview and metrics
+                  </p>
+                </div>
+                
+                <div className="p-6">
+                  <FireSessionDashboard />
+                </div>
+              </div>
+            )}
+
+            {/* Hookah Room Dashboard */}
+            {showHookahRoom && (
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    🔥 Hookah Room Dashboard
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Specialized view for hookah room operations
+                  </p>
+                </div>
+                
+                <div className="p-6">
+                  <HookahRoomDashboard staffId={staffId} />
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Dashboard */}
-        {activeSessions.length > 0 && (
-          <div className="mt-8">
-            <FireSessionDashboard
-              staffRole={selectedRole}
-              staffId={staffId}
-            />
-          </div>
-        )}
-
-        {/* System Information */}
+        {/* Demo Status Footer */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">System Information</h2>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-3">🔑 Button Language</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p><strong>Prep → Front:</strong> Prep Started → Flavor Locked → Timer Armed → Ready for Delivery</p>
-                <p><strong>Front → Customer:</strong> Picked Up → Delivered → Customer Confirmed</p>
-                <p><strong>Edge Cases:</strong> Hold, Redo/Remix, Swap Charcoal, Cancel, Return to Prep</p>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              🔥 Demo System Status
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="bg-green-50 p-3 rounded-lg">
+                <div className="text-green-800 font-medium">Workflow Engine</div>
+                <div className="text-green-600">Active & Running</div>
               </div>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-3">🔄 Cursor Events</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p>Each button press emits a cursor event with:</p>
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Session ID & Staff Role</li>
-                  <li>Timestamp & Status Tag</li>
-                  <li>Previous & New State</li>
-                  <li>Metadata & Recovery Info</li>
-                </ul>
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="text-blue-800 font-medium">Event System</div>
+                <div className="text-blue-600">Real-time Updates</div>
               </div>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-lg font-medium text-blue-900 mb-2">🎯 Agent Build Benefits</h3>
-            <div className="text-sm text-blue-800">
-              <p><strong>No Hidden Logic:</strong> States map directly to button language</p>
-              <p><strong>Reduced Complexity:</strong> Edge cases stored as same event type</p>
-              <p><strong>Extensible:</strong> Add new buttons without breaking flow</p>
-              <p><strong>Real-time Sync:</strong> Dashboards update automatically via event subscription</p>
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <div className="text-purple-800 font-medium">Demo Mode</div>
+                <div className="text-purple-600">Auto-cycle Enabled</div>
+              </div>
             </div>
           </div>
         </div>
