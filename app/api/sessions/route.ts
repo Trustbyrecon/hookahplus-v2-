@@ -1,67 +1,73 @@
 // app/api/sessions/route.ts
 import { NextResponse } from "next/server";
-import { getActiveSessions, updateCoalStatus, addFlavorToSession, startSession, handleRefill, getFlavorMixLibrary, getCustomerPreviousSessions } from "../../../lib/orders";
+import { getAllSessions, getSessionsByState, seedSession } from "@/lib/sessionState";
 
-export async function GET() {
-  try {
-    const activeSessions = getActiveSessions();
-    return NextResponse.json({ 
-      success: true,
-      sessions: activeSessions,
-      count: activeSessions.length
-    });
-  } catch (error: any) {
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 });
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const state = searchParams.get('state');
+  const table = searchParams.get('table');
+  
+  // Seed demo session if none exist
+  if (getAllSessions().length === 0) {
+    seedSession();
   }
+  
+  let sessions = getAllSessions();
+  
+  // Filter by state if specified
+  if (state) {
+    sessions = getSessionsByState(state as any);
+  }
+  
+  // Filter by table if specified
+  if (table) {
+    sessions = sessions.filter(s => s.table === table);
+  }
+  
+  return NextResponse.json({ 
+    sessions,
+    count: sessions.length,
+    total: getAllSessions().length
+  });
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { action, orderId, data } = body;
+    const body = await req.json();
+    const { table = "T-1", items = [{ sku: "hookah.session", qty: 1 }] } = body;
     
-    switch (action) {
-      case 'start_session':
-        startSession(orderId);
-        return NextResponse.json({ success: true, message: 'Session started' });
-        
-      case 'update_coal_status':
-        updateCoalStatus(orderId, data.status);
-        return NextResponse.json({ success: true, message: 'Coal status updated' });
-        
-      case 'handle_refill':
-        const refillSuccess = handleRefill(orderId);
-        return NextResponse.json({ 
-          success: refillSuccess, 
-          message: refillSuccess ? 'Refill completed, status reset to active' : 'Refill failed or not needed' 
-        });
-        
-      case 'add_flavor':
-        addFlavorToSession(orderId, data.flavor, data.rate);
-        return NextResponse.json({ success: true, message: 'Flavor added' });
-        
-      case 'get_flavor_suggestions':
-        const flavorLibrary = getFlavorMixLibrary();
-        const customerHistory = data.customerId ? getCustomerPreviousSessions(data.customerId, orderId) : [];
-        return NextResponse.json({ 
-          success: true, 
-          flavorLibrary,
-          customerHistory
-        });
-        
-      default:
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Invalid action' 
-        }, { status: 400 });
-    }
+    // Generate a new session ID
+    const sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    
+    // Create new session
+    const newSession = {
+      id: sessionId,
+      state: "NEW" as const,
+      table,
+      items,
+      payment: { status: "started" as const },
+      timers: {},
+      flags: {},
+      meta: { 
+        createdBy: body.createdBy || "system", 
+        loungeId: body.loungeId || "lounge_demo" 
+      },
+      audit: [],
+    };
+    
+    // Import and use the store functions
+    const { putSession } = await import("@/lib/sessionState");
+    putSession(newSession);
+    
+    return NextResponse.json({ 
+      ok: true, 
+      session: newSession 
+    }, { status: 201 });
+    
   } catch (error: any) {
     return NextResponse.json({ 
-      success: false, 
-      error: error.message 
+      error: "Failed to create session",
+      details: error.message 
     }, { status: 500 });
   }
 }

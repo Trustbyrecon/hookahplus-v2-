@@ -1,353 +1,291 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  fireSessionWorkflow, 
-  SessionState, 
-  SessionStatus, 
-  WorkflowEvent 
-} from '../lib/fire-session-workflow';
+  getSession, 
+  getAllSessions, 
+  sessionCommands,
+  type Session 
+} from '@/lib/cmd';
+import { 
+  getStateDisplayName, 
+  getStateColor, 
+  getAvailableCommands,
+  type SessionState 
+} from '@/lib/sessionState';
 
 export default function FireSessionDashboard() {
-  const [sessions, setSessions] = useState<SessionState[]>([]);
-  const [recentEvents, setRecentEvents] = useState<WorkflowEvent[]>([]);
-  const [metrics, setMetrics] = useState<any>(null);
-  const [statusFilter, setStatusFilter] = useState<SessionStatus | 'all'>('all');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 🔄 Subscribe to workflow events
+  // Load sessions on mount
   useEffect(() => {
-    const unsubscribe = fireSessionWorkflow.subscribeToAgentEvents((event) => {
-      // Update sessions list
-      const allSessions = Array.from(fireSessionWorkflow.getAllSessions().values());
-      setSessions(allSessions);
-
-      // Update recent events
-      const events = fireSessionWorkflow.getEventHistory();
-      setRecentEvents(events.slice(-10).reverse());
-
-      // Update metrics
-      setMetrics(fireSessionWorkflow.getSessionMetrics());
-    });
-
-    // Load initial data
-    const allSessions = Array.from(fireSessionWorkflow.getAllSessions().values());
-    setSessions(allSessions);
-    setRecentEvents(fireSessionWorkflow.getEventHistory().slice(-10).reverse());
-    setMetrics(fireSessionWorkflow.getSessionMetrics());
-
-    return unsubscribe;
+    loadSessions();
   }, []);
 
-  // Filter sessions by status
-  const filteredSessions = statusFilter === 'all' 
-    ? sessions 
-    : sessions.filter(session => session.currentStatus === statusFilter);
-
-  // Get status color
-  const getStatusColor = (status: SessionStatus) => {
-    switch (status) {
-      case 'prep': return 'bg-blue-100 text-blue-800';
-      case 'delivery': return 'bg-yellow-100 text-yellow-800';
-      case 'service': return 'bg-green-100 text-green-800';
-      case 'refill': return 'bg-purple-100 text-purple-800';
-      case 'coals_needed': return 'bg-orange-100 text-orange-800';
-      case 'recovery': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const loadSessions = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllSessions();
+      setSessions(response.sessions);
+      if (response.sessions.length > 0 && !selectedSession) {
+        setSelectedSession(response.sessions[0]);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Get status icon
-  const getStatusIcon = (status: SessionStatus) => {
-    switch (status) {
-      case 'prep': return '🔧';
-      case 'delivery': return '🚚';
-      case 'service': return '✅';
-      case 'refill': return '🥤';
-      case 'coals_needed': return '🔥';
-      case 'recovery': return '⚠️';
-      case 'completed': return '🎉';
-      case 'cancelled': return '❌';
-      default: return '❓';
+  const executeCommand = async (sessionId: string, command: string, data: any = {}, actor: "foh" | "boh" | "system" = "foh") => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Execute the command
+      await sessionCommands[command as keyof typeof sessionCommands](sessionId, data, actor);
+      
+      // Reload sessions to get updated state
+      await loadSessions();
+      
+      // Update selected session if it's the one we just modified
+      if (selectedSession?.id === sessionId) {
+        const updated = await getSession(sessionId);
+        setSelectedSession(updated.session);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const createNewSession = async () => {
+    try {
+      setLoading(true);
+      const table = prompt('Enter table number (e.g., T-15):') || 'T-15';
+      await sessionCommands.createSession({ table });
+      await loadSessions();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCommandButton = (session: Session, command: string, label: string, actor: "foh" | "boh" = "foh", color = "blue") => {
+    const isAvailable = getAvailableCommands(session.state).includes(command as any);
+    
+    return (
+      <button
+        key={command}
+        onClick={() => executeCommand(session.id, command, {}, actor)}
+        disabled={!isAvailable || loading}
+        className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+          isAvailable 
+            ? `bg-${color}-500 hover:bg-${color}-600 text-white` 
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+        }`}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  if (loading && sessions.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading Fire Session Dashboard...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Quick Stats */}
-      {metrics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-600">{metrics.totalSessions}</div>
-            <div className="text-sm text-blue-700">Total Sessions</div>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-600">{metrics.activeSessions}</div>
-            <div className="text-sm text-green-700">Active Sessions</div>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-purple-600">
-              {Math.round(metrics.refillRate * 100)}%
-            </div>
-            <div className="text-sm text-purple-700">Refill Rate</div>
-          </div>
-          <div className="bg-orange-50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-orange-600">
-              {Math.round(metrics.coalBurnoutRate * 100)}%
-            </div>
-            <div className="text-sm text-orange-700">Coal Burnout Rate</div>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Fire Session Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Manage hookah sessions with real-time state machine
+          </p>
         </div>
-      )}
 
-      {/* Status Filter */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            📊 Active Sessions ({filteredSessions.length})
-          </h2>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as SessionStatus | 'all')}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="mb-6 flex gap-4">
+          <button
+            onClick={createNewSession}
+            disabled={loading}
+            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-medium"
           >
-            <option value="all">All Statuses</option>
-            <option value="prep">Prep</option>
-            <option value="delivery">Delivery</option>
-            <option value="service">Service</option>
-            <option value="refill">Refill</option>
-            <option value="coals_needed">Coals Needed</option>
-            <option value="recovery">Recovery</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+            Create New Session
+          </button>
+          <button
+            onClick={loadSessions}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium"
+          >
+            Refresh
+          </button>
         </div>
 
-        <div className="space-y-3">
-          {filteredSessions.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              No sessions found with the selected status.
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Sessions List */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Active Sessions</h2>
+              <div className="space-y-3">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    onClick={() => setSelectedSession(session)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedSession?.id === session.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {session.table}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {session.id.slice(-8)}
+                        </div>
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStateColor(session.state)}`}>
+                        {getStateDisplayName(session.state)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {sessions.length === 0 && (
+                  <div className="text-gray-500 text-center py-8">
+                    No sessions found. Create one to get started!
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            filteredSessions.map((session) => (
-              <SessionCard key={session.sessionId} session={session} />
-            ))
-          )}
+          </div>
+
+          {/* Session Details & Controls */}
+          <div className="lg:col-span-2">
+            {selectedSession ? (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Table {selectedSession.table}
+                    </h2>
+                    <p className="text-gray-600">Session {selectedSession.id}</p>
+                  </div>
+                  <div className={`px-4 py-2 rounded-full text-sm font-medium ${getStateColor(selectedSession.state)}`}>
+                    {getStateDisplayName(selectedSession.state)}
+                  </div>
+                </div>
+
+                {/* Session Info */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Payment Status
+                    </label>
+                    <div className="text-sm text-gray-900 capitalize">
+                      {selectedSession.payment.status}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Items
+                    </label>
+                    <div className="text-sm text-gray-900">
+                      {selectedSession.items.map(item => `${item.sku} (${item.qty})`).join(', ')}
+                    </div>
+                  </div>
+                </div>
+
+                {/* FOH Controls */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-blue-600">Front of House (FOH)</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getCommandButton(selectedSession, "DELIVER_NOW", "Deliver Now", "foh", "blue")}
+                    {getCommandButton(selectedSession, "MARK_DELIVERED", "Mark Delivered", "foh", "green")}
+                    {getCommandButton(selectedSession, "START_ACTIVE", "Start Active", "foh", "purple")}
+                    {getCommandButton(selectedSession, "MOVE_TABLE", "Move Table", "foh", "yellow")}
+                    {getCommandButton(selectedSession, "CLOSE_SESSION", "Close Session", "foh", "red")}
+                    {getCommandButton(selectedSession, "REMAKE", "Remake", "foh", "orange")}
+                    {getCommandButton(selectedSession, "STAFF_HOLD", "Staff Hold", "foh", "yellow")}
+                  </div>
+                </div>
+
+                {/* BOH Controls */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-green-600">Back of House (BOH)</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getCommandButton(selectedSession, "CLAIM_PREP", "Claim Prep", "boh", "purple")}
+                    {getCommandButton(selectedSession, "HEAT_UP", "Heat Up", "boh", "red")}
+                    {getCommandButton(selectedSession, "READY_FOR_DELIVERY", "Ready for Delivery", "boh", "green")}
+                    {getCommandButton(selectedSession, "REMAKE", "Remake", "boh", "orange")}
+                    {getCommandButton(selectedSession, "STAFF_HOLD", "Staff Hold", "boh", "yellow")}
+                  </div>
+                </div>
+
+                {/* System Controls */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-600">System</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getCommandButton(selectedSession, "PAYMENT_CONFIRMED", "Confirm Payment", "system", "green")}
+                    {getCommandButton(selectedSession, "PAYMENT_FAILED", "Fail Payment", "system", "red")}
+                    {getCommandButton(selectedSession, "VOID", "Void Session", "system", "gray")}
+                    {getCommandButton(selectedSession, "REFUND_REQUEST", "Request Refund", "system", "orange")}
+                    {getCommandButton(selectedSession, "REFUND_COMPLETE", "Complete Refund", "system", "blue")}
+                  </div>
+                </div>
+
+                {/* Audit Trail */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Recent Activity</h3>
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {selectedSession.audit.slice(-5).reverse().map((event) => (
+                      <div key={event.id} className="text-sm p-2 bg-gray-50 rounded">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{event.cmd || event.type}</span>
+                          <span className="text-gray-500 text-xs">
+                            {new Date(event.ts).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className="text-gray-600 text-xs">
+                          {event.from && event.to && `${event.from} → ${event.to}`}
+                          {event.reason && ` (${event.reason})`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="text-center text-gray-500 py-12">
+                  Select a session to view details and controls
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Recent Events */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Events</h2>
-        </div>
-        
-        <div className="divide-y divide-gray-200">
-          {recentEvents.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              No recent events.
-            </div>
-          ) : (
-            recentEvents.map((event, index) => (
-              <EventCard key={index} event={event} />
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Frequent Issues */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Frequent Issues</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h3 className="font-medium text-red-900 mb-2">⚠️ Recovery Sessions</h3>
-            <div className="text-2xl font-bold text-red-600">
-              {sessions.filter(s => s.currentStatus === 'recovery').length}
-            </div>
-            <p className="text-sm text-red-700">Sessions requiring attention</p>
-          </div>
-          
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <h3 className="font-medium text-yellow-900 mb-2">⏰ Overdue Deliveries</h3>
-            <div className="text-2xl font-bold text-yellow-600">
-              {sessions.filter(s => {
-                if (s.currentStatus === 'delivery' && s.sessionTimer?.armedAt) {
-                  const elapsed = Date.now() - s.sessionTimer.armedAt.getTime();
-                  return elapsed > 5 * 60 * 1000; // 5 minutes
-                }
-                return false;
-              }).length}
-            </div>
-            <p className="text-sm text-yellow-700">Deliveries taking too long</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Session Card Component
-function SessionCard({ session }: { session: SessionState }) {
-  const getStatusColor = (status: SessionStatus) => {
-    switch (status) {
-      case 'prep': return 'bg-blue-100 text-blue-800';
-      case 'delivery': return 'bg-yellow-100 text-yellow-800';
-      case 'service': return 'bg-green-100 text-green-800';
-      case 'refill': return 'bg-purple-100 text-purple-800';
-      case 'coals_needed': return 'bg-orange-100 text-orange-800';
-      case 'recovery': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: SessionStatus) => {
-    switch (status) {
-      case 'prep': return '🔧';
-      case 'delivery': return '🚚';
-      case 'service': return '✅';
-      case 'refill': return '🥤';
-      case 'coals_needed': return '🔥';
-      case 'recovery': return '⚠️';
-      case 'completed': return '🎉';
-      case 'cancelled': return '❌';
-      default: return '❓';
-    }
-  };
-
-  return (
-    <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-            <span className="text-lg">{getStatusIcon(session.currentStatus)}</span>
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900">
-              Session {session.sessionId}
-            </h3>
-            <p className="text-sm text-gray-500">Table {session.tableId}</p>
-          </div>
-        </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.currentStatus)}`}>
-          {session.currentStatus.replace('_', ' ').toUpperCase()}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-3">
-        <div>
-          <span className="text-sm font-medium text-gray-700">Flavor Mix:</span>
-          <div className="text-sm text-gray-900">{session.flavorMix}</div>
-        </div>
-        <div>
-          <span className="text-sm font-medium text-gray-700">Prep Staff:</span>
-          <div className="text-sm text-gray-900">{session.staffAssigned.prep}</div>
-        </div>
-        {session.staffAssigned.front && (
-          <div>
-            <span className="text-sm font-medium text-gray-700">Front Staff:</span>
-            <div className="text-sm text-gray-900">{session.staffAssigned.front}</div>
-          </div>
-        )}
-        {session.staffAssigned.hookah_room && (
-          <div>
-            <span className="text-sm font-medium text-gray-700">Hookah Room:</span>
-            <div className="text-sm text-gray-900">{session.staffAssigned.hookah_room}</div>
-          </div>
-        )}
-      </div>
-
-      {/* Service Statistics */}
-      {session.serviceStage.isActive && (
-        <div className="bg-blue-50 p-3 rounded-lg mb-3">
-          <div className="text-sm text-blue-800">
-            <strong>Service Stats:</strong> {session.serviceStage.refillCount} refills, {session.serviceStage.charcoalSwaps} coal swaps, {session.serviceStage.coalBurnoutCount} coal burnouts
-          </div>
-        </div>
-      )}
-
-      {/* Demo Mode Status */}
-      {session.demoMode && (
-        <div className="bg-yellow-50 p-3 rounded-lg mb-3">
-          <div className="text-sm text-yellow-800">
-            <strong>Demo Mode:</strong> Cycle {session.sessionTimer?.currentCycle || 0} - {session.currentStatus === 'service' && '🔄 Running 30s cycle'}
-            {session.currentStatus === 'refill' && '⏳ 15s refill period'}
-            {session.currentStatus === 'coals_needed' && '⏳ 10s coal replacement'}
-          </div>
-        </div>
-      )}
-
-      {/* Session Timer Info */}
-      {session.sessionTimer && (
-        <div className="text-xs text-gray-500">
-          {session.sessionTimer.armedAt && (
-            <span>Armed: {session.sessionTimer.armedAt.toLocaleTimeString()} </span>
-          )}
-          {session.sessionTimer.startedAt && (
-            <span>Started: {session.sessionTimer.startedAt.toLocaleTimeString()} </span>
-          )}
-          {session.sessionTimer.duration && (
-            <span>Duration: {session.sessionTimer.duration}min </span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Event Card Component
-function EventCard({ event }: { event: WorkflowEvent }) {
-  const getButtonColor = (button: string) => {
-    if (['prep_started', 'flavor_locked', 'session_timer_armed', 'ready_for_delivery'].includes(button)) {
-      return 'bg-blue-100 text-blue-800';
-    }
-    if (['picked_up', 'delivered', 'customer_confirmed', 'refill_delivered', 'coals_delivered'].includes(button)) {
-      return 'bg-green-100 text-green-800';
-    }
-    if (['hold', 'redo_remix', 'return_to_prep'].includes(button)) {
-      return 'bg-red-100 text-red-800';
-    }
-    if (['swap_charcoal'].includes(button)) {
-      return 'bg-yellow-100 text-yellow-800';
-    }
-    if (['refill_requested'].includes(button)) {
-      return 'bg-purple-100 text-purple-800';
-    }
-    if (['coals_burned_out'].includes(button)) {
-      return 'bg-orange-100 text-orange-800';
-    }
-    return 'bg-gray-100 text-gray-800';
-  };
-
-  return (
-    <div className="p-4 hover:bg-gray-50 transition-colors">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-3">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getButtonColor(event.buttonPressed)}`}>
-            {event.buttonPressed.replace('_', ' ').toUpperCase()}
-          </span>
-          <span className="text-sm font-medium text-gray-900">
-            Session {event.sessionId}
-          </span>
-        </div>
-        <div className="text-xs text-gray-500">
-          {event.timestamp.toLocaleTimeString()}
-        </div>
-      </div>
-      
-      <div className="text-sm text-gray-600">
-        <span className="font-medium">{event.staffRole}</span> staff member pressed{' '}
-        <span className="font-medium">{event.buttonPressed.replace('_', ' ')}</span>
-      </div>
-      
-      {event.metadata?.reason && (
-        <div className="mt-2 text-xs text-gray-500">
-          Reason: {event.metadata.reason}
-        </div>
-      )}
     </div>
   );
 }
