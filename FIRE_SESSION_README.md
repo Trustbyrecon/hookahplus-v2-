@@ -6,7 +6,8 @@ A complete state machine implementation for managing hookah lounge sessions from
 
 1. **Navigate to the dashboard**: `/fire-session-dashboard`
 2. **Test the state machine**: `/test-fire-session`
-3. **Use the API directly**: `/api/sessions/[id]/command`
+3. **Admin control center**: `/admin-control`
+4. **Use the API directly**: `/api/sessions/[id]/command`
 
 ## 🏗️ Architecture
 
@@ -19,6 +20,7 @@ A complete state machine implementation for managing hookah lounge sessions from
 - **`components/BOHPrepRoom.tsx`** - Back of House prep room interface
 - **`components/FOHFloorDashboard.tsx`** - Front of House floor management
 - **`app/fire-session-dashboard/page.tsx`** - Main dashboard with FOH/BOH toggle
+- **`app/admin-control/page.tsx`** - Admin control center with live reports
 
 ### Session States
 
@@ -172,6 +174,15 @@ const allSessions = getAllSessions();
 ```
 
 ## 🚀 Next Steps
+
+### Live Data Management
+
+The system now operates with live data and no time restrictions:
+
+- **Real-time sessions**: All sessions are live and accessible
+- **No historical windows**: Data is persistent and available
+- **Admin control center**: Comprehensive live reporting and analytics
+- **Demo data seeding**: Easy generation of test data for development
 
 ### Database Integration
 

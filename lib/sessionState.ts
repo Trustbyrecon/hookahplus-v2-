@@ -111,6 +111,75 @@ export function seedSession(id = "sess_demo", table = "T-12") {
   return getSession(id)!;
 }
 
+// Generate multiple demo sessions for testing
+export function seedMultipleSessions() {
+  const tables = ["T-1", "T-2", "T-3", "T-4", "T-5", "T-6", "T-7", "T-8", "T-9", "T-10"];
+  const states: SessionState[] = ["NEW", "PAID_CONFIRMED", "PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE", "CLOSE_PENDING", "CLOSED"];
+  
+  tables.forEach((table, index) => {
+    const sessionId = `demo_${table}_${Date.now()}`;
+    const state = states[index % states.length];
+    
+    putSession({
+      id: sessionId,
+      state,
+      table,
+      items: [{ sku: "hookah.session", qty: 1 }],
+      payment: { status: "confirmed" },
+      timers: {
+        heatUpStart: state === "HEAT_UP" ? Date.now() - Math.random() * 300000 : undefined,
+        deliveredAt: state === "DELIVERED" || state === "ACTIVE" ? Date.now() - Math.random() * 600000 : undefined,
+      },
+      flags: { vip: Math.random() > 0.7, ageVerified: true },
+      meta: { 
+        createdBy: "system", 
+        loungeId: "lounge_demo", 
+        trustLock: "TLH-v1::seed",
+        customerId: `customer_${Math.floor(Math.random() * 1000)}`
+      },
+      audit: [{
+        id: `evt_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        type: "session.state.changed",
+        ts: Date.now() - Math.random() * 3600000, // Random time in last hour
+        actor: { role: "system" },
+        sessionId,
+        from: "NEW",
+        to: state,
+        cmd: "PAYMENT_CONFIRMED",
+      }],
+    });
+  });
+}
+
+// Get live sessions (all non-closed sessions)
+export function getLiveSessions() {
+  return Array.from(store.values()).filter(s => 
+    !["CLOSED", "REFUNDED", "VOIDED"].includes(s.state)
+  );
+}
+
+// Get sessions by status for reporting
+export function getSessionsByStatus() {
+  const sessions = getAllSessions();
+  const statusCounts: Record<SessionState, number> = {} as any;
+  
+  // Initialize all states to 0
+  const allStates: SessionState[] = [
+    "NEW", "PAID_PENDING_AUTH", "PAID_CONFIRMED", "QUEUED_PREP", "PREP_IN_PROGRESS",
+    "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE",
+    "CLOSE_PENDING", "CLOSED", "FAILED_PAYMENT", "STOCK_BLOCKED", "REMAKE_REQUESTED",
+    "RELOCATE_TABLE", "STAFF_HOLD", "REFUND_REQUESTED", "REFUNDED", "VOIDED"
+  ];
+  
+  allStates.forEach(state => statusCounts[state] = 0);
+  
+  sessions.forEach(session => {
+    statusCounts[session.state]++;
+  });
+  
+  return statusCounts;
+}
+
 // ---------------- Transition map ----------------
 const allowed: Record<SessionState, Partial<Record<Command, SessionState>>> = {
   NEW: {

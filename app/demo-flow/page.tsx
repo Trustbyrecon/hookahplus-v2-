@@ -211,6 +211,19 @@ export default function DemoFlowPage() {
                   Status: Confirmed
                 </div>
               </div>
+              
+              {/* FOH/BOH Integration Notice */}
+              <div className="mt-6 bg-blue-900/20 border border-blue-500 rounded-lg p-6 max-w-md mx-auto">
+                <div className="text-blue-400 font-bold text-lg mb-2">🔄 FOH/BOH Integration</div>
+                <div className="text-blue-300 text-sm">
+                  <div className="mb-2">✅ Payment confirmation sent to FOH dashboard</div>
+                  <div className="mb-2">✅ Order queued in BOH prep room</div>
+                  <div className="mb-2">✅ Real-time status updates across all systems</div>
+                  <div className="text-xs text-blue-400 mt-3">
+                    Check your FOH/BOH dashboards to see this order!
+                  </div>
+                </div>
+              </div>
             </div>
             <button
               onClick={handleNextStep}
@@ -286,6 +299,80 @@ export default function DemoFlowPage() {
                      </div>
           </div>
         )}
+
+        {/* Mobile Workflow Simulation */}
+        <div className="mt-12 bg-zinc-800 rounded-xl p-8">
+          <h3 className="text-2xl font-bold text-cyan-300 mb-6 text-center">🎬 Live Mobile Workflow Simulation</h3>
+          <p className="text-zinc-400 mb-6 text-center">Watch a customer go through the complete QR workflow in real-time</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Mobile Order Status */}
+            <div className="bg-zinc-700 rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-pink-300 mb-4">📱 Mobile Order Status</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-300">Order ID:</span>
+                  <span className="font-mono text-sm text-pink-400">ord_123456</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-300">Table:</span>
+                  <span className="text-green-400">T-3</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-300">Status:</span>
+                  <span className="bg-green-900 text-green-300 px-2 py-1 rounded text-sm">Active</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-300">Flavor:</span>
+                  <span className="text-blue-400">Double Apple + Mint</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-300">Amount:</span>
+                  <span className="text-yellow-400">$23.00</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Workflow Progress */}
+            <div className="bg-zinc-700 rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-cyan-300 mb-4">📊 Mobile Workflow Progress</h4>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <span className="text-zinc-300">QR Code Scanned</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <span className="text-zinc-300">Flavor Selected</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <span className="text-zinc-300">Payment Processed</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-blue-400">Order Confirmed</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
+                  <span className="text-zinc-500">Session Active</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-zinc-400 text-sm mb-4">
+              💡 <strong>Pro Tip:</strong> Mobile orders appear automatically when customers complete QR workflow
+            </p>
+            <div className="bg-zinc-700 rounded-lg p-4 inline-block">
+              <div className="text-sm text-zinc-300">
+                <div className="text-green-400 font-medium">Real-time Integration</div>
+                <div className="text-zinc-400">Orders sync instantly with FOH/BOH dashboards</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Processing Overlay */}
         {isProcessing && (

@@ -50,33 +50,39 @@ const FireSessionDashboard = () => {
         {activeView === "foh" ? <FOHFloorDashboard /> : <BOHPrepRoom />}
       </div>
 
-      {/* Quick Actions Footer */}
-      <div className="fixed bottom-6 right-6">
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Quick Actions</h3>
-          <div className="space-y-2">
-            <button
-              onClick={() => {
-                // Seed a demo session
-                fetch("/api/sessions/sess_demo/command", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ cmd: "PAYMENT_CONFIRMED" })
-                }).then(() => window.location.reload());
-              }}
-              className="w-full bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
-            >
-              Seed Demo Session
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full bg-gray-600 text-white px-3 py-2 rounded text-sm hover:bg-gray-700"
-            >
-              Refresh Dashboard
-            </button>
+              {/* Quick Actions Footer */}
+        <div className="fixed bottom-6 right-6">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Quick Actions</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  // Seed a demo session
+                  fetch("/api/sessions/sess_demo/command", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cmd: "PAYMENT_CONFIRMED" })
+                  }).then(() => window.location.reload());
+                }}
+                className="w-full bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
+              >
+                Seed Demo Session
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-gray-600 text-white px-3 py-2 rounded text-sm hover:bg-gray-700"
+              >
+                Refresh Dashboard
+              </button>
+              <a
+                href="/admin-control"
+                className="w-full bg-purple-600 text-white px-3 py-2 rounded text-sm hover:bg-purple-700 text-center block"
+              >
+                Admin Control
+              </a>
+            </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };

@@ -180,19 +180,23 @@ export function addFlavorToSession(orderId: string, flavor: string, addOnRate: n
   }
 }
 
-// Get orders for specific time range (last 2 hours + current)
-export function getRecentOrders(hoursBack: number = 2) {
-  const cutoffTime = Date.now() - (hoursBack * 60 * 60 * 1000);
-  return ORDERS.filter(o => o.createdAt >= cutoffTime);
+// Get all orders (live data, no time restrictions)
+export function getRecentOrders() {
+  return ORDERS; // Return all orders for live dashboard
 }
 
-// Get active sessions (including paused ones)
+// Get active sessions (including paused ones) - live data
 export function getActiveSessions() {
   return ORDERS.filter(o => 
     o.status === 'paid' && 
     o.sessionStartTime && 
     (o.coalStatus === 'active' || o.coalStatus === 'needs_refill' || o.coalStatus === 'burnt_out')
   );
+}
+
+// Get live orders for dashboard (all orders, no time restrictions)
+export function getLiveOrders() {
+  return ORDERS;
 }
 
 // Flavor intent capture for Aliethia

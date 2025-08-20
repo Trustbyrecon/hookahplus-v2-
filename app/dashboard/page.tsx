@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { getTopFlavors, getReturningCustomers, listOrders, getTotalRevenue, getPaidOrderCount, getPendingOrderCount } from "../../lib/orders";
+import { getTopFlavors, getReturningCustomers, getLiveOrders, getTotalRevenue, getPaidOrderCount, getPendingOrderCount } from "../../lib/orders";
 import AdminNavHeader from "../../components/AdminNavHeader";
 import GlobalNavigation from "../../components/GlobalNavigation";
 
@@ -52,9 +52,9 @@ export default function Dashboard() {
     console.log('Fetching orders...');
     setIsLoading(true);
     try {
-      // Use the local orders from lib/orders.ts instead of API call
-      const localOrders = listOrders();
-      console.log('Local orders:', localOrders);
+      // Use the live orders from lib/orders.ts instead of API call
+      const localOrders = getLiveOrders();
+      console.log('Live orders:', localOrders);
       setOrders(localOrders);
       
       // Generate Aliethia insights
@@ -317,8 +317,8 @@ export default function Dashboard() {
         {/* Orders Table */}
         <div className="bg-zinc-900 border border-teal-500 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-teal-500">
-            <h2 className="text-xl font-semibold text-teal-300">Live Orders & Historical Data</h2>
-            <p className="text-zinc-400 text-sm">Real-time updates every 5 seconds • {totalOrders} orders • Shows last 2 hours + current</p>
+            <h2 className="text-xl font-semibold text-teal-300">Live Orders & Sessions</h2>
+            <p className="text-zinc-400 text-sm">Real-time updates every 5 seconds • {totalOrders} orders • Live data with no time restrictions</p>
           </div>
           
           <div className="overflow-x-auto">

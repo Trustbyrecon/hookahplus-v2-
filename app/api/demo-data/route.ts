@@ -4,9 +4,9 @@
 import { NextResponse } from "next/server";
 import { addOrder, markPaid, clearOrders, startSession, updateCoalStatus, addFlavorToSession, setTableMapping } from "../../../lib/orders";
 
-// Simulate orders over a 4-hour period (6 PM - 10 PM) to show historical data
+// Simulate orders over a realistic time period for live demo
 const startTime = new Date();
-startTime.setHours(startTime.getHours() - 2); // 2 hours ago
+startTime.setHours(startTime.getHours() - 1); // 1 hour ago for demo purposes
 const endTime = new Date(); // Current time
 
 // Enhanced flavor combinations based on real lounge atmosphere

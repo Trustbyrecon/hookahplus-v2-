@@ -34,6 +34,18 @@ const GlobalNavigation: React.FC = () => {
       color: 'bg-purple-600 hover:bg-purple-700'
     },
     {
+      label: 'Demo Flow',
+      href: '/demo-flow',
+      icon: '📱',
+      color: 'bg-cyan-600 hover:bg-cyan-700'
+    },
+    {
+      label: 'ROI Calculator',
+      href: '/roi-calculator',
+      icon: '💰',
+      color: 'bg-emerald-600 hover:bg-emerald-700'
+    },
+    {
       label: 'Square POS',
       href: '/square-pos',
       icon: '💳',
@@ -46,10 +58,28 @@ const GlobalNavigation: React.FC = () => {
       color: 'bg-pink-600 hover:bg-pink-700'
     },
     {
+      label: 'Fire Session',
+      href: '/fire-session-dashboard',
+      icon: '🔥',
+      color: 'bg-red-600 hover:bg-red-700'
+    },
+    {
       label: 'Admin Control',
-      href: '/admin',
+      href: '/admin-control',
       icon: '⚙️',
       color: 'bg-gray-600 hover:bg-gray-700'
+    },
+    {
+      label: 'Customer Mgmt',
+      href: '/admin-customers',
+      icon: '👥',
+      color: 'bg-indigo-600 hover:bg-indigo-700'
+    },
+    {
+      label: 'Connector Mgmt',
+      href: '/admin-connectors',
+      icon: '🔗',
+      color: 'bg-yellow-600 hover:bg-yellow-700'
     }
   ];
 
