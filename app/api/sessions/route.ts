@@ -1,14 +1,32 @@
 // app/api/sessions/route.ts
 import { NextResponse } from "next/server";
+import { getAllSessions, getSessionsByState, getSessionsByTable } from "../../../lib/sessionState";
 import { getActiveSessions, updateCoalStatus, addFlavorToSession, startSession, handleRefill, getFlavorMixLibrary, getCustomerPreviousSessions } from "../../../lib/orders";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const activeSessions = getActiveSessions();
+    const { searchParams } = new URL(request.url);
+    const state = searchParams.get('state');
+    const table = searchParams.get('table');
+    const customerId = searchParams.get('customerId');
+
+    let sessions;
+    
+    if (state) {
+      sessions = getSessionsByState(state as any);
+    } else if (table) {
+      sessions = getSessionsByTable(table);
+    } else if (customerId) {
+      // Filter sessions by customer ID
+      sessions = getAllSessions().filter(s => s.meta.customerId === customerId);
+    } else {
+      sessions = getAllSessions();
+    }
+
     return NextResponse.json({ 
       success: true,
-      sessions: activeSessions,
-      count: activeSessions.length
+      sessions,
+      count: sessions.length
     });
   } catch (error: any) {
     return NextResponse.json({ 
