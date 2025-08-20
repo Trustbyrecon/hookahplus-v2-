@@ -18,6 +18,120 @@ import {
   getFlavorMixLibrary
 } from "@/lib/orders";
 
+// Reflex Bloom Roadmap - MVP Launch Features
+interface ReflexCard {
+  id: string;
+  feature: string;
+  description: string;
+  sprint: string;
+  command: string;
+  dependencies: string[];
+  reflexScore: number;
+  bloomLogLink?: string;
+  status: 'seed' | 'activate' | 'reflect' | 'trust-lock' | 'bloomed';
+  createdAt: number;
+  lastUpdated: number;
+}
+
+const REFLEX_ROADMAP: ReflexCard[] = [
+  {
+    id: 'MB-001',
+    feature: 'Fire Session State Machine',
+    description: 'Core session workflow with FOH/BOH integration',
+    sprint: 'S-0',
+    command: 'cmd.enableFireSessionWorkflow()',
+    dependencies: [],
+    reflexScore: 95,
+    status: 'bloomed',
+    createdAt: Date.now() - 86400000 * 7,
+    lastUpdated: Date.now() - 86400000 * 2
+  },
+  {
+    id: 'MB-002',
+    feature: 'Session UI Trust Loop',
+    description: 'Real-time session monitoring with trust validation',
+    sprint: 'S-0',
+    command: 'cmd.enableSessionTrustLoop()',
+    dependencies: ['MB-001'],
+    reflexScore: 87,
+    status: 'trust-lock',
+    createdAt: Date.now() - 86400000 * 6,
+    lastUpdated: Date.now() - 86400000 * 1
+  },
+  {
+    id: 'MB-003',
+    feature: 'Mobile QR Workflow',
+    description: 'Customer journey from scan to session activation',
+    sprint: 'S-1',
+    command: 'cmd.deployMobileQRWorkflow()',
+    dependencies: ['MB-001', 'MB-002'],
+    reflexScore: 78,
+    status: 'reflect',
+    createdAt: Date.now() - 86400000 * 5,
+    lastUpdated: Date.now() - 86400000 * 1
+  },
+  {
+    id: 'MB-004',
+    feature: 'Stripe Payment Integration',
+    description: 'Secure payment processing with live mode prep',
+    sprint: 'S-1',
+    command: 'cmd.enableStripePayments()',
+    dependencies: ['MB-003'],
+    reflexScore: 65,
+    status: 'activate',
+    createdAt: Date.now() - 86400000 * 4,
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'MB-005',
+    feature: 'Admin Control Center',
+    description: 'Comprehensive dashboard with live analytics',
+    sprint: 'S-2',
+    command: 'cmd.deployAdminControl()',
+    dependencies: ['MB-002', 'MB-003'],
+    reflexScore: 92,
+    status: 'trust-lock',
+    createdAt: Date.now() - 86400000 * 3,
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'MB-006',
+    feature: 'ROI Calculator & Trust Core',
+    description: 'Value communication and pricing validation',
+    sprint: 'S-2',
+    command: 'cmd.enableTrustCoreROI()',
+    dependencies: ['MB-005'],
+    reflexScore: 88,
+    status: 'reflect',
+    createdAt: Date.now() - 86400000 * 2,
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'MB-007',
+    feature: 'Dynamic Navigation System',
+    description: 'Context-aware navigation with FOH/BOH toggle',
+    sprint: 'S-3',
+    command: 'cmd.deployDynamicNavigation()',
+    dependencies: ['MB-005'],
+    reflexScore: 73,
+    status: 'activate',
+    createdAt: Date.now() - 86400000 * 1,
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'MB-008',
+    feature: 'Reflexive Kanban Integration',
+    description: 'Trust-scored development lifecycle tracking',
+    sprint: 'S-3',
+    command: 'cmd.enableReflexiveKanban()',
+    dependencies: ['MB-005', 'MB-007'],
+    reflexScore: 0,
+    status: 'seed',
+    createdAt: Date.now(),
+    lastUpdated: Date.now()
+  }
+];
+
 const AdminControlCenter = () => {
   const [sessions, setSessions] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -31,7 +145,9 @@ const AdminControlCenter = () => {
   const [topFlavors, setTopFlavors] = useState<Array<{ flavor: string; count: number }>>([]);
   const [flavorCombinations, setFlavorCombinations] = useState<Array<{ combination: string; count: number }>>([]);
   const [loading, setLoading] = useState(false);
+  const [reflexCards, setReflexCards] = useState<ReflexCard[]>(REFLEX_ROADMAP);
 
+  // Refresh data
   const refreshData = () => {
     // Get all live data
     const allSessions = getAllSessions();
@@ -85,6 +201,47 @@ const AdminControlCenter = () => {
     }
   };
 
+  // Reflex Bloom Roadmap Functions
+  const getStatusIcon = (status: ReflexCard['status']) => {
+    const icons = {
+      'seed': '🌱',
+      'activate': '⚡',
+      'reflect': '🔍',
+      'trust-lock': '🔒',
+      'bloomed': '🌸'
+    };
+    return icons[status];
+  };
+
+  const getStatusColor = (status: ReflexCard['status']) => {
+    const colors = {
+      'seed': 'bg-zinc-800 text-zinc-300',
+      'activate': 'bg-blue-500/20 text-blue-300',
+      'reflect': 'bg-yellow-500/20 text-yellow-300',
+      'trust-lock': 'bg-purple-500/20 text-purple-300',
+      'bloomed': 'bg-emerald-500/20 text-emerald-300'
+    };
+    return colors[status];
+  };
+
+  const getSprintColor = (sprint: string) => {
+    const colors: Record<string, string> = {
+      'S-0': 'bg-red-500/20 text-red-300',
+      'S-1': 'bg-orange-500/20 text-orange-300',
+      'S-2': 'bg-yellow-500/20 text-yellow-300',
+      'S-3': 'bg-green-500/20 text-green-300'
+    };
+    return colors[sprint] || 'bg-zinc-800 text-zinc-400';
+  };
+
+  const handleCardStatusChange = (cardId: string, newStatus: ReflexCard['status']) => {
+    setReflexCards(prev => prev.map(card => 
+      card.id === cardId 
+        ? { ...card, status: newStatus, lastUpdated: Date.now() }
+        : card
+    ));
+  };
+
   const getStateColor = (state: string) => {
     const colors: Record<string, string> = {
       NEW: "bg-zinc-800 text-zinc-300",
@@ -130,6 +287,223 @@ const AdminControlCenter = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-teal-400 mb-2">Admin Control Center</h1>
           <p className="text-zinc-400">Live Session Management & Analytics Dashboard</p>
+        </div>
+
+        {/* 🌀 Reflex Bloom Roadmap - Reflexive Kanban Integration */}
+        <div className="mb-8">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-teal-400">🌀 Reflex Bloom Roadmap</h2>
+              <div className="text-sm text-zinc-400">
+                MVP Launch - Reflexive Kanban Flow
+              </div>
+            </div>
+
+            {/* Reflex States Kanban Board */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              {/* 🌱 Seed */}
+              <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
+                <div className="text-center mb-3">
+                  <div className="text-2xl mb-1">🌱</div>
+                  <div className="text-sm font-medium text-zinc-300">Seed</div>
+                  <div className="text-xs text-zinc-500">
+                    {reflexCards.filter(c => c.status === 'seed').length} cards
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {reflexCards.filter(c => c.status === 'seed').map(card => (
+                    <div key={card.id} className="bg-zinc-900 rounded border border-zinc-600 p-3 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-white">{card.id}</span>
+                        <span className={`px-2 py-1 rounded text-xs ${getSprintColor(card.sprint)}`}>
+                          {card.sprint}
+                        </span>
+                      </div>
+                      <div className="text-zinc-300 mb-2">{card.feature}</div>
+                      <div className="text-zinc-500 text-xs mb-2">{card.command}</div>
+                      <button
+                        onClick={() => handleCardStatusChange(card.id, 'activate')}
+                        className="w-full bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs hover:bg-blue-500/30 transition-colors"
+                      >
+                        ⚡ Activate
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ⚡ Activate */}
+              <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
+                <div className="text-center mb-3">
+                  <div className="text-2xl mb-1">⚡</div>
+                  <div className="text-sm font-medium text-zinc-300">Activate</div>
+                  <div className="text-xs text-zinc-500">
+                    {reflexCards.filter(c => c.status === 'activate').length} cards
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {reflexCards.filter(c => c.status === 'activate').map(card => (
+                    <div key={card.id} className="bg-zinc-900 rounded border border-zinc-600 p-3 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-white">{card.id}</span>
+                        <span className={`px-2 py-1 rounded text-xs ${getSprintColor(card.sprint)}`}>
+                          {card.sprint}
+                        </span>
+                      </div>
+                      <div className="text-zinc-300 mb-2">{card.feature}</div>
+                      <div className="text-zinc-500 text-xs mb-2">Reflex Score: {card.reflexScore}</div>
+                      <button
+                        onClick={() => handleCardStatusChange(card.id, 'reflect')}
+                        className="w-full bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs hover:bg-yellow-500/30 transition-colors"
+                      >
+                        🔍 Reflect
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 🔍 Reflect */}
+              <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
+                <div className="text-center mb-3">
+                  <div className="text-2xl mb-1">🔍</div>
+                  <div className="text-sm font-medium text-zinc-300">Reflect</div>
+                  <div className="text-xs text-zinc-500">
+                    {reflexCards.filter(c => c.status === 'reflect').length} cards
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {reflexCards.filter(c => c.status === 'reflect').map(card => (
+                    <div key={card.id} className="bg-zinc-900 rounded border border-zinc-600 p-3 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-white">{card.id}</span>
+                        <span className={`px-2 py-1 rounded text-xs ${getSprintColor(card.sprint)}`}>
+                          {card.sprint}
+                        </span>
+                      </div>
+                      <div className="text-zinc-300 mb-2">{card.feature}</div>
+                      <div className="text-zinc-500 text-xs mb-2">Reflex Score: {card.reflexScore}</div>
+                      <button
+                        onClick={() => handleCardStatusChange(card.id, 'trust-lock')}
+                        className="w-full bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs hover:bg-purple-500/30 transition-colors"
+                      >
+                        🔒 Trust Lock
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 🔒 Trust Lock */}
+              <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
+                <div className="text-center mb-3">
+                  <div className="text-2xl mb-1">🔒</div>
+                  <div className="text-sm font-medium text-zinc-300">Trust Lock</div>
+                  <div className="text-xs text-zinc-500">
+                    {reflexCards.filter(c => c.status === 'trust-lock').length} cards
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {reflexCards.filter(c => c.status === 'trust-lock').map(card => (
+                    <div key={card.id} className="bg-zinc-900 rounded border border-zinc-600 p-3 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-white">{card.id}</span>
+                        <span className={`px-2 py-1 rounded text-xs ${getSprintColor(card.sprint)}`}>
+                          {card.sprint}
+                        </span>
+                      </div>
+                      <div className="text-zinc-300 mb-2">{card.feature}</div>
+                      <div className="text-zinc-500 text-xs mb-2">Reflex Score: {card.reflexScore}</div>
+                      <button
+                        onClick={() => handleCardStatusChange(card.id, 'bloomed')}
+                        className="w-full bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded text-xs hover:bg-emerald-500/30 transition-colors"
+                      >
+                        🌸 Bloom
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 🌸 Bloomed */}
+              <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
+                <div className="text-center mb-3">
+                  <div className="text-2xl mb-1">🌸</div>
+                  <div className="text-sm font-medium text-zinc-300">Bloomed</div>
+                  <div className="text-xs text-zinc-500">
+                    {reflexCards.filter(c => c.status === 'bloomed').length} cards
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {reflexCards.filter(c => c.status === 'bloomed').map(card => (
+                    <div key={card.id} className="bg-zinc-900 rounded border border-zinc-600 p-3 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-white">{card.id}</span>
+                        <span className={`px-2 py-1 rounded text-xs ${getSprintColor(card.sprint)}`}>
+                          {card.sprint}
+                        </span>
+                      </div>
+                      <div className="text-zinc-300 mb-2">{card.feature}</div>
+                      <div className="text-zinc-500 text-xs mb-2">Bloomed: {new Date(card.lastUpdated).toLocaleDateString()}</div>
+                      <div className="text-emerald-400 text-xs">✅ Complete</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Sprint Lanes */}
+            <div className="grid grid-cols-4 gap-4">
+              {['S-0', 'S-1', 'S-2', 'S-3'].map(sprint => (
+                <div key={sprint} className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
+                  <div className="text-center mb-3">
+                    <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getSprintColor(sprint)}`}>
+                      {sprint}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-1">
+                      {reflexCards.filter(c => c.sprint === sprint).length} features
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {reflexCards.filter(c => c.sprint === sprint).map(card => (
+                      <div key={card.id} className="bg-zinc-900 rounded border border-zinc-600 p-2 text-xs">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`px-2 py-1 rounded text-xs ${getStatusColor(card.status)}`}>
+                            {getStatusIcon(card.status)}
+                          </span>
+                          <span className="font-medium text-white">{card.id}</span>
+                        </div>
+                        <div className="text-zinc-300 text-xs">{card.feature}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bloom Log Summary */}
+            <div className="mt-6 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+              <h3 className="text-lg font-semibold text-teal-300 mb-3">🌸 Bloom Log Summary</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl text-emerald-400">{reflexCards.filter(c => c.status === 'bloomed').length}</div>
+                  <div className="text-zinc-400">Bloomed</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl text-purple-400">{reflexCards.filter(c => c.status === 'trust-lock').length}</div>
+                  <div className="text-zinc-400">Trust Locked</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl text-blue-400">{reflexCards.filter(c => c.status === 'activate').length}</div>
+                  <div className="text-zinc-400">Active</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl text-zinc-400">{reflexCards.filter(c => c.status === 'seed').length}</div>
+                  <div className="text-zinc-400">Seeded</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Control Actions */}
