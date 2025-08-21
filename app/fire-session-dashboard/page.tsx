@@ -4,11 +4,107 @@ import { useState, useEffect } from "react";
 import GlobalNavigation from "../../components/GlobalNavigation";
 import { getAllSessions, seedMultipleSessions, type Session, type SessionState } from "@/lib/sessionState";
 
+// Sim Metadata for First-Class User Experience
+interface SimMetadata {
+  step: number;
+  title: string;
+  description: string;
+  action: string;
+  hint: string;
+  nextStep?: string;
+  isCompleted: boolean;
+}
+
+const FOH_JOURNEY: SimMetadata[] = [
+  {
+    step: 1,
+    title: "Welcome to Front of House",
+    description: "You're managing customer delivery and table management",
+    action: "Generate demo data to see live sessions",
+    hint: "Click 'Generate 15 Demo Sessions' to populate the dashboard",
+    nextStep: "Sessions will appear in Floor Queue",
+    isCompleted: false
+  },
+  {
+    step: 2,
+    title: "Monitor Floor Queue",
+    description: "Watch for sessions ready for delivery",
+    action: "Select a session to see available actions",
+    hint: "Click on any session card to view details and controls",
+    nextStep: "Use Session Controls to manage delivery",
+    isCompleted: false
+  },
+  {
+    step: 3,
+    title: "Execute Delivery Workflow",
+    description: "Move sessions through delivery states",
+    action: "Use DELIVER_NOW → MARK_DELIVERED → START_ACTIVE",
+    hint: "Follow the workflow buttons in order for smooth delivery",
+    nextStep: "Monitor active sessions and close when ready",
+    isCompleted: false
+  },
+  {
+    step: 4,
+    title: "Session Lifecycle Management",
+    description: "Handle active sessions and closures",
+    action: "Use CLOSE_SESSION for completed sessions",
+    hint: "Keep track of session duration and customer satisfaction",
+    nextStep: "Return to step 1 for new sessions",
+    isCompleted: false
+  }
+];
+
+const BOH_JOURNEY: SimMetadata[] = [
+  {
+    step: 1,
+    title: "Welcome to Back of House",
+    description: "You're managing hookah preparation and prep queue",
+    action: "Generate demo data to see prep workflow",
+    hint: "Click 'Generate 15 Demo Sessions' to populate the dashboard",
+    nextStep: "Sessions will appear in Prep Queue",
+    isCompleted: false
+  },
+  {
+    step: 2,
+    title: "Monitor Prep Queue",
+    description: "Watch for new paid sessions",
+    action: "Select a session to begin prep workflow",
+    hint: "Click on any session card to view details and controls",
+    nextStep: "Use Session Controls to manage prep",
+    isCompleted: false
+  },
+  {
+    step: 3,
+    title: "Execute Prep Workflow",
+    description: "Move sessions through prep states",
+    action: "Use CLAIM_PREP → HEAT_UP → READY_FOR_DELIVERY",
+    hint: "Follow the workflow buttons in order for smooth prep",
+    nextStep: "Hand off to FOH when ready",
+    isCompleted: false
+  },
+  {
+    step: 4,
+    title: "Quality Control & Handoff",
+    description: "Ensure hookah quality and readiness",
+    action: "Use REMAKE if needed, then READY_FOR_DELIVERY",
+    hint: "Double-check flavor, heat, and presentation",
+    nextStep: "Return to step 1 for new sessions",
+    isCompleted: false
+  }
+];
+
 const FireSessionDashboard = () => {
   const [activeView, setActiveView] = useState<"foh" | "boh">("foh");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showJourneyGuide, setShowJourneyGuide] = useState(true);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  // Get current journey based on active view
+  const currentJourney = activeView === "foh" ? FOH_JOURNEY : BOH_JOURNEY;
+  const currentJourneyStep = currentJourney.find(s => s.step === currentStep);
 
   // Refresh sessions based on current view
   const refreshSessions = () => {
@@ -37,6 +133,23 @@ const FireSessionDashboard = () => {
     const interval = setInterval(refreshSessions, 5000);
     return () => clearInterval(interval);
   }, [activeView]);
+
+  // Update journey progress based on actions
+  useEffect(() => {
+    if (sessions.length > 0 && currentStep === 1) {
+      markStepComplete(1);
+    }
+    if (selectedSession && currentStep === 2) {
+      markStepComplete(2);
+    }
+  }, [sessions, selectedSession, currentStep]);
+
+  const markStepComplete = (step: number) => {
+    setCompletedSteps(prev => new Set([...prev, step]));
+    if (step < currentJourney.length) {
+      setCurrentStep(step + 1);
+    }
+  };
 
   const handleGenerateDemoData = async () => {
     setLoading(true);
@@ -93,6 +206,7 @@ const FireSessionDashboard = () => {
       
       alert("Generated 15 demo hookah sessions with proper workflow progression! Check both FOH and BOH views.");
       refreshSessions();
+      markStepComplete(1);
     } catch (error) {
       console.error("Error generating demo data:", error);
       alert("Error generating demo data");
@@ -215,6 +329,10 @@ const FireSessionDashboard = () => {
         if (["CLOSE_SESSION", "CLOSED"].includes(command)) {
           setSelectedSession(null);
         }
+        // Mark workflow step as complete
+        if (currentStep === 3) {
+          markStepComplete(3);
+        }
       } else {
         const error = await response.json();
         alert(`Command failed: ${error.error}`);
@@ -223,6 +341,12 @@ const FireSessionDashboard = () => {
       console.error("Error executing command:", error);
       alert("Error executing command");
     }
+  };
+
+  const resetJourney = () => {
+    setCurrentStep(1);
+    setCompletedSteps(new Set());
+    setShowJourneyGuide(true);
   };
 
   return (
@@ -269,6 +393,101 @@ const FireSessionDashboard = () => {
 
       {/* Dashboard Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* 🗺️ Journey Guide - First-Class Experience */}
+        {showJourneyGuide && (
+          <div className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-xl border border-teal-500/20 p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-teal-300">🗺️ {activeView === "foh" ? "Front of House" : "Back of House"} Journey Guide</h2>
+              <button
+                onClick={() => setShowJourneyGuide(false)}
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between text-sm text-zinc-400 mb-2">
+                <span>Step {currentStep} of {currentJourney.length}</span>
+                <span>{Math.round((completedSteps.size / currentJourney.length) * 100)}% Complete</span>
+              </div>
+              <div className="w-full bg-zinc-800 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-teal-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${(completedSteps.size / currentJourney.length) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Current Step */}
+            {currentJourneyStep && (
+              <div className="bg-zinc-900 rounded-lg border border-zinc-700 p-4 mb-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-zinc-950 font-bold">
+                    {currentStep}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white mb-1">{currentJourneyStep.title}</h3>
+                    <p className="text-zinc-300 text-sm mb-2">{currentJourneyStep.description}</p>
+                    <div className="bg-teal-500/20 border border-teal-500/30 rounded-lg p-3">
+                      <div className="text-teal-300 font-medium text-sm mb-1">🎯 Action Required:</div>
+                      <div className="text-white text-sm">{currentJourneyStep.action}</div>
+                    </div>
+                    {currentJourneyStep.hint && (
+                      <div className="mt-2 text-zinc-400 text-xs">
+                        💡 <span className="italic">{currentJourneyStep.hint}</span>
+                      </div>
+                    )}
+                    {currentJourneyStep.nextStep && (
+                      <div className="mt-2 text-emerald-400 text-xs">
+                        ➡️ <span className="italic">Next: {currentJourneyStep.nextStep}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Journey Steps Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {currentJourney.map((step) => (
+                <div 
+                  key={step.step}
+                  className={`p-3 rounded-lg border text-center transition-all ${
+                    step.step === currentStep
+                      ? 'border-teal-500 bg-teal-500/20'
+                      : completedSteps.has(step.step)
+                      ? 'border-emerald-500 bg-emerald-500/20'
+                      : 'border-zinc-700 bg-zinc-800'
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-full mx-auto mb-2 flex items-center justify-center text-xs font-bold ${
+                    step.step === currentStep
+                      ? 'bg-teal-500 text-zinc-950'
+                      : completedSteps.has(step.step)
+                      ? 'bg-emerald-500 text-zinc-950'
+                      : 'bg-zinc-600 text-zinc-300'
+                  }`}>
+                    {completedSteps.has(step.step) ? '✓' : step.step}
+                  </div>
+                  <div className="text-xs font-medium text-white mb-1">{step.title}</div>
+                  <div className="text-xs text-zinc-400">{step.description}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={resetJourney}
+                className="bg-zinc-700 text-white px-4 py-2 rounded-lg hover:bg-zinc-600 transition-colors text-sm"
+              >
+                🔄 Reset Journey
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Control Actions */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
           <h2 className="text-xl font-semibold text-teal-300 mb-4">Control Actions</h2>
@@ -285,6 +504,12 @@ const FireSessionDashboard = () => {
               className="bg-zinc-700 text-white px-6 py-3 rounded-xl hover:bg-zinc-600 transition-colors font-medium"
             >
               🔄 Refresh Dashboard
+            </button>
+            <button
+              onClick={() => setShowJourneyGuide(!showJourneyGuide)}
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-500 transition-colors font-medium"
+            >
+              {showJourneyGuide ? "🗺️ Hide Guide" : "🗺️ Show Guide"}
             </button>
             <a
               href="/admin-control"
@@ -353,6 +578,15 @@ const FireSessionDashboard = () => {
                     <div className="text-4xl mb-2">🍃</div>
                     <p>No sessions {activeView === "foh" ? "on floor" : "in prep queue"}</p>
                     <p className="text-sm mt-2">Use the control actions above to generate demo data</p>
+                    <div className="mt-4 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                      <div className="text-teal-300 font-medium mb-2">🚀 Quick Start:</div>
+                      <ol className="text-sm text-zinc-400 text-left space-y-1">
+                        <li>1. Click "Generate 15 Demo Sessions"</li>
+                        <li>2. Watch sessions appear in the queue</li>
+                        <li>3. Select a session to see available actions</li>
+                        <li>4. Follow the workflow buttons in order</li>
+                      </ol>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -402,6 +636,32 @@ const FireSessionDashboard = () => {
                             Delivered: {new Date(session.timers.deliveredAt).toLocaleTimeString()}
                           </div>
                         )}
+
+                        {/* Flow indicator */}
+                        <div className="mt-2 flex items-center space-x-1">
+                          <div className="text-xs text-zinc-500">Flow:</div>
+                          {activeView === "foh" ? (
+                            <>
+                              <span className={`text-xs ${session.state === "READY_FOR_DELIVERY" ? "text-emerald-400" : "text-zinc-500"}`}>Ready</span>
+                              <span className="text-zinc-500">→</span>
+                              <span className={`text-xs ${session.state === "OUT_FOR_DELIVERY" ? "text-blue-400" : "text-zinc-500"}`}>Out</span>
+                              <span className="text-zinc-500">→</span>
+                              <span className={`text-xs ${session.state === "DELIVERED" ? "text-purple-400" : "text-zinc-500"}`}>Delivered</span>
+                              <span className="text-zinc-500">→</span>
+                              <span className={`text-xs ${session.state === "ACTIVE" ? "text-emerald-400" : "text-zinc-500"}`}>Active</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className={`text-xs ${session.state === "PAID_CONFIRMED" ? "text-blue-400" : "text-zinc-500"}`}>Paid</span>
+                              <span className="text-zinc-500">→</span>
+                              <span className={`text-xs ${session.state === "PREP_IN_PROGRESS" ? "text-orange-400" : "text-zinc-500"}`}>Prep</span>
+                              <span className="text-zinc-500">→</span>
+                              <span className={`text-xs ${session.state === "HEAT_UP" ? "text-red-400" : "text-zinc-500"}`}>Heat</span>
+                              <span className="text-zinc-500">→</span>
+                              <span className={`text-xs ${session.state === "READY_FOR_DELIVERY" ? "text-emerald-400" : "text-zinc-500"}`}>Ready</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -425,6 +685,12 @@ const FireSessionDashboard = () => {
                 {!selectedSession ? (
                   <div className="text-center py-8 text-zinc-500">
                     <p>Select a session to control</p>
+                    <div className="mt-4 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                      <div className="text-teal-300 font-medium mb-2">💡 Tip:</div>
+                      <p className="text-sm text-zinc-400">
+                        Click on any session in the queue to see available actions and workflow controls.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -462,6 +728,33 @@ const FireSessionDashboard = () => {
                           No actions available for this state
                         </p>
                       )}
+                    </div>
+
+                    {/* Workflow Guidance */}
+                    <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                      <h4 className="font-medium text-blue-300 text-sm mb-2">🔄 Workflow Guidance:</h4>
+                      <div className="text-xs text-blue-200">
+                        {activeView === "foh" ? (
+                          <div>
+                            <div className="mb-1">FOH Workflow:</div>
+                            <div className="space-y-1">
+                              <div>READY → DELIVER_NOW → OUT_FOR_DELIVERY</div>
+                              <div>OUT → MARK_DELIVERED → DELIVERED</div>
+                              <div>DELIVERED → START_ACTIVE → ACTIVE</div>
+                              <div>ACTIVE → CLOSE_SESSION → CLOSED</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="mb-1">BOH Workflow:</div>
+                            <div className="space-y-1">
+                              <div>PAID → CLAIM_PREP → PREP_IN_PROGRESS</div>
+                              <div>PREP → HEAT_UP → HEAT_UP</div>
+                              <div>HEAT → READY_FOR_DELIVERY → READY</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
