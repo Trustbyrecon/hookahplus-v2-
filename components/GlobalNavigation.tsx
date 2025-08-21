@@ -107,8 +107,8 @@ const GlobalNavigation: React.FC = () => {
       color: 'from-teal-500 to-emerald-500',
       bgColor: 'bg-teal-500/10',
       flowState: flowState.currentWorkflow === 'session-management' ? 'active' : 'idle',
-      description: 'Session management and operational workflow',
-      aiInsight: 'AI Agent: Core system is ready for session data generation',
+      description: 'AI Insights operationalization and session workflow',
+      aiInsight: 'AI Agent: Core system is ready for session data generation. We have the ability to generate data so lets give them something to experience here.',
       items: [
         { 
           label: 'Dashboard', 
@@ -132,10 +132,10 @@ const GlobalNavigation: React.FC = () => {
           label: 'Fire Session', 
           href: '/fire-session-dashboard', 
           icon: '🔥', 
-          description: 'Session workflow',
+          description: 'AI-powered session workflow',
           flowState: pathname === '/fire-session-dashboard' ? 'active' : 'idle',
-          nextAction: 'Generate floor sessions',
-          aiRecommendation: 'Primary session management interface'
+          nextAction: 'Generate 5 floor sessions',
+          aiRecommendation: 'Experience AI Insights in action with integrated FOH/BOH workflow'
         }
       ]
     },

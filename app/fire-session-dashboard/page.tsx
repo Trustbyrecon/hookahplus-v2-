@@ -22,7 +22,7 @@ const FOH_JOURNEY: SimMetadata[] = [
     title: "Welcome to Front of House",
     description: "You're managing customer delivery and table management",
     action: "Generate floor sessions to see live workflow",
-    hint: "Click 'Generate 10 Floor Sessions' to populate the floor queue",
+    hint: "Click 'Generate 5 Floor Sessions' to populate the floor queue",
     nextStep: "Sessions will appear in Floor Queue",
     isCompleted: false
   },
@@ -96,6 +96,7 @@ const BOH_JOURNEY: SimMetadata[] = [
 
 const FireSessionDashboard = () => {
   const [activeView, setActiveView] = useState<"foh" | "boh">("foh");
+  const [selectedRole, setSelectedRole] = useState<string>("staff");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
@@ -223,18 +224,29 @@ const FireSessionDashboard = () => {
     }
   };
 
-  // ENHANCED: Generate 10 Floor Sessions specifically for FOH view
+  // ENHANCED: Generate 5 Floor Sessions specifically for FOH view
   const handleGenerateFloorSessions = async () => {
+    // Role-based session generation limits
+    const roleLimits: Record<string, number> = {
+      'staff': 3,
+      'owner': 10,
+      'manager': 8,
+      'hookah-prep': 5,
+      'bar-tender': 5
+    };
+    
+    const sessionLimit = roleLimits[selectedRole] || 5;
+    
     setLoading(true);
     try {
-      console.log("🚀 Starting to generate 10 floor sessions...");
+      console.log(`🚀 Starting to generate ${sessionLimit} floor sessions for ${selectedRole}...`);
       
-      // Generate 10 sessions specifically for the floor (FOH view)
-      for (let i = 0; i < 10; i++) {
+      // Generate sessions based on role limit
+      for (let i = 0; i < sessionLimit; i++) {
         const tableId = `T-${Math.floor(Math.random() * 20) + 1}`;
         const sessionId = `floor_${tableId}_${Date.now()}_${i}`;
         
-        console.log(`📝 Creating session ${i + 1}/10: ${sessionId} for table ${tableId}`);
+        console.log(`📝 Creating session ${i + 1}/5: ${sessionId} for table ${tableId}`);
         
         // Start with PAYMENT_CONFIRMED
         const paymentResponse = await fetch(`/api/sessions/${sessionId}/command`, {
@@ -367,7 +379,7 @@ const FireSessionDashboard = () => {
         }
       }
       
-      alert("Generated 10 fire sessions for the floor! Switch to FOH view to see them.");
+      alert(`Generated ${sessionLimit} fire sessions for the floor! Switch to FOH view to see them.`);
       refreshSessions();
       markStepComplete(1);
     } catch (error) {
@@ -501,8 +513,17 @@ const FireSessionDashboard = () => {
 
   const sortedSessions = [...sessions].sort((a, b) => getPriorityScore(b) - getPriorityScore(a));
 
-  // ENHANCED: Complete session controls validation
+  // ENHANCED: Role-based session controls validation
   const canExecuteCommand = (session: Session, command: string): boolean => {
+    // Role-based command permissions
+    const rolePermissions: Record<string, string[]> = {
+      'staff': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION'],
+      'owner': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD', 'MOVE_TABLE', 'ADD_COAL_SWAP', 'REFUND_REQUEST'],
+      'manager': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD', 'MOVE_TABLE', 'ADD_COAL_SWAP', 'REFUND_REQUEST'],
+      'hookah-prep': ['CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD'],
+      'bar-tender': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'ADD_COAL_SWAP']
+    };
+
     const validCommands: Record<string, string[]> = {
       // FOH commands - Complete Floor Queue flow
       DELIVER_NOW: ["READY_FOR_DELIVERY"],
@@ -523,42 +544,59 @@ const FireSessionDashboard = () => {
       REFUND_REQUEST: ["DELIVERED", "ACTIVE", "CLOSE_PENDING"]
     };
 
+    // Check if user has permission for this command
+    const hasPermission = rolePermissions[selectedRole]?.includes(command);
+    if (!hasPermission) return false;
+
+    // Check if command is valid for current session state
     return validCommands[command]?.includes(session.state) || false;
   };
 
-  // ENHANCED: Complete available commands for all states
+  // ENHANCED: Role-based available commands for all states
   const getAvailableCommands = (session: Session): string[] => {
     const commands: string[] = [];
     
+    // Role-based command permissions
+    const rolePermissions: Record<string, string[]> = {
+      'staff': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION'],
+      'owner': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD', 'MOVE_TABLE', 'ADD_COAL_SWAP', 'REFUND_REQUEST'],
+      'manager': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD', 'MOVE_TABLE', 'ADD_COAL_SWAP', 'REFUND_REQUEST'],
+      'hookah-prep': ['CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD'],
+      'bar-tender': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'ADD_COAL_SWAP']
+    };
+    
+    const userPermissions = rolePermissions[selectedRole] || [];
+    
     if (activeView === "foh") {
       // Complete FOH Floor Queue flow
-      if (session.state === "READY_FOR_DELIVERY") commands.push("DELIVER_NOW");
-      if (session.state === "OUT_FOR_DELIVERY") commands.push("MARK_DELIVERED");
-      if (session.state === "DELIVERED") commands.push("START_ACTIVE");
-      if (session.state === "ACTIVE") commands.push("CLOSE_SESSION");
+      if (session.state === "READY_FOR_DELIVERY" && userPermissions.includes("DELIVER_NOW")) commands.push("DELIVER_NOW");
+      if (session.state === "OUT_FOR_DELIVERY" && userPermissions.includes("MARK_DELIVERED")) commands.push("MARK_DELIVERED");
+      if (session.state === "DELIVERED" && userPermissions.includes("START_ACTIVE")) commands.push("START_ACTIVE");
+      if (session.state === "ACTIVE" && userPermissions.includes("CLOSE_SESSION")) commands.push("CLOSE_SESSION");
     } else {
       // Complete BOH Prep flow
-      if (session.state === "PAID_CONFIRMED") commands.push("CLAIM_PREP");
-      if (session.state === "PREP_IN_PROGRESS") commands.push("HEAT_UP");
-      if (session.state === "HEAT_UP") commands.push("READY_FOR_DELIVERY");
+      if (session.state === "PAID_CONFIRMED" && userPermissions.includes("CLAIM_PREP")) commands.push("CLAIM_PREP");
+      if (session.state === "PREP_IN_PROGRESS" && userPermissions.includes("HEAT_UP")) commands.push("HEAT_UP");
+      if (session.state === "HEAT_UP" && userPermissions.includes("READY_FOR_DELIVERY")) commands.push("READY_FOR_DELIVERY");
     }
     
     // Enhanced common commands for all states
     if (["PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE"].includes(session.state)) {
-      commands.push("REMAKE", "STAFF_HOLD");
+      if (userPermissions.includes("REMAKE")) commands.push("REMAKE");
+      if (userPermissions.includes("STAFF_HOLD")) commands.push("STAFF_HOLD");
     }
     
     // Additional FOH commands
     if (["READY_FOR_DELIVERY", "OUT_FOR_DELIVERY"].includes(session.state)) {
-      commands.push("MOVE_TABLE");
+      if (userPermissions.includes("MOVE_TABLE")) commands.push("MOVE_TABLE");
     }
     
     if (session.state === "ACTIVE") {
-      commands.push("ADD_COAL_SWAP");
+      if (userPermissions.includes("ADD_COAL_SWAP")) commands.push("ADD_COAL_SWAP");
     }
     
     if (["DELIVERED", "ACTIVE", "CLOSE_PENDING"].includes(session.state)) {
-      commands.push("REFUND_REQUEST");
+      if (userPermissions.includes("REFUND_REQUEST")) commands.push("REFUND_REQUEST");
     }
     
     return commands;
@@ -619,74 +657,32 @@ const FireSessionDashboard = () => {
     setShowJourneyGuide(true);
   };
 
-  // Debug function to check current sessions
-  const debugSessions = () => {
-    const allSessions = getAllSessions();
-    console.log("🔍 Current sessions in store:", allSessions.length);
-    console.log("📊 Sessions by state:", allSessions.reduce((acc, s) => {
-      acc[s.state] = (acc[s.state] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>));
-    console.log("📋 All sessions:", allSessions);
-  };
 
-  // Test function to create a single session
-  const testSingleSession = async () => {
-    setLoading(true);
-    try {
-      console.log("🧪 Testing single session creation...");
-      
-      const sessionId = `test_${Date.now()}`;
-      const tableId = "T-1";
-      
-      console.log(`📝 Creating test session: ${sessionId} for table ${tableId}`);
-      
-      const response = await fetch(`/api/sessions/${sessionId}/command`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          cmd: "PAYMENT_CONFIRMED",
-          data: { 
-            table: tableId,
-            customerId: `test_customer_${Math.floor(Math.random() * 1000)}`,
-            flavor: "Double Apple",
-            amount: 2500
-          }
-        })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Test session created successfully:", result);
-        alert("Test session created! Check console for details.");
-        refreshSessions();
-      } else {
-        const error = await response.json();
-        console.error("❌ Test session creation failed:", error);
-        alert(`Test session creation failed: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("❌ Error creating test session:", error);
-      alert("Error creating test session");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <GlobalNavigation />
       
-      {/* Header */}
-      <div className="bg-zinc-900 border-b border-zinc-800 p-6">
+      {/* Role Selection Dropdown */}
+      <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-3">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-teal-400 mb-2">Fire Session Dashboard</h1>
-              <p className="text-zinc-400">Hookah Lounge Session Management</p>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-zinc-400">Role:</span>
+              <select 
+                className="bg-zinc-800 border border-zinc-700 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+              >
+                <option value="staff">Staff</option>
+                <option value="owner">Owner</option>
+                <option value="manager">Manager</option>
+                <option value="hookah-prep">Hookah Prep</option>
+                <option value="bar-tender">Bar Tender</option>
+              </select>
             </div>
             
-            {/* View Toggle */}
+            {/* FOH/BOH View Toggle */}
             <div className="flex bg-zinc-800 rounded-xl p-1 border border-zinc-700">
               <button
                 onClick={() => setActiveView("foh")}
@@ -711,6 +707,20 @@ const FireSessionDashboard = () => {
                 <span>Back of House</span>
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Header */}
+      <div className="bg-zinc-900 border-b border-zinc-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-teal-400 mb-2">Fire Session Dashboard</h1>
+              <p className="text-zinc-400">Hookah Lounge Session Management</p>
+            </div>
+            
+
           </div>
         </div>
       </div>
@@ -816,22 +826,36 @@ const FireSessionDashboard = () => {
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
           <h2 className="text-xl font-semibold text-teal-300 mb-4">Control Actions</h2>
           <div className="flex flex-wrap gap-4">
-            {/* NEW: Generate 10 Floor Sessions button */}
-            <button
-              onClick={handleGenerateFloorSessions}
-              disabled={loading}
-              className="bg-emerald-500 text-zinc-950 px-6 py-3 rounded-xl hover:bg-emerald-400 disabled:opacity-50 transition-colors font-medium"
-            >
-              {loading ? "Generating..." : "🔥 Generate 10 Floor Sessions"}
-            </button>
+                        {/* NEW: Generate Floor Sessions button - Role-based visibility */}
+            {['staff', 'owner', 'manager', 'bar-tender'].includes(selectedRole) && (
+              <button
+                onClick={handleGenerateFloorSessions}
+                disabled={loading}
+                className="bg-emerald-500 text-zinc-950 px-6 py-3 rounded-xl hover:bg-emerald-400 disabled:opacity-50 transition-colors font-medium"
+              >
+                {loading ? "Generating..." : `🔥 Generate ${(() => {
+                  const roleLimits: Record<string, number> = {
+                    'staff': 3,
+                    'owner': 10,
+                    'manager': 8,
+                    'hookah-prep': 5,
+                    'bar-tender': 5
+                  };
+                  return roleLimits[selectedRole] || 5;
+                })()} Floor Sessions`}
+              </button>
+            )}
             
-            <button
-              onClick={handleGenerateDemoData}
-              disabled={loading}
-              className="bg-zinc-700 text-white px-6 py-3 rounded-xl hover:bg-zinc-600 transition-colors font-medium"
-            >
-              {loading ? "Generating..." : "🎯 Generate 15 Demo Sessions"}
-            </button>
+            {/* Generate Demo Sessions button - Role-based visibility */}
+            {['owner', 'manager', 'hookah-prep'].includes(selectedRole) && (
+              <button
+                onClick={handleGenerateDemoData}
+                disabled={loading}
+                className="bg-zinc-700 text-white px-6 py-3 rounded-xl hover:bg-zinc-600 transition-colors font-medium"
+              >
+                {loading ? "Generating..." : "🎯 Generate 15 Demo Sessions"}
+              </button>
+            )}
             
             <button
               onClick={refreshSessions}
@@ -847,27 +871,9 @@ const FireSessionDashboard = () => {
               {showJourneyGuide ? "🗺️ Hide Guide" : "🗺️ Show Guide"}
             </button>
             
-            <a
-              href="/admin-control"
-              className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-500 transition-colors font-medium"
-            >
-              ⚙️ Admin Control
-            </a>
+
             
-            <button
-              onClick={debugSessions}
-              className="bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-500 transition-colors font-medium"
-            >
-              🐛 Debug Sessions
-            </button>
-            
-            <button
-              onClick={testSingleSession}
-              disabled={loading}
-              className="bg-yellow-600 text-white px-6 py-3 rounded-xl hover:bg-yellow-500 transition-colors font-medium"
-            >
-              🧪 Test Single Session
-            </button>
+
           </div>
         </div>
 
@@ -899,12 +905,24 @@ const FireSessionDashboard = () => {
 
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <span className="text-2xl">📊</span>
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <span className="text-2xl">👤</span>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-zinc-400">Current View</p>
-                <p className="text-lg font-semibold text-white">{activeView === "foh" ? "Front of House" : "Back of House"}</p>
+                <p className="text-sm font-medium text-zinc-400">Role & Permissions</p>
+                <p className="text-lg font-semibold text-white">{selectedRole.replace('-', ' ').toUpperCase()}</p>
+                <p className="text-xs text-zinc-400">
+                  {(() => {
+                    const roleLimits: Record<string, number> = {
+                      'staff': 3,
+                      'owner': 10,
+                      'manager': 8,
+                      'hookah-prep': 5,
+                      'bar-tender': 5
+                    };
+                    return `Can generate ${roleLimits[selectedRole] || 5} sessions`;
+                  })()}
+                </p>
               </div>
             </div>
           </div>
@@ -932,7 +950,16 @@ const FireSessionDashboard = () => {
                     <div className="mt-4 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
                       <div className="text-teal-300 font-medium mb-2">🚀 Quick Start:</div>
                       <ol className="text-sm text-zinc-400 text-left space-y-1">
-                        <li>1. Click "Generate 10 Floor Sessions" for FOH view</li>
+                        <li>1. Click "Generate {(() => {
+                          const roleLimits: Record<string, number> = {
+                            'staff': 3,
+                            'owner': 10,
+                            'manager': 8,
+                            'hookah-prep': 5,
+                            'bar-tender': 5
+                          };
+                          return roleLimits[selectedRole] || 5;
+                        })()} Floor Sessions" for FOH view</li>
                         <li>2. Click "Generate 15 Demo Sessions" for BOH view</li>
                         <li>3. Watch sessions appear in the queue</li>
                         <li>4. Select a session to see available actions</li>
@@ -1081,7 +1108,12 @@ const FireSessionDashboard = () => {
           <div className="lg:col-span-1">
             <div className="bg-zinc-900 rounded-xl border border-zinc-800">
               <div className="px-6 py-4 border-b border-zinc-800">
-                <h2 className="text-lg font-semibold text-teal-300">Session Controls</h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-lg font-semibold text-teal-300">Session Controls</h2>
+                  <span className="text-xs bg-zinc-700 text-zinc-300 px-2 py-1 rounded-full">
+                    {selectedRole.replace('-', ' ').toUpperCase()}
+                  </span>
+                </div>
                 {selectedSession && (
                   <p className="text-sm text-zinc-400">
                     Table {selectedSession.table} - {selectedSession.state.replace(/_/g, ' ')}
@@ -1135,6 +1167,33 @@ const FireSessionDashboard = () => {
                           No actions available for this state
                         </p>
                       )}
+                    </div>
+
+                    {/* Role Permissions Display */}
+                    <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                      <h4 className="font-medium text-purple-300 text-sm mb-2">👤 Role Permissions:</h4>
+                      <div className="text-xs text-purple-200">
+                        <div className="mb-2">
+                          <span className="font-medium">Current Role:</span> {selectedRole.replace('-', ' ').toUpperCase()}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(() => {
+                            const rolePermissions: Record<string, string[]> = {
+                              'staff': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION'],
+                              'owner': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD', 'MOVE_TABLE', 'ADD_COAL_SWAP', 'REFUND_REQUEST'],
+                              'manager': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD', 'MOVE_TABLE', 'ADD_COAL_SWAP', 'REFUND_REQUEST'],
+                              'hookah-prep': ['CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'REMAKE', 'STAFF_HOLD'],
+                              'bar-tender': ['DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE', 'CLOSE_SESSION', 'ADD_COAL_SWAP']
+                            };
+                            const permissions = rolePermissions[selectedRole] || [];
+                            return permissions.map(perm => (
+                              <span key={perm} className="bg-purple-500/20 text-purple-200 px-2 py-1 rounded text-xs">
+                                {perm.replace(/_/g, ' ')}
+                              </span>
+                            ));
+                          })()}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Workflow Guidance */}
@@ -1245,6 +1304,57 @@ const FireSessionDashboard = () => {
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Role-Based Session Generation Info */}
+        <div className="mt-6 bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+          <h3 className="text-lg font-semibold text-teal-300 mb-4">Role-Based Session Generation</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-white mb-2">Current Role: {selectedRole.replace('-', ' ').toUpperCase()}</h4>
+              <div className="space-y-2 text-sm text-zinc-400">
+                <div className="flex justify-between">
+                  <span>Session Generation Limit:</span>
+                  <span className="text-white font-medium">
+                    {(() => {
+                      const roleLimits: Record<string, number> = {
+                        'staff': 3,
+                        'owner': 10,
+                        'manager': 8,
+                        'hookah-prep': 5,
+                        'bar-tender': 5
+                      };
+                      return roleLimits[selectedRole] || 5;
+                    })()} sessions
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Can Generate Floor Sessions:</span>
+                  <span className={`font-medium ${['staff', 'owner', 'manager', 'bar-tender'].includes(selectedRole) ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {['staff', 'owner', 'manager', 'bar-tender'].includes(selectedRole) ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Can Generate Demo Sessions:</span>
+                  <span className={`font-medium ${['owner', 'manager', 'hookah-prep'].includes(selectedRole) ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {['owner', 'manager', 'hookah-prep'].includes(selectedRole) ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium text-white mb-2">AI Insights Integration</h4>
+              <p className="text-sm text-zinc-400 mb-3">
+                This dashboard demonstrates AI-powered session lifecycle management with role-based access control.
+              </p>
+              <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3">
+                <div className="text-teal-300 font-medium text-sm mb-1">🤖 AI Agent Status:</div>
+                <div className="text-xs text-teal-200">
+                  Core system is ready for session data generation. We have the ability to generate data so lets give them something to experience here.
+                </div>
               </div>
             </div>
           </div>
