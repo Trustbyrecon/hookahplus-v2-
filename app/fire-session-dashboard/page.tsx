@@ -21,8 +21,8 @@ const FOH_JOURNEY: SimMetadata[] = [
     step: 1,
     title: "Welcome to Front of House",
     description: "You're managing customer delivery and table management",
-    action: "Generate demo data to see live sessions",
-    hint: "Click 'Generate 15 Demo Sessions' to populate the dashboard",
+    action: "Generate floor sessions to see live workflow",
+    hint: "Click 'Generate 10 Floor Sessions' to populate the floor queue",
     nextStep: "Sessions will appear in Floor Queue",
     isCompleted: false
   },
@@ -218,6 +218,126 @@ const FireSessionDashboard = () => {
     }
   };
 
+  // ENHANCED: Generate 10 Floor Sessions specifically for FOH view
+  const handleGenerateFloorSessions = async () => {
+    setLoading(true);
+    try {
+      // Generate 10 sessions specifically for the floor (FOH view)
+      for (let i = 0; i < 10; i++) {
+        const tableId = `T-${Math.floor(Math.random() * 20) + 1}`;
+        const sessionId = `floor_${tableId}_${Date.now()}_${i}`;
+        
+        // Start with PAYMENT_CONFIRMED
+        await fetch(`/api/sessions/${sessionId}/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            cmd: "PAYMENT_CONFIRMED",
+            data: { 
+              table: tableId,
+              customerId: `floor_customer_${Math.floor(Math.random() * 1000)}`,
+              flavor: ['Double Apple', 'Mint', 'Strawberry', 'Grape', 'Rose', 'Vanilla'][Math.floor(Math.random() * 6)],
+              amount: 2500 + Math.floor(Math.random() * 3000)
+            }
+          })
+        });
+
+        // Progress through BOH workflow to get to floor
+        await fetch(`/api/sessions/${sessionId}/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cmd: "CLAIM_PREP" })
+        });
+        
+        await fetch(`/api/sessions/${sessionId}/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cmd: "HEAT_UP" })
+        });
+        
+        await fetch(`/api/sessions/${sessionId}/command`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cmd: "READY_FOR_DELIVERY" })
+        });
+
+        // Randomly distribute floor sessions across different states
+        const floorState = Math.random();
+        if (floorState > 0.8) {
+          // 20% - Ready for Delivery
+          // Already in READY_FOR_DELIVERY state
+        } else if (floorState > 0.6) {
+          // 20% - Out for Delivery
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "DELIVER_NOW" })
+          });
+        } else if (floorState > 0.4) {
+          // 20% - Delivered
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "DELIVER_NOW" })
+          });
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "MARK_DELIVERED" })
+          });
+        } else if (floorState > 0.2) {
+          // 20% - Active
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "DELIVER_NOW" })
+          });
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "MARK_DELIVERED" })
+          });
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "START_ACTIVE" })
+          });
+        } else {
+          // 20% - Close Pending
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "DELIVER_NOW" })
+          });
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "MARK_DELIVERED" })
+          });
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "START_ACTIVE" })
+          });
+          await fetch(`/api/sessions/${sessionId}/command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd: "CLOSE_SESSION" })
+          });
+        }
+      }
+      
+      alert("Generated 10 fire sessions for the floor! Switch to FOH view to see them.");
+      refreshSessions();
+      markStepComplete(1);
+    } catch (error) {
+      console.error("Error generating floor sessions:", error);
+      alert("Error generating floor sessions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGenerateDemoData = async () => {
     setLoading(true);
     try {
@@ -329,10 +449,10 @@ const FireSessionDashboard = () => {
 
   const sortedSessions = [...sessions].sort((a, b) => getPriorityScore(b) - getPriorityScore(a));
 
-  // Validate session state before allowing actions
+  // ENHANCED: Complete session controls validation
   const canExecuteCommand = (session: Session, command: string): boolean => {
     const validCommands: Record<string, string[]> = {
-      // FOH commands
+      // FOH commands - Complete Floor Queue flow
       DELIVER_NOW: ["READY_FOR_DELIVERY"],
       MARK_DELIVERED: ["OUT_FOR_DELIVERY"],
       START_ACTIVE: ["DELIVERED"],
@@ -343,31 +463,50 @@ const FireSessionDashboard = () => {
       HEAT_UP: ["PREP_IN_PROGRESS"],
       READY_FOR_DELIVERY: ["HEAT_UP"],
       
-      // Common commands
+      // Enhanced common commands
       REMAKE: ["PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE"],
-      STAFF_HOLD: ["PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE"]
+      STAFF_HOLD: ["PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE"],
+      MOVE_TABLE: ["READY_FOR_DELIVERY", "OUT_FOR_DELIVERY"],
+      ADD_COAL_SWAP: ["ACTIVE"],
+      REFUND_REQUEST: ["DELIVERED", "ACTIVE", "CLOSE_PENDING"]
     };
 
     return validCommands[command]?.includes(session.state) || false;
   };
 
+  // ENHANCED: Complete available commands for all states
   const getAvailableCommands = (session: Session): string[] => {
     const commands: string[] = [];
     
     if (activeView === "foh") {
+      // Complete FOH Floor Queue flow
       if (session.state === "READY_FOR_DELIVERY") commands.push("DELIVER_NOW");
       if (session.state === "OUT_FOR_DELIVERY") commands.push("MARK_DELIVERED");
       if (session.state === "DELIVERED") commands.push("START_ACTIVE");
       if (session.state === "ACTIVE") commands.push("CLOSE_SESSION");
     } else {
+      // Complete BOH Prep flow
       if (session.state === "PAID_CONFIRMED") commands.push("CLAIM_PREP");
       if (session.state === "PREP_IN_PROGRESS") commands.push("HEAT_UP");
       if (session.state === "HEAT_UP") commands.push("READY_FOR_DELIVERY");
     }
     
-    // Common commands
+    // Enhanced common commands for all states
     if (["PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE"].includes(session.state)) {
       commands.push("REMAKE", "STAFF_HOLD");
+    }
+    
+    // Additional FOH commands
+    if (["READY_FOR_DELIVERY", "OUT_FOR_DELIVERY"].includes(session.state)) {
+      commands.push("MOVE_TABLE");
+    }
+    
+    if (session.state === "ACTIVE") {
+      commands.push("ADD_COAL_SWAP");
+    }
+    
+    if (["DELIVERED", "ACTIVE", "CLOSE_PENDING"].includes(session.state)) {
+      commands.push("REFUND_REQUEST");
     }
     
     return commands;
@@ -567,29 +706,41 @@ const FireSessionDashboard = () => {
           </div>
         )}
 
-        {/* Control Actions */}
+        {/* ENHANCED: Control Actions with Floor Session Generation */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
           <h2 className="text-xl font-semibold text-teal-300 mb-4">Control Actions</h2>
           <div className="flex flex-wrap gap-4">
+            {/* NEW: Generate 10 Floor Sessions button */}
+            <button
+              onClick={handleGenerateFloorSessions}
+              disabled={loading}
+              className="bg-emerald-500 text-zinc-950 px-6 py-3 rounded-xl hover:bg-emerald-400 disabled:opacity-50 transition-colors font-medium"
+            >
+              {loading ? "Generating..." : "🔥 Generate 10 Floor Sessions"}
+            </button>
+            
             <button
               onClick={handleGenerateDemoData}
               disabled={loading}
-              className="bg-teal-500 text-zinc-950 px-6 py-3 rounded-xl hover:bg-teal-400 disabled:opacity-50 transition-colors font-medium"
+              className="bg-zinc-700 text-white px-6 py-3 rounded-xl hover:bg-zinc-600 transition-colors font-medium"
             >
               {loading ? "Generating..." : "🎯 Generate 15 Demo Sessions"}
             </button>
+            
             <button
               onClick={refreshSessions}
               className="bg-zinc-700 text-white px-6 py-3 rounded-xl hover:bg-zinc-600 transition-colors font-medium"
             >
               🔄 Refresh Dashboard
             </button>
+            
             <button
               onClick={() => setShowJourneyGuide(!showJourneyGuide)}
               className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-500 transition-colors font-medium"
             >
               {showJourneyGuide ? "🗺️ Hide Guide" : "🗺️ Show Guide"}
             </button>
+            
             <a
               href="/admin-control"
               className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-500 transition-colors font-medium"
@@ -660,10 +811,11 @@ const FireSessionDashboard = () => {
                     <div className="mt-4 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
                       <div className="text-teal-300 font-medium mb-2">🚀 Quick Start:</div>
                       <ol className="text-sm text-zinc-400 text-left space-y-1">
-                        <li>1. Click "Generate 15 Demo Sessions"</li>
-                        <li>2. Watch sessions appear in the queue</li>
-                        <li>3. Select a session to see available actions</li>
-                        <li>4. Follow the workflow buttons in order</li>
+                        <li>1. Click "Generate 10 Floor Sessions" for FOH view</li>
+                        <li>2. Click "Generate 15 Demo Sessions" for BOH view</li>
+                        <li>3. Watch sessions appear in the queue</li>
+                        <li>4. Select a session to see available actions</li>
+                        <li>5. Follow the workflow buttons in order</li>
                       </ol>
                     </div>
                   </div>
@@ -716,7 +868,7 @@ const FireSessionDashboard = () => {
                           </div>
                         )}
 
-                        {/* Flow indicator */}
+                        {/* ENHANCED: Complete Flow indicator */}
                         <div className="mt-2 flex items-center space-x-1">
                           <div className="text-xs text-zinc-500">Flow:</div>
                           {activeView === "foh" ? (
@@ -728,6 +880,8 @@ const FireSessionDashboard = () => {
                               <span className={`text-xs ${session.state === "DELIVERED" ? "text-purple-400" : "text-zinc-500"}`}>Delivered</span>
                               <span className="text-zinc-500">→</span>
                               <span className={`text-xs ${session.state === "ACTIVE" ? "text-emerald-400" : "text-zinc-500"}`}>Active</span>
+                              <span className="text-zinc-500">→</span>
+                              <span className={`text-xs ${session.state === "CLOSE_PENDING" ? "text-yellow-400" : "text-zinc-500"}`}>Close</span>
                             </>
                           ) : (
                             <>
