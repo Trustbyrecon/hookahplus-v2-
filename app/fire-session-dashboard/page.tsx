@@ -15,6 +15,7 @@ interface SimMetadata {
   isCompleted: boolean;
 }
 
+// Enhanced journey steps with operational data
 const FOH_JOURNEY: SimMetadata[] = [
   {
     step: 1,
@@ -37,18 +38,18 @@ const FOH_JOURNEY: SimMetadata[] = [
   {
     step: 3,
     title: "Execute Delivery Workflow",
-    description: "Move sessions through delivery states",
+    description: "Move sessions through delivery states with data continuity",
     action: "Use DELIVER_NOW → MARK_DELIVERED → START_ACTIVE",
-    hint: "Follow the workflow buttons in order for smooth delivery",
+    hint: "Track customer ID, table position, and workflow execution",
     nextStep: "Monitor active sessions and close when ready",
     isCompleted: false
   },
   {
     step: 4,
     title: "Session Lifecycle Management",
-    description: "Handle active sessions and closures",
+    description: "Handle active sessions and closures with operational tracking",
     action: "Use CLOSE_SESSION for completed sessions",
-    hint: "Keep track of session duration and customer satisfaction",
+    hint: "Track session duration, customer satisfaction, and table turnover",
     nextStep: "Return to step 1 for new sessions",
     isCompleted: false
   }
@@ -76,18 +77,18 @@ const BOH_JOURNEY: SimMetadata[] = [
   {
     step: 3,
     title: "Execute Prep Workflow",
-    description: "Move sessions through prep states",
+    description: "Move sessions through prep states with data tracking",
     action: "Use CLAIM_PREP → HEAT_UP → READY_FOR_DELIVERY",
-    hint: "Follow the workflow buttons in order for smooth prep",
+    hint: "Track customer preferences, flavor mixes, and prep timing",
     nextStep: "Hand off to FOH when ready",
     isCompleted: false
   },
   {
     step: 4,
     title: "Quality Control & Handoff",
-    description: "Ensure hookah quality and readiness",
+    description: "Ensure hookah quality and readiness with operational data",
     action: "Use REMAKE if needed, then READY_FOR_DELIVERY",
-    hint: "Double-check flavor, heat, and presentation",
+    hint: "Track quality metrics, customer feedback, and handoff timing",
     nextStep: "Return to step 1 for new sessions",
     isCompleted: false
   }
@@ -142,7 +143,73 @@ const FireSessionDashboard = () => {
     if (selectedSession && currentStep === 2) {
       markStepComplete(2);
     }
+    // Track workflow execution for step 3
+    if (currentStep === 3) {
+      const workflowExecutions = sessions.filter(s => 
+        s.audit.some(a => a.cmd && ['CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE'].includes(a.cmd))
+      ).length;
+      if (workflowExecutions >= 2) {
+        markStepComplete(3);
+      }
+    }
+    // Track session lifecycle completion for step 4
+    if (currentStep === 4) {
+      const completedSessions = sessions.filter(s => 
+        s.state === 'CLOSED' || s.state === 'ACTIVE'
+      ).length;
+      if (completedSessions >= 1) {
+        markStepComplete(4);
+      }
+    }
   }, [sessions, selectedSession, currentStep]);
+
+  // Enhanced data flow tracking
+  const getSessionFlowData = (session: Session) => {
+    const flowData = {
+      customerId: session.meta.customerId || 'Unknown',
+      tablePosition: session.table,
+      barGridPosition: getBarGridPosition(session.table),
+      sessionDuration: session.audit.length > 0 ? 
+        Math.round((Date.now() - session.audit[0].ts) / 60000) : 0,
+      workflowSteps: session.audit.filter(a => a.cmd).map(a => a.cmd || ''),
+      currentState: session.state,
+      estimatedCompletion: getEstimatedCompletion(session.state)
+    };
+    return flowData;
+  };
+
+  // ScreenCoder-inspired bar grid position mapping
+  const getBarGridPosition = (tableId: string) => {
+    const tableMap: Record<string, { row: number; col: number; zone: string }> = {
+      'T-1': { row: 1, col: 1, zone: 'VIP' },
+      'T-2': { row: 1, col: 2, zone: 'VIP' },
+      'T-3': { row: 2, col: 1, zone: 'Main' },
+      'T-4': { row: 2, col: 2, zone: 'Main' },
+      'T-5': { row: 2, col: 3, zone: 'Main' },
+      'T-6': { row: 3, col: 1, zone: 'Bar' },
+      'T-7': { row: 3, col: 2, zone: 'Bar' },
+      'T-8': { row: 3, col: 3, zone: 'Bar' },
+      'T-9': { row: 4, col: 1, zone: 'Outdoor' },
+      'T-10': { row: 4, col: 2, zone: 'Outdoor' }
+    };
+    return tableMap[tableId] || { row: 0, col: 0, zone: 'Unknown' };
+  };
+
+  // Estimate completion time based on current state
+  const getEstimatedCompletion = (state: SessionState) => {
+    const estimates: Record<string, number> = {
+      'PAID_CONFIRMED': 15, // 15 min to prep
+      'PREP_IN_PROGRESS': 10, // 10 min to heat
+      'HEAT_UP': 8, // 8 min to ready
+      'READY_FOR_DELIVERY': 5, // 5 min to deliver
+      'OUT_FOR_DELIVERY': 3, // 3 min to delivered
+      'DELIVERED': 2, // 2 min to active
+      'ACTIVE': 0, // Already active
+      'CLOSE_PENDING': 1, // 1 min to close
+      'CLOSED': 0 // Already closed
+    };
+    return estimates[state] || 0;
+  };
 
   const markStepComplete = (step: number) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -306,6 +373,7 @@ const FireSessionDashboard = () => {
     return commands;
   };
 
+  // Enhanced command execution with flow tracking
   const executeCommand = async (session: Session, command: string) => {
     if (!canExecuteCommand(session, command)) {
       alert(`Command ${command} is not valid for session in state ${session.state}`);
@@ -318,20 +386,31 @@ const FireSessionDashboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           cmd: command,
-          actor: activeView === "foh" ? "foh" : "boh"
+          actor: activeView === "foh" ? "foh" : "boh",
+          flowData: getSessionFlowData(session)
         })
       });
 
       if (response.ok) {
+        // Track workflow execution for journey progress
+        if (command && ['CLAIM_PREP', 'HEAT_UP', 'READY_FOR_DELIVERY', 'DELIVER_NOW', 'MARK_DELIVERED', 'START_ACTIVE'].includes(command)) {
+          console.log(`Workflow executed: ${command} for session ${session.id}`);
+        }
+        
         alert(`Command ${command} executed successfully!`);
         refreshSessions();
+        
         // Clear selection if session state changed significantly
         if (["CLOSE_SESSION", "CLOSED"].includes(command)) {
           setSelectedSession(null);
         }
-        // Mark workflow step as complete
-        if (currentStep === 3) {
+        
+        // Check if we should advance journey step
+        if (currentStep === 3 && command === 'READY_FOR_DELIVERY') {
           markStepComplete(3);
+        }
+        if (currentStep === 4 && command === 'CLOSE_SESSION') {
+          markStepComplete(4);
         }
       } else {
         const error = await response.json();
@@ -662,6 +741,59 @@ const FireSessionDashboard = () => {
                             </>
                           )}
                         </div>
+
+                        {/* Enhanced Operational Data - Steps 3 & 4 */}
+                        {currentStep >= 3 && (
+                          <div className="mt-3 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <span className="text-zinc-400">Customer:</span>
+                                <div className="text-white font-medium">{session.meta.customerId || 'Unknown'}</div>
+                              </div>
+                              <div>
+                                <span className="text-zinc-400">Position:</span>
+                                <div className="text-white font-medium">
+                                  {(() => {
+                                    const pos = getBarGridPosition(session.table);
+                                    return `${pos.zone} (${pos.row},${pos.col})`;
+                                  })()}
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-zinc-400">Duration:</span>
+                                <div className="text-white font-medium">
+                                  {session.audit.length > 0 ? 
+                                    `${Math.round((Date.now() - session.audit[0].ts) / 60000)}m` : 
+                                    'New'
+                                  }
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-zinc-400">ETA:</span>
+                                <div className="text-white font-medium">
+                                  {getEstimatedCompletion(session.state)}m
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Workflow Progress Bar */}
+                            <div className="mt-2">
+                              <div className="text-xs text-zinc-400 mb-1">Workflow Progress:</div>
+                              <div className="w-full bg-zinc-700 rounded-full h-1.5">
+                                <div 
+                                  className="bg-gradient-to-r from-teal-500 to-emerald-500 h-1.5 rounded-full transition-all duration-300"
+                                  style={{ 
+                                    width: `${(() => {
+                                      const steps = session.audit.filter(a => a.cmd).length;
+                                      const maxSteps = activeView === "foh" ? 4 : 3;
+                                      return Math.min((steps / maxSteps) * 100, 100);
+                                    })()}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -756,6 +888,86 @@ const FireSessionDashboard = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Enhanced Data Flow Tracking - Steps 3 & 4 */}
+                    {currentStep >= 3 && selectedSession && (
+                      <div className="p-4 bg-teal-500/10 rounded-lg border border-teal-500/20">
+                        <h4 className="font-medium text-teal-300 text-sm mb-2">📊 Operational Data Flow:</h4>
+                        <div className="text-xs text-teal-200 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="font-medium">Customer ID:</span>
+                              <div className="text-white">{selectedSession.meta.customerId || 'Unknown'}</div>
+                            </div>
+                            <div>
+                              <span className="font-medium">Table Position:</span>
+                              <div className="text-white">{selectedSession.table}</div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium">Bar Grid Layout:</span>
+                            <div className="text-white">
+                              {(() => {
+                                const pos = getBarGridPosition(selectedSession.table);
+                                return `Row ${pos.row}, Col ${pos.col} (${pos.zone})`;
+                              })()}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium">Session Duration:</span>
+                            <div className="text-white">
+                              {selectedSession.audit.length > 0 ? 
+                                `${Math.round((Date.now() - selectedSession.audit[0].ts) / 60000)} minutes` : 
+                                'New session'
+                              }
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium">Estimated Completion:</span>
+                            <div className="text-white">
+                              {getEstimatedCompletion(selectedSession.state)} minutes
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium">Workflow Steps:</span>
+                            <div className="text-white">
+                              {selectedSession.audit
+                                .filter(a => a.cmd)
+                                .map(a => a.cmd)
+                                .join(' → ') || 'No steps yet'
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Journey Progress Indicator */}
+                    {currentStep >= 3 && (
+                      <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                        <h4 className="font-medium text-purple-300 text-sm mb-2">🎯 Journey Progress:</h4>
+                        <div className="text-xs text-purple-200">
+                          <div className="mb-2">
+                            <span className="font-medium">Current Step:</span> {currentStep}/4
+                          </div>
+                          <div className="w-full bg-zinc-800 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-purple-500 to-teal-500 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${(currentStep / 4) * 100}%` }}
+                            ></div>
+                          </div>
+                          <div className="mt-2 text-center text-xs">
+                            {currentStep === 3 ? 'Executing workflow...' : 
+                             currentStep === 4 ? 'Managing lifecycle...' : 
+                             'Journey complete!'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
