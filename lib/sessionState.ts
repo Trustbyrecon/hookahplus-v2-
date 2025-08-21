@@ -287,6 +287,18 @@ export function reduce(session: Session, cmd: Command, actor: ActorRole, data: a
   if (cmd === "ADD_COAL_SWAP") {
     // you'd enqueue a coal task here
   }
+  if (cmd === "PAYMENT_CONFIRMED") {
+    // Update payment status and session data
+    session.payment.status = "confirmed";
+    if (data.table) session.table = data.table;
+    if (data.customerId) session.meta.customerId = data.customerId;
+    if (data.flavor) {
+      session.items = [{ sku: `hookah.${data.flavor.toLowerCase().replace(' ', '.')}`, qty: 1, notes: data.flavor }];
+    }
+    if (data.amount) {
+      session.payment.intentId = `intent_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    }
+  }
 
   session.state = to;
 

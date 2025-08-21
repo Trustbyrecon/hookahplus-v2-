@@ -110,6 +110,9 @@ const FireSessionDashboard = () => {
   // Refresh sessions based on current view
   const refreshSessions = () => {
     const allSessions = getAllSessions();
+    console.log("🔄 Refreshing sessions. Total in store:", allSessions.length);
+    console.log("📊 All session states:", allSessions.map(s => ({ id: s.id, state: s.state, table: s.table })));
+    
     let filteredSessions: Session[] = [];
     
     if (activeView === "foh") {
@@ -118,12 +121,14 @@ const FireSessionDashboard = () => {
       filteredSessions = allSessions.filter(s => 
         ["READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE", "CLOSE_PENDING"].includes(s.state)
       );
+      console.log("🏠 FOH view - filtered sessions:", filteredSessions.length);
     } else {
       // Back of House: sessions in prep, heating, ready for delivery
       // Only show sessions that are in prep workflow
       filteredSessions = allSessions.filter(s => 
         ["PAID_CONFIRMED", "QUEUED_PREP", "PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY"].includes(s.state)
       );
+      console.log("🔧 BOH view - filtered sessions:", filteredSessions.length);
     }
     
     setSessions(filteredSessions);
@@ -222,13 +227,17 @@ const FireSessionDashboard = () => {
   const handleGenerateFloorSessions = async () => {
     setLoading(true);
     try {
+      console.log("🚀 Starting to generate 10 floor sessions...");
+      
       // Generate 10 sessions specifically for the floor (FOH view)
       for (let i = 0; i < 10; i++) {
         const tableId = `T-${Math.floor(Math.random() * 20) + 1}`;
         const sessionId = `floor_${tableId}_${Date.now()}_${i}`;
         
+        console.log(`📝 Creating session ${i + 1}/10: ${sessionId} for table ${tableId}`);
+        
         // Start with PAYMENT_CONFIRMED
-        await fetch(`/api/sessions/${sessionId}/command`, {
+        const paymentResponse = await fetch(`/api/sessions/${sessionId}/command`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -241,25 +250,56 @@ const FireSessionDashboard = () => {
             }
           })
         });
+        
+        if (!paymentResponse.ok) {
+          const error = await paymentResponse.json();
+          console.error(`❌ Payment confirmation failed for ${sessionId}:`, error);
+          continue;
+        }
+        
+        console.log(`✅ Payment confirmed for ${sessionId}`);
 
         // Progress through BOH workflow to get to floor
-        await fetch(`/api/sessions/${sessionId}/command`, {
+        console.log(`🔧 Progressing ${sessionId} through BOH workflow...`);
+        
+        const claimResponse = await fetch(`/api/sessions/${sessionId}/command`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cmd: "CLAIM_PREP" })
         });
         
-        await fetch(`/api/sessions/${sessionId}/command`, {
+        if (!claimResponse.ok) {
+          const error = await claimResponse.json();
+          console.error(`❌ Claim prep failed for ${sessionId}:`, error);
+          continue;
+        }
+        console.log(`✅ Claim prep successful for ${sessionId}`);
+        
+        const heatResponse = await fetch(`/api/sessions/${sessionId}/command`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cmd: "HEAT_UP" })
         });
         
-        await fetch(`/api/sessions/${sessionId}/command`, {
+        if (!heatResponse.ok) {
+          const error = await heatResponse.json();
+          console.error(`❌ Heat up failed for ${sessionId}:`, error);
+          continue;
+        }
+        console.log(`✅ Heat up successful for ${sessionId}`);
+        
+        const readyResponse = await fetch(`/api/sessions/${sessionId}/command`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cmd: "READY_FOR_DELIVERY" })
         });
+        
+        if (!readyResponse.ok) {
+          const error = await readyResponse.json();
+          console.error(`❌ Ready for delivery failed for ${sessionId}:`, error);
+          continue;
+        }
+        console.log(`✅ Ready for delivery successful for ${sessionId}`);
 
         // Randomly distribute floor sessions across different states
         const floorState = Math.random();
@@ -341,13 +381,17 @@ const FireSessionDashboard = () => {
   const handleGenerateDemoData = async () => {
     setLoading(true);
     try {
+      console.log("🎯 Starting to generate 15 demo sessions...");
+      
       // Generate 15 demo hookah sessions with proper state progression
       for (let i = 0; i < 15; i++) {
         const tableId = `T-${Math.floor(Math.random() * 20) + 1}`;
         const sessionId = `demo_${tableId}_${Date.now()}_${i}`;
         
+        console.log(`📝 Creating demo session ${i + 1}/15: ${sessionId} for table ${tableId}`);
+        
         // Start with PAYMENT_CONFIRMED to get into proper workflow
-        await fetch(`/api/sessions/${sessionId}/command`, {
+        const paymentResponse = await fetch(`/api/sessions/${sessionId}/command`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -360,6 +404,14 @@ const FireSessionDashboard = () => {
             }
           })
         });
+        
+        if (!paymentResponse.ok) {
+          const error = await paymentResponse.json();
+          console.error(`❌ Payment confirmation failed for demo ${sessionId}:`, error);
+          continue;
+        }
+        
+        console.log(`✅ Payment confirmed for demo ${sessionId}`);
 
         // Randomly progress some sessions through the workflow
         const randomProgress = Math.random();
@@ -567,6 +619,60 @@ const FireSessionDashboard = () => {
     setShowJourneyGuide(true);
   };
 
+  // Debug function to check current sessions
+  const debugSessions = () => {
+    const allSessions = getAllSessions();
+    console.log("🔍 Current sessions in store:", allSessions.length);
+    console.log("📊 Sessions by state:", allSessions.reduce((acc, s) => {
+      acc[s.state] = (acc[s.state] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>));
+    console.log("📋 All sessions:", allSessions);
+  };
+
+  // Test function to create a single session
+  const testSingleSession = async () => {
+    setLoading(true);
+    try {
+      console.log("🧪 Testing single session creation...");
+      
+      const sessionId = `test_${Date.now()}`;
+      const tableId = "T-1";
+      
+      console.log(`📝 Creating test session: ${sessionId} for table ${tableId}`);
+      
+      const response = await fetch(`/api/sessions/${sessionId}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          cmd: "PAYMENT_CONFIRMED",
+          data: { 
+            table: tableId,
+            customerId: `test_customer_${Math.floor(Math.random() * 1000)}`,
+            flavor: "Double Apple",
+            amount: 2500
+          }
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Test session created successfully:", result);
+        alert("Test session created! Check console for details.");
+        refreshSessions();
+      } else {
+        const error = await response.json();
+        console.error("❌ Test session creation failed:", error);
+        alert(`Test session creation failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("❌ Error creating test session:", error);
+      alert("Error creating test session");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <GlobalNavigation />
@@ -747,6 +853,21 @@ const FireSessionDashboard = () => {
             >
               ⚙️ Admin Control
             </a>
+            
+            <button
+              onClick={debugSessions}
+              className="bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-500 transition-colors font-medium"
+            >
+              🐛 Debug Sessions
+            </button>
+            
+            <button
+              onClick={testSingleSession}
+              disabled={loading}
+              className="bg-yellow-600 text-white px-6 py-3 rounded-xl hover:bg-yellow-500 transition-colors font-medium"
+            >
+              🧪 Test Single Session
+            </button>
           </div>
         </div>
 
