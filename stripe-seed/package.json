@@ -1,0 +1,16 @@
+{
+  "name": "stripe-seed",
+  "version": "1.0.0",
+  "description": "Stripe catalog seeding for Hookah+ MVP",
+  "main": "seed.js",
+  "scripts": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "stripe": "^14.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

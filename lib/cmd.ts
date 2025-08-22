@@ -1,24 +1,17 @@
 export async function sendCmd(
-  sessionId: string, 
+  id: string, 
   cmd: string, 
   data: any = {}, 
-  actor: "foh"|"boh"|"system"|"agent" = "agent"
+  actor: "foh" | "boh" | "system" | "agent" = "agent"
 ) {
-  const response = await fetch(`/api/sessions/${sessionId}/command`, {
+  return fetch(`/api/sessions/${id}/command`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Idempotency-Key": `${sessionId}:${cmd}:${Date.now()}`
+      "Idempotency-Key": `${id}:${cmd}:${Date.now()}`
     },
     body: JSON.stringify({ cmd, data, actor })
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || `Command failed: ${response.status}`);
-  }
-  
-  return response.json();
+  }).then(r => r.json());
 }
 
 export async function getSession(sessionId: string) {
