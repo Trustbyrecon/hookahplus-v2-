@@ -1,70 +1,12 @@
-[
-  {
-    "product_id": "hp_hookah_session",
-    "price_ids": [
-      "price_1RyECpDuKNq0KFAAlQGPHb4g"
-    ],
-    "name": "Hookah Session",
-    "metadata": {
-      "category": "consumer",
-      "roi_anchor": "30_base"
-    }
+{
+  "products": {
+    "hookah_session": "prod_Sumle9pcZhrIvj",
+    "flavor_addon_150": "prod_SummNRn3Oi6rNJ",
+    "trust_core_pro_mo": "prod_SummVeHTsGLj39"
   },
-  {
-    "product_id": "hp_flavor_addon",
-    "price_ids": [
-      "price_1RyECqDuKNq0KFAAOhZox6m9"
-    ],
-    "name": "Flavor Add-On",
-    "metadata": {
-      "category": "consumer_addon"
-    }
-  },
-  {
-    "product_id": "hp_tier_starter",
-    "price_ids": [
-      "price_1RyECrDuKNq0KFAAFupRGu38"
-    ],
-    "name": "Hookah+ Starter",
-    "metadata": {
-      "category": "owner_saas",
-      "tier": "starter",
-      "included_addons": "qr_bill_pay"
-    }
-  },
-  {
-    "product_id": "hp_tier_pro",
-    "price_ids": [
-      "price_1RyECrDuKNq0KFAA5zm3JIfx"
-    ],
-    "name": "Hookah+ Pro",
-    "metadata": {
-      "category": "owner_saas",
-      "tier": "pro",
-      "included_addons": "qr_bill_pay,flavor_ai"
-    }
-  },
-  {
-    "product_id": "hp_tier_trust_plus",
-    "price_ids": [
-      "price_1RyECsDuKNq0KFAAHqv7Bs8G"
-    ],
-    "name": "Hookah+ Trust+",
-    "metadata": {
-      "category": "owner_saas",
-      "tier": "trust_plus",
-      "included_addons": "qr_bill_pay,flavor_ai,session_heatmap"
-    }
-  },
-  {
-    "product_id": "hp_tier_enterprise_plus",
-    "price_ids": [],
-    "name": "Hookah+ Enterprise+",
-    "metadata": {
-      "category": "owner_saas",
-      "tier": "enterprise_plus",
-      "included_addons": "all",
-      "billing": "custom_quote"
-    }
+  "prices": {
+    "hookah_session": "price_1RyxCSDuKNq0KFAA23N7a4Cu",
+    "flavor_addon_150": "price_1RyxCTDuKNq0KFAAyRDEd0to",
+    "trust_core_pro_mo": "price_1RyxCUDuKNq0KFAAZCqONNBA"
   }
-]
+}
