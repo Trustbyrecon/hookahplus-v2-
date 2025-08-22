@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+// lib/eventBus.ts
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
 type Handler = (payload: any) => void;
 
 const channels = new Map<string, Set<Handler>>();
@@ -16,6 +20,7 @@ export function subscribe(topic: string, handler: Handler) {
   return () => channels.get(topic)!.delete(handler);
 }
 
+<<<<<<< HEAD
 export function unsubscribe(topic: string, handler: Handler) {
   const subs = channels.get(topic);
   if (subs) {
@@ -47,4 +52,11 @@ export function publishPrepEvent(event: any) {
 
 export function publishSystemEvent(event: any) {
   publish(`system`, event);
+=======
+// Helper for session-specific topics
+export function publishSessionEvent(sessionId: string, payload: any) {
+  publish(`sessions.${sessionId}`, payload);
+  publish(`sessions.floor`, payload); // FOH board could subscribe
+  publish(`sessions.prep`, payload);  // BOH board could subscribe
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
 }

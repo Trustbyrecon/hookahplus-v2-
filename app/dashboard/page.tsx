@@ -1,512 +1,630 @@
-// app/dashboard/page.tsx
 "use client";
-import { useEffect, useState } from "react";
-import { getTopFlavors, getReturningCustomers, listOrders, getTotalRevenue, getPaidOrderCount, getPendingOrderCount } from "../../lib/orders";
-import AdminNavHeader from "../../components/AdminNavHeader";
+
+import { useState, useEffect } from "react";
 import GlobalNavigation from "../../components/GlobalNavigation";
+import { designSystem, applyDesignToken } from "../../lib/designSystem";
 
-type Order = {
+// AI Agent Collaboration Interface
+interface DashboardState {
+  currentWorkflow: 'onboarding' | 'data-generation' | 'session-management' | 'customer-journey' | 'optimization';
+  activeRole: 'owner' | 'foh' | 'boh' | 'admin';
+  dataStatus: 'empty' | 'populated' | 'active' | 'flowing';
+  nextAction: string;
+  progress: number;
+  trustLockStatus: 'active' | 'pending' | 'verified';
+  aiInsights: string[];
+  humanFeedback: string[];
+}
+
+// Unified Session Interface
+interface UnifiedSession {
   id: string;
-  tableId?: string;
-  flavor?: string;
+  type: 'mobile' | 'staff' | 'demo';
+  status: 'pending' | 'prep' | 'ready' | 'delivered' | 'active' | 'completed';
+  table: string;
+  customer: string;
+  flavor: string;
   amount: number;
-  currency: string;
-  status: "created" | "paid" | "failed";
-  createdAt: number;
-  // Enhanced fields for session management
-  sessionStartTime?: number;
-  sessionDuration?: number;
-  coalStatus?: "active" | "needs_refill" | "burnt_out" | "paused";
-  addOnFlavors?: string[];
-  baseRate?: number;
-  addOnRate?: number;
-  totalRevenue?: number;
-  // Customer profile metadata
-  customerName?: string;
-  customerId?: string;
-  customerPreferences?: {
-    favoriteFlavors?: string[];
-    sessionDuration?: number;
-    addOnPreferences?: string[];
-    notes?: string;
-  };
-  previousSessions?: string[];
-  // Table mapping data
-  tableType?: "high_boy" | "table" | "2x_booth" | "4x_booth" | "8x_sectional" | "4x_sofa";
-  tablePosition?: { x: number; y: number };
-  refillTimerStart?: number;
-};
+  duration: number;
+  createdAt: Date;
+  workflow: string[];
+  priority: number;
+}
 
-export default function Dashboard() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [lastGenerated, setLastGenerated] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [aliethiaInsights, setAliethiaInsights] = useState<{
-    topFlavors: Array<{ flavor: string; count: number }>;
-    returningCustomers: Array<{ customerId: string; customerName: string; visitCount: number; lastVisit: number }>;
-    promotionalOffers: Array<{ customerId: string; customerName: string; offer: string; qrCode: string }>;
-  }>({ topFlavors: [], returningCustomers: [], promotionalOffers: [] });
+const UnifiedDashboard = () => {
+  const [dashboardState, setDashboardState] = useState<DashboardState>({
+    currentWorkflow: 'onboarding',
+    activeRole: 'owner',
+    dataStatus: 'empty',
+    nextAction: '🎯 Welcome to Hookah+! Start by generating demo data to see the system in action',
+    progress: 5,
+    trustLockStatus: 'active',
+    aiInsights: [
+      'AI Agent: System ready for initial data generation',
+      'AI Agent: Onboarding workflow prepared for new users',
+      'AI Agent: Trust-Lock security layer active and verified'
+    ],
+    humanFeedback: [
+      'Lounge Owner: "I need to see how this system works before committing"',
+      'Staff Member: "Show me the workflow from customer order to delivery"',
+      'Manager: "I want to understand the ROI and efficiency gains"'
+    ]
+  });
 
-  async function fetchOrders() {
-    console.log('Fetching orders...');
-    setIsLoading(true);
-    try {
-      // Use the local orders from lib/orders.ts instead of API call
-      const localOrders = listOrders();
-      console.log('Local orders:', localOrders);
-      setOrders(localOrders);
-      
-      // Generate Aliethia insights
-      generateAliethiaInsights(localOrders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const [sessions, setSessions] = useState<UnifiedSession[]>([]);
+  const [activeView, setActiveView] = useState<'overview' | 'sessions' | 'analytics' | 'workflow'>('overview');
+  const [mobileOrderTimer, setMobileOrderTimer] = useState(60);
+  const [isTimerActive, setIsTimerActive] = useState(false);
 
-  function generateAliethiaInsights(orders: Order[]) {
-    // Generate top flavors
-    const flavorCounts: Record<string, number> = {};
-    orders.forEach(order => {
-      if (order.flavor && order.status === 'paid') {
-        flavorCounts[order.flavor] = (flavorCounts[order.flavor] || 0) + 1;
-      }
-    });
-    
-    const topFlavors = Object.entries(flavorCounts)
-      .map(([flavor, count]) => ({ flavor, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-
-    // Generate returning customer insights
-    const customerVisits: Record<string, { name: string; visits: number; lastVisit: number }> = {};
-    orders.forEach(order => {
-      if (order.customerId && order.status === 'paid') {
-        if (!customerVisits[order.customerId]) {
-          customerVisits[order.customerId] = {
-            name: order.customerName || 'Unknown Customer',
-            visits: 0,
-            lastVisit: 0
-          };
-        }
-        customerVisits[order.customerId].visits++;
-        customerVisits[order.customerId].lastVisit = Math.max(customerVisits[order.customerId].lastVisit, order.createdAt);
-      }
-    });
-
-    const returningCustomers = Object.entries(customerVisits)
-      .filter(([_, data]) => data.visits >= 2)
-      .map(([customerId, data]) => ({
-        customerId,
-        customerName: data.name,
-        visitCount: data.visits,
-        lastVisit: data.lastVisit
-      }))
-      .sort((a, b) => b.visitCount - a.visitCount);
-
-    // Generate promotional offers for returning customers
-    const promotionalOffers = returningCustomers
-      .filter(customer => customer.visitCount >= 3)
-      .map(customer => {
-        const offers = [
-          "Free hookah flavor mix on next session! 🎁",
-          "50% off premium tobacco upgrade 🚀",
-          "Complimentary fruit bowl with any order 🍎",
-          "VIP seating priority for next visit ⭐",
-          "Free session extension (30 min) ⏰"
-        ];
-        const randomOffer = offers[Math.floor(Math.random() * offers.length)];
-        const qrCode = `QR_${customer.customerId}_${Date.now()}`;
-        
-        return {
-          customerId: customer.customerId,
-          customerName: customer.customerName,
-          offer: randomOffer,
-          qrCode
-        };
-      });
-
-    setAliethiaInsights({
-      topFlavors,
-      returningCustomers,
-      promotionalOffers
-    });
-  }
-
-  async function generateDemoData() {
-    setIsGenerating(true);
-    try {
-      console.log('Generating demo data...');
-      const res = await fetch('/api/demo-data', { method: 'POST' });
-      const data = await res.json();
-      console.log('Demo data response:', data);
-      
-      if (data.success) {
-        setLastGenerated(`${data.orders} orders (${data.paid} paid, ${data.pending} pending) - ${data.timeRange}`);
-        
-        // Wait a moment for the data to be processed, then refresh
-        setTimeout(async () => {
-          console.log('Refreshing orders after demo generation...');
-          await fetchOrders();
-        }, 1000);
-      }
-    } catch (error) {
-      console.error('Error generating demo data:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }
-
+  // AI Agent Collaboration - Dynamic State Management
   useEffect(() => {
-    fetchOrders();
-    const t = setInterval(fetchOrders, 5000); // poll every 5s for demo
+    const updateDashboardState = () => {
+      if (sessions.length === 0) {
+        setDashboardState(prev => ({
+          ...prev,
+          currentWorkflow: 'onboarding',
+          nextAction: '🎯 Generate demo data to see live orders & sessions',
+          progress: 5,
+          aiInsights: [
+            'AI Agent: System ready for initial data generation',
+            'AI Agent: Onboarding workflow prepared for new users',
+            'AI Agent: Trust-Lock security layer active and verified'
+          ]
+        }));
+      } else if (sessions.length < 5) {
+        setDashboardState(prev => ({
+          ...prev,
+          currentWorkflow: 'data-generation',
+          nextAction: '📊 Generate more demo data to see full workflow',
+          progress: 25,
+          aiInsights: [
+            'AI Agent: Initial data generated, ready for workflow demonstration',
+            'AI Agent: System beginning to show operational value',
+            'AI Agent: Trust-Lock maintaining data integrity'
+          ]
+        }));
+      } else if (sessions.length >= 5) {
+        setDashboardState(prev => ({
+          ...prev,
+          currentWorkflow: 'session-management',
+          nextAction: '🔥 Manage active sessions and see workflow in action',
+          progress: 50,
+          aiInsights: [
+            'AI Agent: Sufficient data for workflow demonstration',
+            'AI Agent: System showing operational efficiency',
+            'AI Agent: Ready for advanced session management'
+          ]
+        }));
+      }
+    };
+
+    updateDashboardState();
+    const interval = setInterval(updateDashboardState, 5000);
     
-    // Track dashboard view
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'Dashboard_View', {
-        event_category: 'Navigation',
-        event_label: 'Dashboard',
-      });
-    }
+    return () => clearInterval(interval);
+  }, [sessions.length]);
+
+  // Mobile Order Timer Simulation
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
     
-    return () => clearInterval(t);
-  }, []);
-
-  // Calculate metrics using local functions
-  const totalOrders = orders.length;
-  const paidOrders = getPaidOrderCount();
-  const totalRevenue = getTotalRevenue() / 100; // Convert cents to dollars
-  const pendingOrders = getPendingOrderCount();
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
-  // Format duration
-  const formatDuration = (minutes: number) => {
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-  };
-
-  // Get status color and icon
-  const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return { color: 'text-green-400', icon: '✅', label: 'Paid' };
-      case 'created':
-        return { color: 'text-yellow-400', icon: '⏳', label: 'Pending' };
-      case 'failed':
-        return { color: 'text-red-400', icon: '❌', label: 'Failed' };
-      default:
-        return { color: 'text-gray-400', icon: '❓', label: 'Unknown' };
+    if (isTimerActive && mobileOrderTimer > 0) {
+      interval = setInterval(() => {
+        setMobileOrderTimer(prev => {
+          if (prev <= 1) {
+            // Generate mobile order when timer reaches 0
+            generateMobileOrder();
+            return 60; // Reset timer
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
+
+    return () => clearInterval(interval);
+  }, [isTimerActive, mobileOrderTimer]);
+
+  const generateMobileOrder = () => {
+    const newSession: UnifiedSession = {
+      id: `mobile_${Date.now()}`,
+      type: 'mobile',
+      status: 'pending',
+      table: `T-${Math.floor(Math.random() * 20) + 1}`,
+      customer: `Customer_${Math.floor(Math.random() * 1000)}`,
+      flavor: ['Double Apple', 'Mint', 'Strawberry', 'Grape', 'Rose', 'Vanilla'][Math.floor(Math.random() * 6)],
+      amount: 2500 + Math.floor(Math.random() * 3000),
+      duration: 0,
+      createdAt: new Date(),
+      workflow: ['QR_SCAN', 'FLAVOR_SELECT', 'PAYMENT', 'CONFIRMATION'],
+      priority: Math.floor(Math.random() * 100)
+    };
+
+    setSessions(prev => [newSession, ...prev]);
   };
 
-  // Get coal status display
-  const getCoalStatusDisplay = (status?: string) => {
-    switch (status) {
-      case 'active':
-        return { color: 'text-green-400', icon: '🔥', label: 'Active' };
-      case 'needs_refill':
-        return { color: 'text-yellow-400', icon: '⚠️', label: 'Needs Refill' };
-      case 'burnt_out':
-        return { color: 'text-red-400', icon: '💀', label: 'Burnt Out' };
-      case 'paused':
-        return { color: 'text-blue-400', icon: '⏸️', label: 'Paused' };
-      default:
-        return { color: 'text-gray-400', icon: '❓', label: 'N/A' };
+  const generateDemoData = () => {
+    const demoSessions: UnifiedSession[] = [];
+    
+    for (let i = 0; i < 15; i++) {
+      const session: UnifiedSession = {
+        id: `demo_${Date.now()}_${i}`,
+        type: Math.random() > 0.7 ? 'mobile' : 'staff',
+        status: ['pending', 'prep', 'ready', 'delivered', 'active'][Math.floor(Math.random() * 5)] as any,
+        table: `T-${Math.floor(Math.random() * 20) + 1}`,
+        customer: `Customer_${Math.floor(Math.random() * 1000)}`,
+        flavor: ['Double Apple', 'Mint', 'Strawberry', 'Grape', 'Rose', 'Vanilla'][Math.floor(Math.random() * 6)],
+        amount: 2500 + Math.floor(Math.random() * 3000),
+        duration: Math.floor(Math.random() * 120),
+        createdAt: new Date(Date.now() - Math.random() * 3600000),
+        workflow: ['QR_SCAN', 'FLAVOR_SELECT', 'PAYMENT', 'CONFIRMATION', 'PREP', 'DELIVERY'],
+        priority: Math.floor(Math.random() * 100)
+      };
+      
+      demoSessions.push(session);
     }
+
+    setSessions(demoSessions);
+    setDashboardState(prev => ({
+      ...prev,
+      dataStatus: 'populated',
+      progress: 50
+    }));
   };
+
+  const startMobileOrderTimer = () => {
+    setIsTimerActive(true);
+    setMobileOrderTimer(60);
+  };
+
+  const resetTimer = () => {
+    setIsTimerActive(false);
+    setMobileOrderTimer(60);
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      pending: 'text-yellow-400 bg-yellow-400/20',
+      prep: 'text-orange-400 bg-orange-400/20',
+      ready: 'text-emerald-400 bg-emerald-400/20',
+      delivered: 'text-blue-400 bg-blue-400/20',
+      active: 'text-purple-400 bg-purple-400/20',
+      completed: 'text-green-400 bg-green-400/20'
+    };
+    return colors[status] || 'text-zinc-400 bg-zinc-400/20';
+  };
+
+  const getStatusIcon = (status: string) => {
+    const icons: Record<string, string> = {
+      pending: '⏳',
+      prep: '🔧',
+      ready: '✅',
+      delivered: '🎯',
+      active: '🍃',
+      completed: '🎉'
+    };
+    return icons[status] || '❓';
+  };
+
+  const calculateMetrics = () => {
+    const totalOrders = sessions.length;
+    const paidOrders = sessions.filter(s => s.status !== 'pending').length;
+    const totalRevenue = sessions.reduce((sum, s) => sum + s.amount, 0);
+    const pendingOrders = sessions.filter(s => s.status === 'pending').length;
+    const mobileOrders = sessions.filter(s => s.type === 'mobile').length;
+    const activeSessions = sessions.filter(s => s.status === 'active').length;
+
+    return {
+      totalOrders,
+      paidOrders,
+      totalRevenue: totalRevenue / 100, // Convert from cents
+      pendingOrders,
+      mobileOrders,
+      activeSessions
+    };
+  };
+
+  const metrics = calculateMetrics();
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       <GlobalNavigation />
-      <AdminNavHeader />
-      <div className="p-8">
-        <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl md:text-4xl font-bold text-teal-400">Lounge Dashboard</h1>
-          <div className="flex items-center gap-4">
+      
+      {/* Header with Flow Conductor Status */}
+      <div className="bg-zinc-900 border-b border-zinc-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-teal-400 mb-2">Unified Lounge Dashboard</h1>
+              <p className="text-zinc-400">AI-Powered Hookah Lounge Management System</p>
+            </div>
+            
+            {/* Flow Conductor Status */}
+            <div className="text-right">
+              <div className="flex items-center space-x-4 mb-2">
+                <span className="text-emerald-400 text-sm">🔄</span>
+                <span className="text-xs text-zinc-400">Workflow:</span>
+                <span className="text-xs text-emerald-400 capitalize">{dashboardState.currentWorkflow.replace('-', ' ')}</span>
+              </div>
+              <div className="w-32 bg-zinc-800 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-teal-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${dashboardState.progress}%` }}
+                ></div>
+              </div>
+              <div className="text-xs text-emerald-400 mt-1">{dashboardState.progress}% Complete</div>
+            </div>
+          </div>
+
+          {/* AI Agent Collaboration Bar */}
+          <div className="bg-gradient-to-r from-zinc-800 to-zinc-700 rounded-xl p-4 border border-zinc-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <span className="text-emerald-400 text-sm">🤖</span>
+                  <span className="text-xs text-zinc-400">AI Agents:</span>
+                  <span className="text-xs text-emerald-400">Collaborating</span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <span className="text-blue-400 text-sm">👤</span>
+                  <span className="text-xs text-zinc-400">Role:</span>
+                  <span className="text-xs text-blue-400 uppercase">{dashboardState.activeRole}</span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-purple-400 text-sm">🔒</span>
+                  <span className="text-xs text-zinc-400">Trust-Lock:</span>
+                  <span className="text-xs text-purple-400">{dashboardState.trustLockStatus}</span>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <div className="text-xs text-zinc-400 mb-1">🎯 Next Action:</div>
+                <div className="text-sm text-emerald-300 font-medium">{dashboardState.nextAction}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dashboard Content */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* AI Insights and Human Feedback */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* AI Agent Insights */}
+          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20 p-6">
+            <h3 className="text-lg font-semibold text-purple-300 mb-4">🤖 AI Agent Insights</h3>
+            <div className="space-y-3">
+              {dashboardState.aiInsights.map((insight, index) => (
+                <div key={index} className="bg-zinc-800/50 rounded-lg p-3 border border-purple-500/20">
+                  <div className="text-sm text-purple-200">{insight}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Human Feedback */}
+          <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl border border-orange-500/20 p-6">
+            <h3 className="text-lg font-semibold text-orange-300 mb-4">👥 Human Feedback</h3>
+            <div className="space-y-3">
+              {dashboardState.humanFeedback.map((feedback, index) => (
+                <div key={index} className="bg-zinc-800/50 rounded-lg p-3 border border-orange-500/20">
+                  <div className="text-sm text-orange-200">{feedback}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Control Actions */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-8">
+          <h2 className="text-xl font-semibold text-teal-300 mb-4">Control Actions</h2>
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={generateDemoData}
+              className="bg-teal-500 text-zinc-950 px-6 py-3 rounded-xl hover:bg-teal-400 transition-colors font-medium"
+            >
+              🎯 Generate Demo Data
+            </button>
+            
+            <button
+              onClick={startMobileOrderTimer}
+              disabled={isTimerActive}
+              className="bg-purple-500 text-white px-6 py-3 rounded-xl hover:bg-purple-400 disabled:opacity-50 transition-colors font-medium"
+            >
+              📱 Start Mobile Order Timer
+            </button>
+            
+            <button
+              onClick={resetTimer}
+              className="bg-zinc-700 text-white px-6 py-3 rounded-xl hover:bg-zinc-600 transition-colors font-medium"
+            >
+              🔄 Reset Timer
+            </button>
+            
             <a
-              href="/admin"
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              href="/fire-session-dashboard"
+              className="bg-emerald-500 text-zinc-950 px-6 py-3 rounded-xl hover:bg-emerald-400 transition-colors font-medium"
+            >
+              🔥 Fire Session Dashboard
+            </a>
+            
+            <a
+              href="/admin-control"
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-500 transition-colors font-medium"
             >
               ⚙️ Admin Control
             </a>
-            <a
-              href="/sessions"
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              🎯 Live Sessions
-            </a>
-            <button
-              onClick={fetchOrders}
-              disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              {isLoading ? '🔄' : '🔄'} 
-              {isLoading ? 'Refreshing...' : 'Refresh Data'}
-            </button>
-            <button
-              onClick={generateDemoData}
-              disabled={isGenerating}
-              className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              {isGenerating ? '🔄' : '🎭'} 
-              {isGenerating ? 'Generating...' : 'Generate Demo Data'}
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-green-400">🔒</span>
-              <span className="text-teal-200">Trust-Lock: Active</span>
+          </div>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-teal-500/20 rounded-lg">
+                <span className="text-2xl">📊</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-zinc-400">Total Orders</p>
+                <p className="text-2xl font-semibold text-white">{metrics.totalOrders}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-emerald-500/20 rounded-lg">
+                <span className="text-2xl">💰</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-zinc-400">Total Revenue</p>
+                <p className="text-2xl font-semibold text-white">${metrics.totalRevenue.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <span className="text-2xl">📱</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-zinc-400">Mobile Orders</p>
+                <p className="text-2xl font-semibold text-white">{metrics.mobileOrders}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <span className="text-2xl">🍃</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-zinc-400">Active Sessions</p>
+                <p className="text-2xl font-semibold text-white">{metrics.activeSessions}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Generation Status */}
-        {lastGenerated && (
-          <div className="bg-green-900/20 border border-green-500 rounded-lg p-4">
-            <div className="flex items-center gap-2">
-              <span className="text-green-400">✅</span>
-              <span className="text-green-200">Demo data generated: {lastGenerated}</span>
+        {/* Mobile Order Status and Workflow Simulation */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Mobile Order Status */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <h3 className="text-lg font-semibold text-teal-300 mb-4">Mobile Order Status</h3>
+            
+            {/* Timer */}
+            <div className="bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-xl p-4 border border-teal-500/30 mb-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-teal-300 mb-2">
+                  {Math.floor(mobileOrderTimer / 60)}:{(mobileOrderTimer % 60).toString().padStart(2, '0')}
+                </div>
+                <div className="text-sm text-teal-200 mb-3">
+                  Timer automatically generates mobile orders for FOH/BOH transparency
+                </div>
+                <div className="flex justify-center space-x-2">
+                  <button
+                    onClick={startMobileOrderTimer}
+                    disabled={isTimerActive}
+                    className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-400 disabled:opacity-50 transition-colors text-sm"
+                  >
+                    Start
+                  </button>
+                  <button
+                    onClick={resetTimer}
+                    className="bg-zinc-600 text-white px-4 py-2 rounded-lg hover:bg-zinc-500 transition-colors text-sm"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{metrics.totalOrders}</div>
+                <div className="text-sm text-zinc-400">Active Orders</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{metrics.mobileOrders}</div>
+                <div className="text-sm text-zinc-400">Mobile Orders</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{metrics.activeSessions}</div>
+                <div className="text-sm text-zinc-400">Delivered (Ready)</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">${metrics.totalRevenue.toFixed(2)}</div>
+                <div className="text-sm text-zinc-400">Mobile Revenue</div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+              <div className="text-xs text-blue-200">
+                💡 Pro Tip: Mobile orders appear automatically when customers complete QR workflow. 
+                FOH/BOH Link: Order sync instantly across all dashboards for transparency.
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Data Status */}
-        <div className="bg-zinc-800/50 border border-zinc-600 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-zinc-300">
-              <span className="font-medium">Data Status:</span> 
-              {isLoading ? ' 🔄 Refreshing...' : ` 📊 ${totalOrders} orders loaded`}
+          {/* Live Mobile Workflow Simulation */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <h3 className="text-lg font-semibold text-teal-300 mb-4">Live Mobile Workflow Simulation</h3>
+            
+            <div className="space-y-4">
+              {[
+                { step: 1, icon: '📱', title: 'QR Scan', desc: 'Customer scans table QR' },
+                { step: 2, icon: '🍃', title: 'Flavor Pick', desc: 'AI recommendations' },
+                { step: 3, icon: '💳', title: 'Stripe Pay', desc: 'Secure payment' },
+                { step: 4, icon: '✅', title: 'Confirm', desc: 'Instant notification' },
+                { step: 5, icon: '📊', title: 'Monitor', desc: 'Real-time tracking' }
+              ].map((step) => (
+                <div key={step.step} className="flex items-center space-x-4">
+                  <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {step.step}
+                  </div>
+                  <div className="text-2xl">{step.icon}</div>
+                  <div className="flex-1">
+                    <div className="font-medium text-white">{step.title}</div>
+                    <div className="text-sm text-zinc-400">{step.desc}</div>
+                  </div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+              ))}
             </div>
-            <div className="text-sm text-zinc-400">
-              Last updated: {new Date().toLocaleTimeString()}
+
+            <div className="mt-6 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+              <div className="text-center">
+                <div className="text-emerald-300 font-medium mb-2">🎉 Workflow Complete!</div>
+                <div className="text-sm text-emerald-200">
+                  Customer order appears in sessions above. This simulates the complete customer journey from QR scan to order confirmation.
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-zinc-900 border border-teal-500 rounded-lg p-4">
-            <div className="text-2xl font-bold text-teal-400">{totalOrders}</div>
-            <div className="text-zinc-400">Total Orders</div>
-          </div>
-          <div className="bg-zinc-900 border border-green-500 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-400">{paidOrders}</div>
-            <div className="text-zinc-400">Paid Orders</div>
-          </div>
-          <div className="bg-zinc-900 border border-blue-500 rounded-lg p-4">
-            <div className="text-2xl font-bold text-blue-400">{formatCurrency(totalRevenue)}</div>
-            <div className="text-zinc-400">Total Revenue</div>
-          </div>
-          <div className="bg-zinc-900 border border-yellow-500 rounded-lg p-4">
-            <div className="text-2xl font-bold text-yellow-400">{pendingOrders}</div>
-            <div className="text-zinc-400">Pending Orders</div>
-          </div>
-        </div>
-
-        {/* Orders Table */}
-        <div className="bg-zinc-900 border border-teal-500 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-teal-500">
-            <h2 className="text-xl font-semibold text-teal-300">Live Orders & Historical Data</h2>
-            <p className="text-zinc-400 text-sm">Real-time updates every 5 seconds • {totalOrders} orders • Shows last 2 hours + current</p>
+        {/* Live Orders & Sessions */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 mb-8">
+          <div className="px-6 py-4 border-b border-zinc-800">
+            <h2 className="text-lg font-semibold text-teal-300">Live Orders & Sessions</h2>
+            <p className="text-sm text-zinc-400">
+              Real-time updates every 5 seconds • {metrics.totalOrders} orders • Live data with no time restrictions
+            </p>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-neutral-400 bg-zinc-800">
-                <tr>
-                  <th className="p-4 text-left">Order ID</th>
-                  <th className="p-4 text-left">Table</th>
-                  <th className="p-4 text-left">Flavor</th>
-                  <th className="p-4 text-left">Duration</th>
-                  <th className="p-4 text-left">Amount</th>
-                  <th className="p-4 text-left">Status</th>
-                  <th className="p-4 text-left">Coal Status</th>
-                  <th className="p-4 text-left">Customer</th>
-                  <th className="p-4 text-left">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length > 0 ? (
-                  orders.map((order) => {
-                    const statusDisplay = getStatusDisplay(order.status);
-                    const coalDisplay = getCoalStatusDisplay(order.coalStatus);
-                    
-                    return (
-                      <tr key={order.id} className="border-t border-zinc-800 hover:bg-zinc-800/50">
-                        <td className="p-4 font-mono text-xs">{order.id.slice(0, 8)}...</td>
-                        <td className="p-4">{order.tableId || 'N/A'}</td>
-                        <td className="p-4">{order.flavor || 'N/A'}</td>
-                        <td className="p-4">{order.sessionDuration ? formatDuration(order.sessionDuration) : 'N/A'}</td>
-                        <td className="p-4 font-medium">{formatCurrency(order.amount / 100)}</td>
-                        <td className="p-4">
-                          <span className={`${statusDisplay.color} flex items-center gap-1`}>
-                            <span>{statusDisplay.icon}</span>
-                            <span>{statusDisplay.label}</span>
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className={`${coalDisplay.color} flex items-center gap-1`}>
-                            <span>{coalDisplay.icon}</span>
-                            <span>{coalDisplay.label}</span>
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-xs">
-                            <div className="font-medium">{order.customerName || 'Staff Customer'}</div>
-                            {order.customerId && (
-                              <div className="text-zinc-500">ID: {order.customerId.slice(0, 6)}...</div>
-                            )}
+          <div className="p-6">
+            {sessions.length === 0 ? (
+              <div className="text-center py-12 text-zinc-500">
+                <div className="text-4xl mb-4">🍃</div>
+                <p className="text-lg mb-2">No orders yet...</p>
+                <p className="text-sm">Click 'Generate Demo Data' to populate the dashboard</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sessions.map((session) => (
+                  <div key={session.id} className="bg-zinc-800 rounded-xl p-4 border border-zinc-700 hover:border-zinc-600 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{getStatusIcon(session.status)}</span>
+                        <div>
+                          <div className="font-medium text-white">
+                            {session.customer} - Table {session.table}
                           </div>
-                        </td>
-                        <td className="p-4 text-xs text-zinc-400">
-                          {new Date(order.createdAt).toLocaleTimeString()}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={9} className="p-8 text-center text-zinc-500">
-                      <div className="space-y-2">
-                        <div className="text-4xl">🍃</div>
-                        <div>No orders yet…</div>
-                        <div className="text-sm">Click "Generate Demo Data" to populate the dashboard</div>
+                          <div className="text-sm text-zinc-400">
+                            {session.flavor} • ${(session.amount / 100).toFixed(2)}
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Enhanced Aliethia Memory Widget */}
-        <div className="bg-zinc-900 border border-teal-500 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-teal-300 mb-4">🧠 Aliethia Memory - AI-Powered Insights</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div>
-              <h4 className="text-md font-medium text-teal-200 mb-3">🔥 Top 3 Mixes Today</h4>
-              {aliethiaInsights.topFlavors.length > 0 ? (
-                <div className="space-y-2">
-                  {aliethiaInsights.topFlavors.map((item, i) => (
-                    <div key={item.flavor} className="flex justify-between items-center p-2 bg-zinc-800/50 rounded">
-                      <span className="text-zinc-300">{i + 1}. {item.flavor}</span>
-                      <span className="text-teal-400 font-medium">{item.count}x</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-zinc-500 text-sm">
-                  {totalOrders === 0 ? 'Generate demo data to see trends' : 'Need 3+ paid orders to show trends'}
-                </div>
-              )}
-            </div>
-            
-            <div>
-              <h4 className="text-md font-medium text-teal-200 mb-3">👥 Returning Customers</h4>
-              {aliethiaInsights.returningCustomers.length > 0 ? (
-                <div className="space-y-2">
-                  {aliethiaInsights.returningCustomers.slice(0, 3).map((customer) => (
-                    <div key={customer.customerId} className="p-2 bg-zinc-800/50 rounded">
-                      <div className="text-zinc-300 font-medium">{customer.customerName}</div>
-                      <div className="text-teal-400 text-sm">{customer.visitCount} visits</div>
-                      <div className="text-zinc-500 text-xs">
-                        Last: {new Date(customer.lastVisit).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-zinc-500 text-sm">
-                  {totalOrders === 0 ? 'Generate demo data to see patterns' : 'Need 3+ paid orders to calculate'}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h4 className="text-md font-medium text-teal-200 mb-3">🎁 Promotional Offers</h4>
-              {aliethiaInsights.promotionalOffers.length > 0 ? (
-                <div className="space-y-2">
-                  {aliethiaInsights.promotionalOffers.slice(0, 2).map((offer) => (
-                    <div key={offer.customerId} className="p-3 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/50 rounded">
-                      <div className="text-zinc-300 font-medium text-sm">{offer.customerName}</div>
-                      <div className="text-purple-300 text-xs mb-2">{offer.offer}</div>
-                      <div className="text-center">
-                        <div className="text-xs text-zinc-500 mb-1">QR Code:</div>
-                        <div className="font-mono text-xs bg-black p-2 rounded border border-purple-500/50">
-                          {offer.qrCode}
+                      
+                      <div className="text-right">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
+                          {session.status.toUpperCase()}
+                        </span>
+                        <div className="text-xs text-zinc-400 mt-1">
+                          {session.type === 'mobile' ? '📱' : '👤'} {session.type}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-zinc-500 text-sm">
-                  {totalOrders === 0 ? 'Generate demo data to see offers' : 'Need 3+ visits to unlock offers'}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Aliethia Memory Status */}
-          <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg border border-teal-500/50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-zinc-400">
-                <span className="text-teal-400">🧠 Aliethia Status:</span> 
-                {aliethiaInsights.topFlavors.length > 0 ? ' Active - Learning customer preferences' : ' Dormant - Waiting for data'}
+
+                    <div className="flex items-center justify-between text-sm text-zinc-400">
+                      <div>Created: {session.createdAt.toLocaleTimeString()}</div>
+                      <div>Duration: {session.duration}m</div>
+                      <div>Priority: {session.priority}</div>
+                    </div>
+
+                    {/* Workflow Progress */}
+                    <div className="mt-3">
+                      <div className="text-xs text-zinc-400 mb-2">Workflow Progress:</div>
+                      <div className="flex space-x-2">
+                        {session.workflow.map((step, index) => (
+                          <div key={index} className="flex-1 bg-zinc-700 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-teal-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${((index + 1) / session.workflow.length) * 100}%` }}
+                            ></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="text-xs text-zinc-500">
-                {aliethiaInsights.promotionalOffers.length > 0 && (
-                  <span className="text-purple-400">✨ {aliethiaInsights.promotionalOffers.length} active offers</span>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Reflex Agent Status */}
-        <div className="bg-zinc-900 border border-teal-500 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-teal-300 mb-4">Reflex Agent Status</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-green-400 text-2xl">🟢</div>
-              <div className="text-sm text-zinc-400">EP (Payments)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-green-400 text-2xl">🟢</div>
-              <div className="text-sm text-zinc-400">Navigator (UX)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-green-400 text-2xl">🟢</div>
-              <div className="text-sm text-zinc-400">Sentinel (Trust)</div>
-            </div>
-            <div className="text-center">
-              <div className={`text-2xl ${aliethiaInsights.topFlavors.length > 0 ? 'text-green-400' : 'text-amber-400'}`}>
-                {aliethiaInsights.topFlavors.length > 0 ? '🟢' : '🟡'}
+        {/* Aliethia Memory - AI-Powered Insights */}
+        <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-xl border border-pink-500/20 p-6">
+          <h2 className="text-xl font-semibold text-pink-300 mb-4">Aliethia Memory - AI-Powered Insights</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-pink-500/20">
+              <div className="flex items-center space-x-3 mb-3">
+                <span className="text-2xl">🔥</span>
+                <h3 className="font-medium text-white">Top 3 Mixes Today</h3>
               </div>
-              <div className="text-sm text-zinc-400">Aliethia (Memory)</div>
+              <div className="text-sm text-zinc-400">
+                {sessions.length > 0 ? 'Analyzing flavor preferences...' : 'Generate demo data to see trends'}
+              </div>
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-pink-500/20">
+              <div className="flex items-center space-x-3 mb-3">
+                <span className="text-2xl">👥</span>
+                <h3 className="font-medium text-white">Returning Customers</h3>
+              </div>
+              <div className="text-sm text-zinc-400">
+                {sessions.length > 0 ? 'Identifying customer patterns...' : 'Generate demo data to see patterns'}
+              </div>
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-pink-500/20">
+              <div className="flex items-center space-x-3 mb-3">
+                <span className="text-2xl">🎁</span>
+                <h3 className="font-medium text-white">Promotional Offers</h3>
+              </div>
+              <div className="text-sm text-zinc-400">
+                {sessions.length > 0 ? 'Generating personalized offers...' : 'Generate demo data to see offers'}
+              </div>
             </div>
           </div>
-          <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg border border-teal-500/50">
-            <p className="text-sm text-zinc-400 text-center">
-              💡 For detailed monitoring, analytics, and MVP controls, visit the{' '}
-              <a href="/admin" className="text-teal-400 hover:text-teal-300 underline">Admin Control Center</a>
-            </p>
+
+          <div className="mt-6 flex items-center justify-center">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+              <span className="text-sm text-pink-300">
+                Aliethia Status: {sessions.length > 0 ? 'Active - Analyzing data' : 'Dormant - Waiting for data'}
+              </span>
+            </div>
           </div>
-        </div>
         </div>
       </div>
-    </main>
+    </div>
   );
-}
+};
+
+export default UnifiedDashboard;

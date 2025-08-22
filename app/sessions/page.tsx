@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import CustomerProfileManager from "../../components/CustomerProfileManager";
 import LoungeLayout from "../../components/LoungeLayout";
-import ConnectorPartnershipManager from "../../components/ConnectorPartnershipManager";
 import HookahRoomDashboard from "../../components/HookahRoomDashboard";
 import GlobalNavigation from "../../components/GlobalNavigation";
 
@@ -573,6 +571,72 @@ export default function SessionsDashboard() {
           {/* Mobile Order Status */}
           <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-pink-600 rounded-xl p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-pink-300 mb-4 drop-shadow-md">📱 Mobile Order Status</h3>
+            
+            {/* 1-Minute Timer for Mobile Order Simulation */}
+            <div className="mb-4 bg-zinc-800 rounded-lg p-4 border border-pink-600/30">
+              <div className="flex items-center justify-between">
+                <div className="text-pink-300 font-medium">⏱️ Mobile Order Simulation Timer</div>
+                <div className="text-2xl font-bold text-pink-400" id="mobileTimer">01:00</div>
+                <button
+                  onClick={() => {
+                    // Reset timer to 1 minute
+                    let timeLeft = 60;
+                    const timerElement = document.getElementById('mobileTimer');
+                    const interval = setInterval(() => {
+                      timeLeft--;
+                      if (timerElement) {
+                        const minutes = Math.floor(timeLeft / 60);
+                        const seconds = timeLeft % 60;
+                        timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                      }
+                      
+                      if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        if (timerElement) timerElement.textContent = "00:00";
+                        // Auto-generate mobile order when timer expires
+                        const mobileOrder = {
+                          id: `mobile_${Date.now()}`,
+                          tableId: `T-${Math.floor(Math.random() * 10) + 1}`,
+                          flavor: ['Double Apple', 'Mint', 'Strawberry', 'Grape'][Math.floor(Math.random() * 4)],
+                          amount: 2500 + Math.floor(Math.random() * 2000),
+                          status: 'paid',
+                          createdAt: Date.now(),
+                          customerName: `Auto Customer ${Math.floor(Math.random() * 100)}`,
+                          customerId: `cust_${Math.floor(Math.random() * 1000)}`
+                        };
+                        
+                        // Create session and show notification
+                        const sessionId = `mobile_${mobileOrder.tableId}_${Date.now()}`;
+                        fetch(`/api/sessions/${sessionId}/command`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ 
+                            cmd: "PAYMENT_CONFIRMED",
+                            data: { 
+                              table: mobileOrder.tableId,
+                              customerId: mobileOrder.customerId,
+                              flavor: mobileOrder.flavor,
+                              amount: mobileOrder.amount
+                            }
+                          })
+                        }).then(() => {
+                          showNotification(`⏰ Timer expired! Auto-generated mobile order for ${mobileOrder.tableId}`, 'success');
+                          // Refresh sessions to show new order
+                          setTimeout(() => window.location.reload(), 1000);
+                        });
+                      }
+                    }, 1000);
+                  }}
+                  className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded text-sm transition-colors"
+                >
+                  🔄 Reset Timer
+                </button>
+              </div>
+              <div className="text-xs text-zinc-400 mt-2 text-center">
+                Timer automatically generates mobile orders for FOH/BOH transparency
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-zinc-800 rounded-lg p-4 text-center border border-pink-600/30">
                 <div className="text-2xl font-bold text-pink-400">
@@ -610,6 +674,9 @@ export default function SessionsDashboard() {
             <div className="mt-4 text-center">
               <div className="text-sm text-zinc-400">
                 💡 <strong>Pro Tip:</strong> Mobile orders appear automatically when customers complete QR workflow
+              </div>
+              <div className="text-xs text-pink-300 mt-2">
+                🔗 <strong>FOH/BOH Link:</strong> Orders sync instantly across all dashboards for transparency
               </div>
             </div>
           </div>
@@ -914,15 +981,7 @@ export default function SessionsDashboard() {
             />
           </div>
 
-          {/* Customer Profile Manager */}
-          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-green-600 rounded-xl shadow-lg">
-            <CustomerProfileManager />
-          </div>
 
-          {/* Connector Partnership Manager */}
-          <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-orange-600 rounded-xl shadow-lg">
-            <ConnectorPartnershipManager />
-          </div>
         </div>
       </div>
     </main>

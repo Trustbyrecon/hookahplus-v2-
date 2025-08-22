@@ -3,9 +3,10 @@
 
 const { addOrder, markPaid } = require('../lib/orders');
 
-// Simulate orders over a 2-hour period (8 PM - 10 PM)
-const startTime = new Date('2025-08-16T20:00:00Z'); // 8:00 PM
-const endTime = new Date('2025-08-16T22:00:00Z');   // 10:00 PM
+// Simulate orders over a realistic time period for live demo
+const startTime = new Date();
+startTime.setHours(startTime.getHours() - 1); // 1 hour ago for demo purposes
+const endTime = new Date(); // Current time
 
 // Realistic hookah flavors and durations
 const flavors = [
@@ -33,14 +34,14 @@ function generateOrderTimes() {
   const baseTime = startTime.getTime();
   const duration = endTime.getTime() - baseTime;
   
-  // Generate 15-20 orders over 2 hours
+  // Generate 15-20 orders over the time period
   const numOrders = Math.floor(Math.random() * 6) + 15; // 15-20 orders
   
   for (let i = 0; i < numOrders; i++) {
-    // More orders between 8:30-9:30 PM (peak time)
+    // More orders in the middle of the time period (peak time)
     let timeOffset;
     if (i < numOrders * 0.7) { // 70% of orders in peak time
-      timeOffset = (duration * 0.25) + (Math.random() * duration * 0.5); // 8:30-9:30 PM
+      timeOffset = (duration * 0.25) + (Math.random() * duration * 0.5); // Middle period
     } else {
       timeOffset = Math.random() * duration; // Spread remaining orders
     }

@@ -187,8 +187,8 @@ export default function DemoVideoPage() {
       {/* Header */}
       <div className="bg-zinc-900 border-b border-zinc-700 p-6">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl font-bold text-teal-400 mb-2">Demo Video</h1>
-          <p className="text-zinc-400 text-xl">Experience the future of Hookah+ lounge management</p>
+          <h1 className="text-4xl font-bold text-teal-400 mb-2">Hookah+ System Overview</h1>
+          <p className="text-zinc-400 text-xl">Experience the complete Hookah+ lounge management ecosystem</p>
         </div>
       </div>
 
@@ -292,77 +292,122 @@ export default function DemoVideoPage() {
           </div>
         </div>
 
-        {/* Scene Breakdown */}
+        {/* Interactive Demo Features */}
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Scene Breakdown</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {scenes.map((scene, index) => (
-              <div 
-                key={scene.id}
-                className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                  currentScene === index
-                    ? 'border-teal-500 bg-teal-500/20'
-                    : 'border-zinc-700 bg-zinc-800 hover:border-zinc-600'
-                }`}
-                onClick={() => handleSceneClick(index)}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="text-2xl">{scene.visual}</div>
-                  <div className="text-sm text-zinc-400">
-                    {formatTime(scene.startTime)} - {formatTime(scene.endTime)}
-                  </div>
-                </div>
-                <h3 className="font-semibold text-white mb-1">{scene.title}</h3>
-                <p className="text-sm text-zinc-400">{scene.description}</p>
-              </div>
-            ))}
+          <h2 className="text-2xl font-bold text-white mb-6 text-center">Interactive Demo Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700 hover:border-teal-500 transition-all">
+              <div className="text-3xl mb-3">🎯</div>
+              <h3 className="font-semibold text-white mb-2">Live Session Management</h3>
+              <p className="text-sm text-zinc-400">Real-time hookah session tracking with FOH/BOH workflow integration</p>
+            </div>
+            
+            <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700 hover:border-teal-500 transition-all">
+              <div className="text-3xl mb-3">📱</div>
+              <h3 className="font-semibold text-white mb-2">QR Code Workflow</h3>
+              <p className="text-sm text-zinc-400">Customer self-service from scan to payment with AI flavor recommendations</p>
+            </div>
+            
+            <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700 hover:border-teal-500 transition-all">
+              <div className="text-3xl mb-3">💳</div>
+              <h3 className="font-semibold text-white mb-2">Stripe Integration</h3>
+              <p className="text-sm text-zinc-400">Seamless payment processing with real-time confirmation and staff alerts</p>
+            </div>
+            
+            <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700 hover:border-teal-500 transition-all">
+              <div className="text-3xl mb-3">📊</div>
+              <h3 className="font-semibold text-white mb-2">Analytics Dashboard</h3>
+              <p className="text-sm text-zinc-400">Comprehensive insights into session performance and customer behavior</p>
+            </div>
+            
+            <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700 hover:border-teal-500 transition-all">
+              <div className="text-3xl mb-3">🔧</div>
+              <h3 className="font-semibold text-white mb-2">Prep Room Management</h3>
+              <p className="text-sm text-zinc-400">Back-of-house workflow optimization with real-time status updates</p>
+            </div>
+            
+            <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700 hover:border-teal-500 transition-all">
+              <div className="text-3xl mb-3">🚀</div>
+              <h3 className="font-semibold text-white mb-2">ROI Calculator</h3>
+              <p className="text-sm text-zinc-400">Calculate potential revenue increases and operational efficiency gains</p>
+            </div>
           </div>
         </div>
 
-        {/* Video Script */}
+        {/* System Architecture Overview */}
         <div className="mt-12 bg-zinc-800 rounded-xl p-8 border border-zinc-700">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Video Script</h2>
-          <div className="space-y-6">
-            {scenes.map((scene, index) => (
-              <div key={scene.id} className="flex gap-4">
-                <div className="text-2xl font-bold text-teal-400 min-w-[60px]">
-                  {index + 1}
+          <h2 className="text-2xl font-bold text-white mb-6 text-center">System Architecture Overview</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-xl font-semibold text-teal-400 mb-4">Frontend Components</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
+                  <span className="text-zinc-300">Fire Session Dashboard (FOH/BOH)</span>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-white">{scene.title}</h3>
-                    <span className="text-sm text-zinc-400">
-                      ({formatTime(scene.startTime)} - {formatTime(scene.endTime)})
-                    </span>
-                  </div>
-                  <p className="text-zinc-300 mb-2">{scene.description}</p>
-                  <div className="text-sm text-zinc-400">
-                    <strong>Visual:</strong> {scene.visual} | <strong>Overlay:</strong> "{scene.overlay}"
-                  </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-zinc-300">Mobile QR Workflow Interface</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                  <span className="text-zinc-300">Admin Control Center</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                  <span className="text-zinc-300">ROI Calculator & Analytics</span>
                 </div>
               </div>
-            ))}
+            </div>
+            
+            <div>
+              <h3 className="text-xl font-semibold text-teal-400 mb-4">Backend Services</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-zinc-300">Session State Machine</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                  <span className="text-zinc-300">Stripe Payment Processing</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span className="text-zinc-300">Real-time Event Bus</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-zinc-300">TrustLock Security Layer</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Call to Action */}
         <div className="mt-12 bg-gradient-to-r from-teal-900 to-blue-900 rounded-xl p-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to See It Live?</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to Experience Hookah+?</h2>
           <p className="text-xl text-teal-100 mb-8">
-            Experience the interactive demo and see how Hookah+ transforms your lounge
+            Dive into the interactive features and see how Hookah+ transforms your lounge operations
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="/demo-flow"
+              href="/fire-session-dashboard"
               className="bg-white text-teal-900 hover:bg-gray-100 px-8 py-4 rounded-xl text-xl font-bold transition-colors"
             >
-              🎯 Try Interactive Demo
+              🔥 Fire Session Dashboard
             </a>
             <a
-              href="/owner-cta"
+              href="/demo-flow"
               className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-teal-900 px-8 py-4 rounded-xl text-xl font-bold transition-colors"
             >
-              🚀 Get Started
+              📱 QR Workflow Demo
+            </a>
+            <a
+              href="/roi-calculator"
+              className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-teal-900 px-8 py-4 rounded-xl text-xl font-bold transition-colors"
+            >
+              💰 ROI Calculator
             </a>
           </div>
         </div>
@@ -390,3 +435,4 @@ export default function DemoVideoPage() {
     </main>
   );
 }
+

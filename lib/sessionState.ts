@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+// lib/sessionState.ts
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
 export type SessionState =
   | "NEW"
   | "PAID_PENDING_AUTH"
@@ -30,7 +34,11 @@ export type Session = {
   payment: { status: "started" | "confirmed" | "failed"; intentId?: string };
   timers: { heatUpStart?: number; deliveredAt?: number; expiresAt?: number };
   flags: { vip?: boolean; ageVerified?: boolean; allergy?: string | null };
+<<<<<<< HEAD
   meta: { createdBy: string; loungeId: string; trustLock?: string };
+=======
+  meta: { createdBy: string; loungeId: string; trustLock?: string; customerId?: string };
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
   audit: Array<SessionEvent>;
 };
 
@@ -80,12 +88,25 @@ export function putSession(s: Session) {
   return s;
 }
 
+<<<<<<< HEAD
 export function getAllSessions(): Session[] {
   return Array.from(store.values());
 }
 
 export function getSessionsByState(state: SessionState): Session[] {
   return getAllSessions().filter(s => s.state === state);
+=======
+export function getAllSessions() {
+  return Array.from(store.values());
+}
+
+export function getSessionsByState(state: SessionState) {
+  return Array.from(store.values()).filter(s => s.state === state);
+}
+
+export function getSessionsByTable(table: string) {
+  return Array.from(store.values()).filter(s => s.table === table);
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
 }
 
 // seed helper (for local testing)
@@ -106,6 +127,78 @@ export function seedSession(id = "sess_demo", table = "T-12") {
   return getSession(id)!;
 }
 
+<<<<<<< HEAD
+=======
+// Generate multiple demo sessions for testing
+export function seedMultipleSessions() {
+  const tables = ["T-1", "T-2", "T-3", "T-4", "T-5", "T-6", "T-7", "T-8", "T-9", "T-10"];
+  const states: SessionState[] = ["NEW", "PAID_CONFIRMED", "PREP_IN_PROGRESS", "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE", "CLOSE_PENDING", "CLOSED"];
+  
+  tables.forEach((table, index) => {
+    const sessionId = `demo_${table}_${Date.now()}`;
+    const state = states[index % states.length];
+    
+    putSession({
+      id: sessionId,
+      state,
+      table,
+      items: [{ sku: "hookah.session", qty: 1 }],
+      payment: { status: "confirmed" },
+      timers: {
+        heatUpStart: state === "HEAT_UP" ? Date.now() - Math.random() * 300000 : undefined,
+        deliveredAt: state === "DELIVERED" || state === "ACTIVE" ? Date.now() - Math.random() * 600000 : undefined,
+      },
+      flags: { vip: Math.random() > 0.7, ageVerified: true },
+      meta: { 
+        createdBy: "system", 
+        loungeId: "lounge_demo", 
+        trustLock: "TLH-v1::seed",
+        customerId: `customer_${Math.floor(Math.random() * 1000)}`
+      },
+      audit: [{
+        id: `evt_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        type: "session.state.changed",
+        ts: Date.now() - Math.random() * 3600000, // Random time in last hour
+        actor: { role: "system" },
+        sessionId,
+        from: "NEW",
+        to: state,
+        cmd: "PAYMENT_CONFIRMED",
+      }],
+    });
+  });
+}
+
+// Get live sessions (all non-closed sessions)
+export function getLiveSessions() {
+  return Array.from(store.values()).filter(s => 
+    !["CLOSED", "REFUNDED", "VOIDED"].includes(s.state)
+  );
+}
+
+// Get sessions by status for reporting
+export function getSessionsByStatus() {
+  const sessions = getAllSessions();
+  const statusCounts: Record<SessionState, number> = {} as any;
+  
+  // Initialize all states to 0
+  const allStates: SessionState[] = [
+    "NEW", "PAID_PENDING_AUTH", "PAID_CONFIRMED", "QUEUED_PREP", "PREP_IN_PROGRESS",
+    "HEAT_UP", "READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERED", "ACTIVE",
+    "CLOSE_PENDING", "CLOSED", "FAILED_PAYMENT", "STOCK_BLOCKED", "REMAKE_REQUESTED",
+    "RELOCATE_TABLE", "STAFF_HOLD", "REFUND_REQUESTED", "REFUNDED", "VOIDED"
+  ];
+  
+  allStates.forEach(state => statusCounts[state] = 0);
+  
+  sessions.forEach(session => {
+    statusCounts[session.state]++;
+  });
+  
+  return statusCounts;
+}
+
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
 // ---------------- Transition map ----------------
 const allowed: Record<SessionState, Partial<Record<Command, SessionState>>> = {
   NEW: {
@@ -213,6 +306,21 @@ export function reduce(session: Session, cmd: Command, actor: ActorRole, data: a
   if (cmd === "ADD_COAL_SWAP") {
     // you'd enqueue a coal task here
   }
+<<<<<<< HEAD
+=======
+  if (cmd === "PAYMENT_CONFIRMED") {
+    // Update payment status and session data
+    session.payment.status = "confirmed";
+    if (data.table) session.table = data.table;
+    if (data.customerId) session.meta.customerId = data.customerId;
+    if (data.flavor) {
+      session.items = [{ sku: `hookah.${data.flavor.toLowerCase().replace(' ', '.')}`, qty: 1, notes: data.flavor }];
+    }
+    if (data.amount) {
+      session.payment.intentId = `intent_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    }
+  }
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
 
   session.state = to;
 
@@ -231,6 +339,7 @@ export function reduce(session: Session, cmd: Command, actor: ActorRole, data: a
 
   return session;
 }
+<<<<<<< HEAD
 
 // ---------------- Utility functions ----------------
 export function getAvailableCommands(state: SessionState): Command[] {
@@ -288,3 +397,5 @@ export function getStateColor(state: SessionState): string {
   };
   return colors[state] || "bg-gray-100 text-gray-800";
 }
+=======
+>>>>>>> 076f5b4944bb4d1a7c37cd5caa69740b3cb806df
